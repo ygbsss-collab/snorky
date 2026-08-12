@@ -1,0 +1,28 @@
+# SNORKY backups
+backup_before_supabase*/
+index_BACKUP*.html
+BACKUP_INFO*.txt
+
+# Browser test profiles
+.chrome-*/
+.edge-*/
+
+# Verification / render screenshots
+verification-*.png
+render-*.png
+recovery-verified.png
+
+# Logs / temporary files
+*.log
+*.tmp
+*.temp
+
+# OS / editor files
+.DS_Store
+Thumbs.db
+
+# Python cache if present
+**pycache**/
+*.pyc
+render.png
+verification.png
