@@ -15,7 +15,7 @@ function pointFromRow(row,regionName){
     pointFeature:row.point_feature||"",snorkelingInfo:row.snorkeling_info||"",parking:row.parking||"",toilet:row.toilet||"",shower:row.shower||"",camping:row.camping||"",cooking:row.cooking||"",
     facilities:list(row.facilities),notes:list(row.notes),description:row.description||"",accessGuide:row.access_guide||"",accessSteps:list(row.access_steps),
     parkingAvailable:typeof row.parking_available==="boolean"?row.parking_available:null,parkingGuide:row.parking_guide||"",entryGuide:row.entry_guide||"",entryLat:numberOrNull(row.entry_lat),entryLng:numberOrNull(row.entry_lng),
-    depthRange:row.depth_range||"",difficulty:row.difficulty||"",pointType:row.point_type||"",warnings:list(row.warnings),sortOrder:Number.isFinite(row.sort_order)?row.sort_order:null,
+    depthRange:row.depth_range||"",difficulty:row.difficulty||"",pointType:row.point_type||"",warnings:list(row.warnings),environment:normalizePointEnvironment(row.environment),sortOrder:Number.isFinite(row.sort_order)?row.sort_order:null,
     createdAt:row.created_at||null,updatedAt:row.updated_at||null,images:[]
   });
 }
@@ -25,7 +25,7 @@ function imageFromRow(sb,row){
   return{id:row.id,url,fileName:row.file_name||"",mimeType:row.mime_type||"",isPrimary:Boolean(row.is_primary),order:Number.isFinite(row.sort_order)?row.sort_order:0,createdAt:row.created_at||null};
 }
 async function loadRegionsFromSupabase(sb){const result=await sb.from("regions").select("id,name");if(result.error)throw result.error;return(result.data||[]).map(row=>({id:internalRegionId(row.id),supabaseId:row.id,name:row.name})).sort((a,b)=>a.name.localeCompare(b.name,"ko-KR"))}
-async function loadPointsFromSupabase(sb){const result=await sb.from("points").select("id,legacy_id,region_id,name,lat,lng,parking_lat,parking_lng,point_feature,snorkeling_info,parking,toilet,shower,camping,cooking,facilities,notes,description,access_guide,access_steps,parking_available,parking_guide,entry_guide,entry_lat,entry_lng,depth_range,difficulty,point_type,warnings,sort_order,created_at,updated_at");if(result.error)throw result.error;return result.data||[]}
+async function loadPointsFromSupabase(sb){const result=await sb.from("points").select("id,legacy_id,region_id,name,lat,lng,parking_lat,parking_lng,point_feature,snorkeling_info,parking,toilet,shower,camping,cooking,facilities,notes,description,access_guide,access_steps,parking_available,parking_guide,entry_guide,entry_lat,entry_lng,depth_range,difficulty,point_type,warnings,environment,sort_order,created_at,updated_at");if(result.error)throw result.error;return result.data||[]}
 async function loadPointImagesFromSupabase(sb){const result=await sb.from("point_images").select("id,point_id,storage_path,file_name,mime_type,is_primary,sort_order,created_at");if(result.error)throw result.error;return result.data||[]}
 function applySupabaseData(sb,regions,pointRows,imageRows){
   const regionBySupabaseId=new Map(regions.map(item=>[String(item.supabaseId),item])),imagesByPoint=new Map();

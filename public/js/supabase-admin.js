@@ -85,7 +85,7 @@ function pointPayload(point,regionId){return{
   point_feature:point.pointFeature||"",snorkeling_info:point.snorkelingInfo||"",parking:point.parking||"",toilet:point.toilet||"",shower:point.shower||"",camping:point.camping||"",cooking:point.cooking||"",
   facilities:values(point.facilities),notes:values(point.notes),description:point.description||"",access_guide:point.accessGuide||"",access_steps:values(point.accessSteps),
   parking_available:typeof point.parkingAvailable==="boolean"?point.parkingAvailable:null,parking_guide:point.parkingGuide||"",entry_guide:point.entryGuide||"",entry_lat:point.entryLat??null,entry_lng:point.entryLng??null,
-  depth_range:point.depthRange||"",difficulty:point.difficulty||"",point_type:point.pointType||"",warnings:values(point.warnings),sort_order:Number.isInteger(point.sortOrder)?point.sortOrder:0
+  depth_range:point.depthRange||"",difficulty:point.difficulty||"",point_type:point.pointType||"",warnings:values(point.warnings),environment:point.environment==null?null:normalizePointEnvironment(point.environment),sort_order:Number.isInteger(point.sortOrder)?point.sortOrder:0
 }}
 
 async function saveNew(){
@@ -102,7 +102,7 @@ async function saveNew(){
 
 async function saveDetail(){
   if(!adminMode||!spot)return;el("pointEditError").textContent="";
-  try{await requireAdmin();const target=getRegionById(el("editPointRegion").value),point={...spot,name:el("editPointName").value.trim(),pointFeature:el("editPointFeature").value.trim(),snorkelingInfo:el("editSnorkelingInfo").value.trim(),parking:el("editParking").value.trim(),toilet:el("editToilet").value.trim(),shower:el("editShower").value.trim(),camping:el("editCamping")?.value.trim()||"",cooking:el("editCooking")?.value.trim()||"",accessGuide:el("editAccessGuide").value.trim(),facilities:[...adminEditFacilities],notes:[...adminEditNotes]};if(!target)throw new Error("지역을 찾을 수 없습니다.");const result=await sb().from("points").update(pointPayload(point,target.supabaseId)).eq("id",spot.supabaseId);if(result.error)throw result.error;const id=spot.supabaseId;closePointEditModal();await reload(id,target.supabaseId);renderPointModal();}
+  try{await requireAdmin();const target=getRegionById(el("editPointRegion").value),point={...spot,name:el("editPointName").value.trim(),pointFeature:el("editPointFeature").value.trim(),snorkelingInfo:el("editSnorkelingInfo").value.trim(),parking:el("editParking").value.trim(),toilet:el("editToilet").value.trim(),shower:el("editShower").value.trim(),camping:el("editCamping")?.value.trim()||"",cooking:el("editCooking")?.value.trim()||"",accessGuide:el("editAccessGuide").value.trim(),facilities:[...adminEditFacilities],notes:[...adminEditNotes],environment:readEnvironmentEditor()};if(!target)throw new Error("지역을 찾을 수 없습니다.");const result=await sb().from("points").update(pointPayload(point,target.supabaseId)).eq("id",spot.supabaseId);if(result.error)throw result.error;const id=spot.supabaseId;closePointEditModal();await reload(id,target.supabaseId);renderPointModal();}
   catch(error){console.error("[SNORKY Admin] 포인트 수정 실패",error);message("pointEditError",error,"저장하지 못했습니다.")}
 }
 

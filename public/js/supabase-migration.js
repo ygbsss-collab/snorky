@@ -92,6 +92,7 @@ function pointPayload(point,regionMap){
     parking_available:typeof point.parkingAvailable==="boolean"?point.parkingAvailable:null,parking_guide:text(point.parkingGuide),
     entry_guide:text(point.entryGuide),entry_lat:finite(point.entryLat),entry_lng:finite(point.entryLng),
     depth_range:text(point.depthRange),difficulty:text(point.difficulty),point_type:text(point.pointType),warnings:array(point.warnings),
+    environment:point.environment==null?null:normalizePointEnvironment(point.environment),
     sort_order:Number.isInteger(point.sortOrder)?point.sortOrder:0
   };
   const created=isoOrUndefined(point.createdAt),updated=isoOrUndefined(point.updatedAt);
