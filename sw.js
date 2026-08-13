@@ -1,5 +1,5 @@
 const CACHE_PREFIX = 'snorky-static-';
-const CACHE_NAME = `${CACHE_PREFIX}v1`;
+const CACHE_NAME = `${CACHE_PREFIX}v3`;
 const APP_SHELL = [
   './',
   './index.html',
@@ -13,7 +13,8 @@ const APP_SHELL = [
   './public/js/supabase-client.js',
   './public/js/supabase-migration.js',
   './public/js/supabase-read.js',
-  './public/js/supabase-admin.js'
+  './public/js/supabase-admin.js',
+  './public/js/user-engagement.js'
 ];
 
 self.addEventListener('install', event => {
