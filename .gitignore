@@ -1,5 +1,6 @@
 # SNORKY backups
 backup_before_supabase*/
+backup_before_*/
 index_BACKUP*.html
 BACKUP_INFO*.txt
 

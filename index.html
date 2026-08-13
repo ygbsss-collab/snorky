@@ -3,6 +3,12 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="theme-color" content="#087ca7">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="SNORKY">
+  <link rel="manifest" href="./manifest.webmanifest">
+  <link rel="apple-touch-icon" href="./public/images/pwa/apple-touch-icon.png">
   <title>SNORKY | 스노클링 컨디션</title>
   <script>try{if(sessionStorage.getItem('snorky_intro_seen'))document.documentElement.classList.add('snorky-intro-seen')}catch(e){console.warn('[SNORKY intro] sessionStorage unavailable',e)}</script>
   <style>
@@ -656,5 +662,6 @@ setAdminMode(false);renderNav();load();loadKakaoMapsSdk();
 <script src="./public/js/supabase-read.js"></script>
 <script src="./public/js/supabase-admin.js"></script>
 <script async src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" onload="window.dispatchEvent(new Event('snorky:supabase-ready'))"></script>
+<script>if('serviceWorker'in navigator)window.addEventListener('load',()=>navigator.serviceWorker.register('./sw.js',{scope:'./'}).catch(error=>console.warn('[SNORKY PWA] Service Worker registration failed',error)));</script>
 </body>
 </html>

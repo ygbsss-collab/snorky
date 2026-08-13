@@ -1,0 +1,39 @@
+{
+  "id": "./",
+  "name": "SNORKY",
+  "short_name": "SNORKY",
+  "description": "스노클링 · 프리다이빙 포인트와 바다 컨디션을 확인하는 SNORKY",
+  "lang": "ko-KR",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "any",
+  "theme_color": "#087ca7",
+  "background_color": "#087ca7",
+  "icons": [
+    {
+      "src": "./public/images/pwa/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "./public/images/pwa/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "./public/images/pwa/icon-192-maskable.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "maskable"
+    },
+    {
+      "src": "./public/images/pwa/icon-512-maskable.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ]
+}
