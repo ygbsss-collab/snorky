@@ -48,7 +48,7 @@ function casePolicy(eligible,rows){
   return{caseName:"E",title:"오늘은 추천할 만한 포인트가 없습니다.",subtitle:"오늘은 바다 쉬어가는 게 좋겠어요.",sectionTitle:"참고 포인트",rows:eligible.slice(0,MAX_RESULTS),medals:false};
 }
 async function evaluate(){
-  if(state.running)return;state.running=true;setLoading("전체 포인트의 현재 바다 상태를 계산하고 있습니다.");
+  if(state.running)return;state.running=true;setLoading("SNORKY 전체 포인트를 확인 중입니다.");
   try{
     await window.SNORKYMarineSafety?.ready;
     const points=await waitForPoints(),service=window.SNORKYNearbyBest;

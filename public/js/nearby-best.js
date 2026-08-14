@@ -65,7 +65,7 @@ function changeRadius(event){
   const radius=Number(event.target.value);if(!ALLOWED_RADII.includes(radius))return;
   state.radius=radius;getDialog().querySelector(".nearby-best-radius-label").textContent=`${radius}km`;
   if(!state.coordinates||state.running)return;
-  state.running=true;const button=getDialog().querySelector(".nearby-best-use");button.disabled=true;button.textContent="선택 반경 계산 중…";
+  state.running=true;const button=getDialog().querySelector(".nearby-best-use");button.disabled=true;button.textContent="내 주변 포인트를 확인 중입니다.";
   runNearbyBest(state.coordinates.latitude,state.coordinates.longitude,radius).finally(finishRun);
 }
 
@@ -150,7 +150,7 @@ async function mapWithConcurrency(items,limit,worker){
 async function runNearbyBest(latitude,longitude,radius){
   const diagnostics={weatherRequests:0,marineRequests:0};
   try{
-    console.info("[SNORKY NEARBY BEST] 현재 위치",{latitude,longitude});console.info("[SNORKY NEARBY BEST] 선택 반경",`${radius}km`);setLoading("현재 위치 주변의 바다 상태를 계산하고 있습니다.");
+    console.info("[SNORKY NEARBY BEST] 현재 위치",{latitude,longitude});console.info("[SNORKY NEARBY BEST] 선택 반경",`${radius}km`);setLoading("내 주변 포인트를 확인 중입니다.");
     const sb=await waitForSupabase();
     await window.SNORKYMarineSafety?.ready;
     const [regions,pointRows]=await Promise.all([selectOrThrow(sb.from("regions").select("id,name,warning_area_code")),fetchAllPointLocations(sb)]);
@@ -168,7 +168,7 @@ async function runNearbyBest(latitude,longitude,radius){
     console.info("[SNORKY NEARBY BEST] Safety 적용 후 BEST 후보 수",candidates.length);console.table(candidates.map(point=>({Point:point.name,Region:point.region,DistanceKm:Number(point.distance.toFixed(2))})));
     if(!pointsInRadius.length){renderNoCandidates(nearest,radius);logDiagnostics(diagnostics,[],[]);return}
     if(!candidates.length){renderResults([],[],0,radius,nearest);logDiagnostics(diagnostics,[],[]);return}
-    setLoading("현재 위치 주변의 바다 상태를 계산하고 있습니다.");
+    setLoading("내 주변 포인트를 확인 중입니다.");
     const environments=await fetchCandidateEnvironments(sb,candidates);
     const environmentById=new Map(environments.map(point=>[String(point.id),point.environment]));
     const scored=await mapWithConcurrency(candidates,4,point=>scoreCandidate({...point,environment:environmentById.get(String(point.id))??null},diagnostics));
