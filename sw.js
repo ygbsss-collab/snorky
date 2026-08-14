@@ -1,5 +1,5 @@
 const CACHE_PREFIX = 'snorky-static-';
-const CACHE_NAME = `${CACHE_PREFIX}v8`;
+const CACHE_NAME = `${CACHE_PREFIX}v27`;
 const APP_SHELL = [
   './',
   './index.html',
@@ -10,11 +10,18 @@ const APP_SHELL = [
   './public/images/pwa/icon-192-maskable.png',
   './public/images/pwa/icon-512-maskable.png',
   './public/images/pwa/apple-touch-icon.png',
+  './public/assets/icons/fins.png',
   './public/js/supabase-client.js',
   './public/js/supabase-migration.js',
   './public/js/supabase-read.js',
   './public/js/supabase-admin.js',
-  './public/js/user-engagement.js'
+  './public/js/user-engagement.js',
+  './public/js/kma-safety.js',
+  './public/js/best-ui.js',
+  './public/js/nearby-best.js',
+  './public/js/today-best.js',
+  './public/js/point-search.js',
+  './public/js/point-gear.js'
 ];
 
 self.addEventListener('install', event => {

@@ -81,7 +81,7 @@ async function deleteRegion(id){
 }
 
 function pointPayload(point,regionId){return{
-  region_id:regionId,name:point.name,lat:point.lat,lng:point.lng,parking_lat:point.parkingLat??null,parking_lng:point.parkingLng??null,
+  region_id:regionId,name:point.name,lat:point.lat,lng:point.lng,warning_area_code:point.warningAreaCode||getRegionById(point.regionId)?.warningAreaCode||null,parking_lat:point.parkingLat??null,parking_lng:point.parkingLng??null,
   point_feature:point.pointFeature||"",snorkeling_info:point.snorkelingInfo||"",parking:point.parking||"",toilet:point.toilet||"",shower:point.shower||"",camping:point.camping||"",cooking:point.cooking||"",
   facilities:values(point.facilities),notes:values(point.notes),description:point.description||"",access_guide:point.accessGuide||"",access_steps:values(point.accessSteps),
   parking_available:typeof point.parkingAvailable==="boolean"?point.parkingAvailable:null,parking_guide:point.parkingGuide||"",entry_guide:point.entryGuide||"",entry_lat:point.entryLat??null,entry_lng:point.entryLng??null,
