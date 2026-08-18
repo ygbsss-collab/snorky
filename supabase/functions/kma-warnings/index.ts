@@ -1,74 +1,24 @@
-const KMA_ENDPOINT="https://apihub.kma.go.kr/api/typ01/url/wrn_now_data.php";
-const TARGET_WARNING_CODES=new Set(["V","T","O","N"]);
-const RELEASE_COMMANDS=new Set(["3","4","7"]);
-const WARNING_NAMES:Record<string,string>={V:"풍랑",T:"태풍",O:"폭풍해일",N:"지진해일"};
-const LEVEL_NAMES:Record<string,string>={1:"예비특보",2:"주의보",3:"경보"};
-const COMMAND_NAMES:Record<string,string>={1:"발표",2:"대치",3:"해제",4:"대치해제",5:"연장",6:"변경",7:"변경해제"};
-const CORS_HEADERS={
-  "Access-Control-Allow-Origin":"*",
-  "Access-Control-Allow-Headers":"authorization, x-client-info, apikey, content-type",
-  "Access-Control-Allow-Methods":"GET, POST, OPTIONS",
-  "Content-Type":"application/json; charset=utf-8"
-};
-
-type WarningRow={regUp:string;regUpKo:string;regId:string;regKo:string;tmFc:string;tmEf:string;wrn:string;lvl:string;cmd:string};
-type ActiveWarning=WarningRow&{areaName:string;warningName:string;levelName:string;commandName:string;active:boolean};
-
-function json(body:unknown,status=200){return new Response(JSON.stringify(body),{status,headers:CORS_HEADERS})}
-function kstTimestamp(date=new Date()){
-  const parts=new Intl.DateTimeFormat("en-CA",{timeZone:"Asia/Seoul",year:"numeric",month:"2-digit",day:"2-digit",hour:"2-digit",minute:"2-digit",hourCycle:"h23"}).formatToParts(date);
-  const value=Object.fromEntries(parts.map(part=>[part.type,part.value]));return`${value.year}${value.month}${value.day}${value.hour}${value.minute}`;
-}
-function csvFields(line:string){
-  const fields:string[]=[];let value="",quoted=false;
-  for(let index=0;index<line.length;index++){const char=line[index];if(char==='"'){if(quoted&&line[index+1]==='"'){value+='"';index++}else quoted=!quoted}else if(char===","&&!quoted){fields.push(value.trim());value=""}else value+=char}
-  fields.push(value.trim());return fields;
-}
-function parseRows(text:string){
-  if(!text||/^\s*\{/.test(text)){let payload;try{payload=JSON.parse(text)}catch{}throw new Error(payload?.result?.message||"KMA 응답 형식 오류")}
-  const rows:WarningRow[]=[];
-  for(const raw of text.split(/\r?\n/)){const line=raw.trim();if(!line||line.startsWith("#"))continue;const fields=csvFields(line);if(fields.length<9)continue;
-    const [regUp,regUpKo,regId,regKo,tmFc,tmEf,wrn,lvl,cmd]=fields;
-    if(!/^S\d{7}$/.test(regId||"")||!/^\d{12}$/.test(tmFc||""))continue;
-    rows.push({regUp,regUpKo,regId,regKo,tmFc,tmEf,wrn,lvl,cmd});
-  }
-  return rows;
-}
-function latestWarnings(rows:WarningRow[]){
-  const latest=new Map<string,WarningRow>();
-  for(const row of rows){if(!TARGET_WARNING_CODES.has(row.wrn))continue;const key=`${row.regId}:${row.wrn}`,previous=latest.get(key);if(!previous||`${row.tmFc}:${row.tmEf}`>=`${previous.tmFc}:${previous.tmEf}`)latest.set(key,row)}
-  return[...latest.values()].map<ActiveWarning>(row=>({...row,areaName:row.regKo||row.regUpKo,warningName:WARNING_NAMES[row.wrn],levelName:LEVEL_NAMES[row.lvl]||row.lvl,commandName:COMMAND_NAMES[row.cmd]||row.cmd,active:!RELEASE_COMMANDS.has(row.cmd)&&(row.lvl==="2"||row.lvl==="3")}));
-}
-function warningIndex(warnings:ActiveWarning[]){
-  const index:Record<string,ActiveWarning[]>=Object.create(null);
-
-  for(const warning of warnings){
-    if(!warning.active)continue;
-
-    const codes=[...new Set(
-      [warning.regId,warning.regUp]
-        .filter(code=>/^S\d{7}$/.test(code||""))
-    )];
-
-    for(const code of codes){
-      (index[code]??=[]).push(warning);
-    }
-  }
-
-  return index;
-}
-
-Deno.serve(async request=>{
-  if(request.method==="OPTIONS")return new Response(null,{status:204,headers:CORS_HEADERS});
-  if(request.method!=="GET"&&request.method!=="POST")return json({status:"UNKNOWN",message:"Method Not Allowed"},405);
-  const key=Deno.env.get("KMA_API_KEY");
-  if(!key)return json({status:"UNKNOWN",upstreamStatus:null,message:"KMA 인증 설정을 확인할 수 없습니다.",warnings:[],warningIndex:{}});
-  const controller=new AbortController(),timer=setTimeout(()=>controller.abort(),10000);
-  try{
-    const url=new URL(KMA_ENDPOINT);url.searchParams.set("fe","f");url.searchParams.set("tm",kstTimestamp());url.searchParams.set("disp","0");url.searchParams.set("help","1");url.searchParams.set("authKey",key);
-    const response=await fetch(url,{signal:controller.signal,headers:{Accept:"text/plain, application/json"}}),text=await response.text();
-    if(!response.ok)return json({status:"UNKNOWN",upstreamStatus:response.status,message:"KMA 현재특보를 확인할 수 없습니다.",warnings:[],warningIndex:{}});
-    const rows=parseRows(text),warnings=latestWarnings(rows);
-    return json({status:"READY",upstreamStatus:response.status,updatedAt:new Date().toISOString(),rowCount:rows.length,warnings,warningIndex:warningIndex(warnings)});
-  }catch(error){return json({status:"UNKNOWN",upstreamStatus:null,message:error instanceof Error&&error.name==="AbortError"?"KMA 조회 시간이 초과되었습니다.":"KMA 현재특보를 확인할 수 없습니다.",warnings:[],warningIndex:{}})}finally{clearTimeout(timer)}
+import{createClient,type SupabaseClient}from"npm:@supabase/supabase-js@2";
+const ENDPOINT="https://apihub.kma.go.kr/api/typ01/url/wrn_now_data.php",TARGET=new Set(["W","V","T","O","N"]),RELEASE=new Set(["3","4","7"]),NAMES:any={W:"강풍",V:"풍랑",T:"태풍",O:"폭풍해일",N:"지진해일"},LEVEL:any={1:"예비특보",2:"주의보",3:"경보"};
+const cors={"Access-Control-Allow-Origin":"*","Access-Control-Allow-Headers":"authorization, x-client-info, x-kma-refresh-secret, x-scheduler-token, apikey, content-type","Access-Control-Allow-Methods":"GET,POST,OPTIONS"};
+const json=(x:any,s=200)=>new Response(JSON.stringify(x),{status:s,headers:{...cors,"content-type":"application/json;charset=utf-8","cache-control":"no-store"}});
+const dbClient=()=>createClient(Deno.env.get("SUPABASE_URL")!,Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,{auth:{persistSession:false,autoRefreshToken:false}});
+const safeMessage=(e:any)=>String(e?.message||e||"UNKNOWN").replace(/https?:\/\/\S+/g,"[URL_REDACTED]").slice(0,300);
+function stage(requestId:string,name:string,meta:any={}){console.info("[KMA SAFETY]",{requestId,stage:name,...meta})}
+function fields(line:string){const a=[];let v="",q=false;for(let i=0;i<line.length;i++){const c=line[i];if(c==='"'){if(q&&line[i+1]==='"'){v+='"';i++}else q=!q}else if(c===","&&!q){a.push(v.trim());v=""}else v+=c}a.push(v.trim());return a}
+function parse(text:string){const rows:any[]=[];for(const raw of text.split(/\r?\n/)){const l=raw.trim();if(!l||l.startsWith("#"))continue;const f=fields(l);if(f.length<9)continue;const[regUp,regUpKo,regId,regKo,tmFc,tmEf,wrn,lvl,cmd]=f;if(/^S\d{7}$/.test(regId)&&/^\d{12}$/.test(tmFc))rows.push({regUp,regUpKo,regId,regKo,tmFc,tmEf,wrn,lvl,cmd})}return rows}
+function normalize(rows:any[]){const map=new Map();for(const r of rows){if(!TARGET.has(r.wrn))continue;const k=`${r.regId}:${r.wrn}`,p=map.get(k);if(!p||`${r.tmFc}:${r.tmEf}`>=`${p.tmFc}:${p.tmEf}`)map.set(k,r)}return[...map.values()].map((r:any)=>({...r,areaName:r.regKo||r.regUpKo,warningName:NAMES[r.wrn],levelName:LEVEL[r.lvl]||r.lvl,active:!RELEASE.has(r.cmd)&&(r.lvl==="2"||r.lvl==="3")}))}
+function warningIndex(w:any[]){const x:any={};for(const v of w.filter(v=>v.active))for(const c of new Set([v.regId,v.regUp].filter((c:any)=>/^S\d{7}$/.test(c))))(x[c as string]??=[]).push(v);return x}
+function kstTimestamp(){const p=Object.fromEntries(new Intl.DateTimeFormat("en-CA",{timeZone:"Asia/Seoul",year:"numeric",month:"2-digit",day:"2-digit",hour:"2-digit",minute:"2-digit",hourCycle:"h23"}).formatToParts().map(x=>[x.type,x.value]));return`${p.year}${p.month}${p.day}${p.hour}${p.minute}`}
+const legacy=(r:Request)=>{const e=Deno.env.get("KMA_REFRESH_SECRET"),a=r.headers.get("x-kma-refresh-secret")||"";return!!e&&a===e};
+async function authorized(db:SupabaseClient,r:Request){if(legacy(r))return true;const c=r.headers.get("x-scheduler-token")||"";if(!c)return false;const q=await db.rpc("validate_kma_automation_scheduler_token",{candidate:c});return!q.error&&q.data===true}
+async function bump(db:SupabaseClient,d:any,status?:number){try{const day=new Date().toISOString().slice(0,10),q=await db.from("kma_api_usage").select("*").eq("provider","KMA").eq("api_name","warnings").eq("usage_date",day).maybeSingle();if(q.error)throw q.error;const o=q.data||{},row:any={provider:"KMA",api_name:"warnings",usage_date:day,updated_at:new Date().toISOString()};for(const k of["request_count","success_count","failure_count","count_429","count_5xx","timeout_count"])row[k]=Number(o[k]||0)+Number(d[k]||0);if(status!==undefined){row.last_http_status=status;row.last_request_at=new Date().toISOString()}const w=await db.from("kma_api_usage").upsert(row,{onConflict:"provider,api_name,usage_date"});if(w.error)throw w.error;return true}catch(e){console.error("[KMA SAFETY USAGE_LOG]",{errorClass:"USAGE_LOG",message:safeMessage(e)});return false}}
+async function updateLog(db:SupabaseClient,id:number|null,outcome:any,status:number|null){if(id===null)return false;try{const q=await db.from("kma_api_request_log").update({http_status:status,outcome:JSON.stringify(outcome),completed_at:new Date().toISOString()}).eq("id",id);if(q.error)throw q.error;return true}catch(e){console.error("[KMA SAFETY REQUEST_LOG]",{errorClass:"USAGE_LOG",message:safeMessage(e)});return false}}
+Deno.serve(async r=>{
+  if(r.method==="OPTIONS")return new Response(null,{status:204,headers:cors});const db=dbClient();
+  if(r.method==="GET"){const cache=await db.from("kma_safety_cache").select("*").eq("status","fresh").order("fetched_at",{ascending:false}).limit(1).maybeSingle(),log=await db.from("kma_api_request_log").select("http_status,outcome,completed_at").eq("provider","KMA").eq("api_name","warnings").order("request_timestamp",{ascending:false}).limit(1).maybeSingle(),rate=await db.rpc("kma_rate_limit_snapshot",{p_api_name:"warnings",p_planned:0});let diagnostic:any=log.data||null;try{if(diagnostic?.outcome?.startsWith("{"))diagnostic={...diagnostic,outcome:JSON.parse(diagnostic.outcome)}}catch{}if(cache.error||!cache.data)return json({status:"UNKNOWN",stale:true,diagnostic,usage:rate.data,warnings:[],warningIndex:{}});const age=(Date.now()-new Date(cache.data.fetched_at).getTime())/60000;if(age>10)return json({status:"UNKNOWN",stale:true,lastSuccessfulAt:cache.data.last_successful_at,diagnostic,usage:rate.data,warnings:[],warningIndex:{}});return json({status:"READY",upstreamStatus:cache.data.http_status,updatedAt:cache.data.fetched_at,lastSuccessfulAt:cache.data.last_successful_at,stale:false,diagnostic,usage:rate.data,warnings:cache.data.normalized_warnings,warningIndex:cache.data.warning_index})}
+  if(r.method!=="POST")return json({status:"UNKNOWN"},405);const requestId=crypto.randomUUID(),diag:any={requestId,stage:"AUTH",upstreamHttpStatus:null,contentType:null,responseLength:null,parsedRowCount:null,normalizedWarningCount:null,cacheWriteStatus:"NOT_ATTEMPTED"};
+  if(!Deno.env.get("KMA_API_KEY"))return json({status:"UNKNOWN",...diag,errorClass:"AUTH",errorMessage:"KMA secret missing"},503);if(!await authorized(db,r))return json({status:"UNKNOWN",...diag,errorClass:"AUTH",errorMessage:"Unauthorized"},401);stage(requestId,"AUTH_OK");
+  const owner=crypto.randomUUID();let locked=false,logId:number|null=null,status=0;
+  try{const lock=await db.rpc("try_acquire_kma_refresh_lock",{p_lock_name:"kma-warning-refresh",p_owner_token:owner,p_ttl_seconds:120});if(lock.error)throw Object.assign(new Error(lock.error.message),{code:"LOCK"});if(lock.data!==true)return json({status:"SKIP",reason:"LOCKED",requestId});locked=true;const latest=await db.from("kma_safety_cache").select("fetched_at").eq("status","fresh").order("fetched_at",{ascending:false}).limit(1).maybeSingle();if(latest.error)throw Object.assign(new Error(latest.error.message),{code:"CACHE_READ"});if(latest.data&&Date.now()-new Date(latest.data.fetched_at).getTime()<5*60000)return json({status:"SKIP",reason:"FRESH",requestId});const rate=await db.rpc("kma_rate_limit_snapshot",{p_api_name:"warnings",p_planned:1});if(rate.error)throw Object.assign(new Error(rate.error.message),{code:"USAGE_LOG"});if(rate.data?.safe!==true)return json({status:"SKIP",reason:"USAGE_GUARD",requestId,usage:rate.data});const inserted=await db.from("kma_api_request_log").insert({provider:"KMA",api_name:"warnings",run_id:owner,outcome:"STARTED"}).select("id").single();if(inserted.error)stage(requestId,"ERROR",{errorClass:"USAGE_LOG",message:safeMessage(inserted.error)});else logId=Number(inserted.data.id);await bump(db,{request_count:1});stage(requestId,"UPSTREAM_START");const ctl=new AbortController(),timer=setTimeout(()=>ctl.abort(),10000);try{const u=new URL(ENDPOINT);for(const[k,v]of Object.entries({fe:"f",tm:kstTimestamp(),disp:"0",help:"1",authKey:Deno.env.get("KMA_API_KEY")!}))u.searchParams.set(k,v);const res=await fetch(u,{signal:ctl.signal}),bytes=await res.arrayBuffer(),text=new TextDecoder("euc-kr").decode(bytes);status=res.status;diag.upstreamHttpStatus=status;diag.contentType=res.headers.get("content-type");diag.responseLength=bytes.byteLength;stage(requestId,"UPSTREAM_HTTP",{httpStatus:status,contentType:diag.contentType,responseLength:diag.responseLength});if(!res.ok)throw Object.assign(new Error(`KMA upstream HTTP ${status}`),{code:status===429?"429":status>=500?"5XX":"UPSTREAM"});const rows=parse(text);diag.parsedRowCount=rows.length;stage(requestId,"PARSE_OK",{parsedRowCount:rows.length});const warnings=normalize(rows);diag.normalizedWarningCount=warnings.length;stage(requestId,"NORMALIZE_OK",{normalizedWarningCount:warnings.length});const tm=rows.length?rows.map(x=>x.tmFc).sort().at(-1)!:kstTimestamp(),source=`${tm.slice(0,4)}-${tm.slice(4,6)}-${tm.slice(6,8)}T${tm.slice(8,10)}:${tm.slice(10,12)}:00+09:00`,now=new Date().toISOString();stage(requestId,"CACHE_WRITE_START");const write=await db.from("kma_safety_cache").upsert({source_issued_at:source,fetched_at:now,last_successful_at:now,status:"fresh",stale:false,http_status:status,warning_payload:{rowCount:rows.length},normalized_warnings:warnings,warning_index:warningIndex(warnings)},{onConflict:"source_issued_at"});if(write.error)throw Object.assign(new Error(`CACHE_WRITE:${write.error.code||"UNKNOWN"}:${write.error.message}`),{code:"CACHE_WRITE"});diag.cacheWriteStatus="OK";stage(requestId,"CACHE_WRITE_OK");const usageOk=await bump(db,{success_count:1},status);diag.usageLogStatus=usageOk?"OK":"FAILED";diag.stage="COMPLETE";await updateLog(db,logId,diag,status);stage(requestId,"COMPLETE");return json({status:"READY",...diag,warnings:warnings.length})}catch(e:any){const code=ctl.signal.aborted?"TIMEOUT":e.code||"UNKNOWN";diag.stage=code==="PARSER"?"PARSER":code==="CACHE_WRITE"?"CACHE_WRITE":code==="TIMEOUT"||code==="429"||code==="5XX"||code==="UPSTREAM"?"UPSTREAM":code;diag.errorClass=code;diag.errorMessage=safeMessage(e);if(code==="429")diag.http429=1;if(code==="5XX")diag.http5xx=1;if(code==="TIMEOUT")diag.timeout=1;stage(requestId,"ERROR",{errorClass:code,message:diag.errorMessage});await bump(db,{failure_count:1,count_429:code==="429"?1:0,count_5xx:code==="5XX"?1:0,timeout_count:code==="TIMEOUT"?1:0},status);await updateLog(db,logId,diag,status||null);return json({status:"UNKNOWN",...diag},502)}finally{clearTimeout(timer)}}finally{if(locked)await db.rpc("release_kma_refresh_lock",{p_lock_name:"kma-warning-refresh",p_owner_token:owner})}
 });

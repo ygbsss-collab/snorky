@@ -1,10 +1,11 @@
 const CACHE_PREFIX = 'snorky-static-';
-const CACHE_NAME = `${CACHE_PREFIX}v29`;
+const CACHE_NAME = `${CACHE_PREFIX}v48`;
 const APP_SHELL = [
   './',
   './index.html',
   './manifest.webmanifest',
   './public/images/snorky-app-icon.png',
+  './public/images/snorky-home-hero-v2.png',
   './public/images/pwa/icon-192.png',
   './public/images/pwa/icon-512.png',
   './public/images/pwa/icon-192-maskable.png',
@@ -12,6 +13,7 @@ const APP_SHELL = [
   './public/images/pwa/apple-touch-icon.png',
   './public/assets/icons/fins.png',
   './public/js/supabase-client.js',
+  './public/js/open-meteo-marine-cache.js',
   './public/js/supabase-migration.js',
   './public/js/supabase-read.js',
   './public/js/supabase-admin.js',
@@ -20,6 +22,7 @@ const APP_SHELL = [
   './public/js/best-ui.js',
   './public/js/nearby-best.js',
   './public/js/today-best.js',
+  './public/js/home-v2.js',
   './public/js/point-search.js',
   './public/js/point-gear.js'
 ];

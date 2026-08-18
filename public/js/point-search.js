@@ -1,6 +1,6 @@
 (function(){
 "use strict";
-const shell=document.getElementById("pointSearchShell"),mobileAnchor=document.getElementById("pointSearchMobileAnchor"),desktopActions=document.querySelector(".region-actions"),input=document.getElementById("pointSearchInput"),results=document.getElementById("pointSearchResults"),tabs=document.getElementById("pointTabsWrap"),mobileQuery=matchMedia("(max-width:700px)");
+const shell=document.getElementById("pointSearchShell"),mobileAnchor=document.getElementById("homeSearchAnchor")||document.getElementById("pointSearchMobileAnchor"),desktopActions=document.querySelector(".region-actions"),input=document.getElementById("pointSearchInput"),results=document.getElementById("pointSearchResults"),tabs=document.getElementById("pointTabsWrap"),mobileQuery=matchMedia("(max-width:700px)");
 if(!shell||!mobileAnchor||!desktopActions||!input||!results||!tabs)return;
 const escapeHtml=value=>String(value??"").replace(/[&<>"]/g,char=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"})[char]);
 function allPoints(){return Array.isArray(window.SNORKY_ACTIVE_POINTS)?window.SNORKY_ACTIVE_POINTS:[]}

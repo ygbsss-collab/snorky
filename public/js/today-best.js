@@ -3,7 +3,7 @@
 
 const MAX_RESULTS=3;
 const SNAPSHOT_TTL=20*60*1000;
-const state={running:false,snapshot:null};
+const state={running:false,pendingRefresh:false,snapshot:null};
 
 function escapeHtml(value){return String(value??"").replace(/[&<>"]/g,char=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"})[char])}
 function grade(score){return window.getSnorkySeaConditionLabel?.(score)||"바다 상태를 확인할 수 없어요"}
@@ -55,9 +55,9 @@ async function evaluate(){
     if(!service?.evaluatePoints)throw new Error("기존 Today 평가 엔진을 사용할 수 없습니다.");
     const {scored,diagnostics}=await service.evaluatePoints(points);
     const rows=scored.map((point,index)=>{const safety=safetyFor(point),hard=point.hardLabel||"NONE",success=!point.error&&Number.isFinite(point.score),included=success&&safety.status==="PASS"&&!point.hardLabel;let reason="";if(!success)reason=point.error||"평가 실패";else if(safety.status==="BLOCK")reason="공식 해상특보";else if(safety.status==="UNKNOWN")reason="해상특보 확인 불가";else if(point.hardLabel)reason=point.hardLabel;return{...point,sourceIndex:index,kma:safety.status,hard,included,reason}}).sort(stableSort);
-    const eligible=rows.filter(row=>row.included),policy=casePolicy(eligible,rows),snapshot={createdAt:Date.now(),pointsTotal:points.length,rows,eligible,policy,diagnostics};state.snapshot=snapshot;render(snapshot);logDevelopment(snapshot);
-  }catch(error){console.error("[SNORKY TODAY BEST] 실행 실패",error);getDialog().querySelector(".today-best-results").innerHTML=`<p class="nearby-best-status error">${escapeHtml(error?.message||"오늘의 BEST를 계산하지 못했습니다.")}</p>`}
-  finally{state.running=false}
+    const eligible=rows.filter(row=>row.included),policy=casePolicy(eligible,rows),sourceById=new Map(points.flatMap(point=>[[String(point.supabaseId??""),point],[String(point.id??""),point]])),homeRows=eligible.slice(0,10).map(point=>({...sourceById.get(String(point.id)),...point,images:sourceById.get(String(point.id))?.images||[]})),snapshot={createdAt:Date.now(),pointsTotal:points.length,rows,eligible,homeRows,policy,diagnostics};state.snapshot=snapshot;render(snapshot);document.dispatchEvent(new CustomEvent("snorky:today-best-ready",{detail:snapshot}));logDevelopment(snapshot);
+  }catch(error){console.error("[SNORKY TODAY BEST] 실행 실패",error);getDialog().querySelector(".today-best-results").innerHTML=`<p class="nearby-best-status error">${escapeHtml(error?.message||"오늘의 BEST를 계산하지 못했습니다.")}</p>`;document.dispatchEvent(new CustomEvent("snorky:today-best-error",{detail:error}))}
+  finally{state.running=false;if(state.pendingRefresh){state.pendingRefresh=false;queueMicrotask(evaluate)}}
 }
 function render(snapshot){
   const {policy}=snapshot,icons=policy.medals?["🥇","🥈","🥉"]:["1","2","3"];
@@ -75,5 +75,5 @@ function logDevelopment(snapshot){
 document.getElementById("todayBestButton")?.addEventListener("click",openDialog);
 document.getElementById("todayBestButtonMobile")?.addEventListener("click",openDialog);
 document.addEventListener("keydown",event=>{if(event.key==="Escape"&&getDialog().classList.contains("open"))closeDialog()});
-window.SNORKYTodayBest={open:openDialog,captureReturnState,restoreReturnState,getSnapshot:()=>state.snapshot,refresh:()=>{state.snapshot=null;return evaluate()}};
+window.SNORKYTodayBest={open:openDialog,captureReturnState,restoreReturnState,getSnapshot:()=>state.snapshot,refresh:()=>{state.snapshot=null;if(state.running){state.pendingRefresh=true;return}return evaluate()}};
 })();

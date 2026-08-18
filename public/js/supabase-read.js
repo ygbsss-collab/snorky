@@ -45,6 +45,7 @@ function applySupabaseData(sb,regions,pointRows,imageRows){
   region=regions.find(item=>item.id===selectedRegionId)?.name||regions[0]?.name||"";spot=locations[region]?.[0]||null;
   DATA_SOURCE.active="supabase";
   renderNav();if(spot){load();renderMap()}else renderNoPointState();
+  document.dispatchEvent(new CustomEvent("snorky:points-ready",{detail:{points:window.SNORKY_ACTIVE_POINTS.length,images:imageRows.length}}));
 }
 async function loadSnorkyDataFromSupabase(){
   const sb=window.getSnorkySupabase();
