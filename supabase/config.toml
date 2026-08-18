@@ -1,0 +1,23 @@
+[functions.kma-weather-refresh]
+verify_jwt = false
+
+[functions.khoa-wave-test]
+verify_jwt = false
+
+[functions.khoa-wave-refresh]
+verify_jwt = false
+
+[functions.khoa-current-refresh]
+verify_jwt = false
+
+[functions.khoa-tide-refresh]
+verify_jwt = false
+
+[functions.khoa-marine-observation-refresh]
+verify_jwt = false
+
+[functions.open-meteo-marine-refresh]
+verify_jwt = false
+
+[functions.open-meteo-marine-cache]
+verify_jwt = false

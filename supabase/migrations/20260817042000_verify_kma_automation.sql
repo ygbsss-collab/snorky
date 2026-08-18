@@ -1,0 +1,6 @@
+do $$ declare a uuid:=gen_random_uuid();b uuid:=gen_random_uuid();begin
+if not exists(select 1 from cron.job where jobname='snorky-kma-weather-refresh' and active and schedule='15 2,5,8,11,14,17,20,23 * * *')then raise exception 'weather scheduler invalid';end if;
+if not exists(select 1 from cron.job where jobname='snorky-kma-safety-refresh' and active and schedule='*/5 * * * *')then raise exception 'safety scheduler invalid';end if;
+if not try_acquire_kma_refresh_lock('kma-village-refresh',a,600)then raise exception 'weather lock failed';end if;if try_acquire_kma_refresh_lock('kma-village-refresh',b,600)then raise exception 'weather duplicate lock allowed';end if;perform release_kma_refresh_lock('kma-village-refresh',a);
+if not try_acquire_kma_refresh_lock('kma-warning-refresh',a,120)then raise exception 'safety lock failed';end if;if try_acquire_kma_refresh_lock('kma-warning-refresh',b,120)then raise exception 'safety duplicate lock allowed';end if;update kma_refresh_lock set expires_at=now()-interval '1 second' where lock_name='kma-warning-refresh';if not try_acquire_kma_refresh_lock('kma-warning-refresh',b,120)then raise exception 'stale lock recovery failed';end if;perform release_kma_refresh_lock('kma-warning-refresh',b);
+end $$;
