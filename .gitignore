@@ -28,3 +28,8 @@ Thumbs.db
 *.pyc
 render.png
 verification.png
+
+# Local tools & mock cache
+.tools/
+test_cache_data.json
+
