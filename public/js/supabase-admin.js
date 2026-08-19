@@ -140,14 +140,36 @@ async function primaryPhoto(point,image){
 async function renderPhotos(point){
   const host=el("pointPhotoContent");if(!host)return;const images=values(point.images),primary=images.find(image=>image.isPrimary)||images[0];host.innerHTML=`<div class="point-gallery">${primary?pointPhotoFrame(primary.url)+`<span class="primary-badge">대표</span>`:'<div class="gallery-empty">등록된 포인트 사진이 없습니다.</div>'}</div>${images.length?`<div class="photo-strip">${images.map(image=>`<button class="photo-thumb" data-sb-view="${image.id}" type="button"><img src="${image.url}" alt="포인트 사진"></button>`).join("")}</div>`:""}${adminMode?`<div class="admin-photo-actions"><button id="sbAddPhotos" type="button">＋ 사진 추가</button><input id="sbPhotoInput" type="file" accept="image/jpeg,image/png,image/webp" multiple hidden></div>${images.map(image=>`<div class="detail-row"><span>${escapeAdminHtml(image.fileName||"사진")}</span><span><button data-sb-primary="${image.id}" type="button">대표사진 설정</button> <button data-sb-delete="${image.id}" type="button">삭제</button></span></div>`).join("")}`:""}`;bindPointPhotoFrame(host);host.querySelectorAll("[data-sb-view]").forEach(button=>button.onclick=()=>{const image=images.find(item=>String(item.id)===button.dataset.sbView),main=host.querySelector(".point-gallery-main"),backdrop=host.querySelector(".point-gallery-backdrop");if(image&&main){main.src=image.url;if(backdrop)backdrop.src=image.url}});if(adminMode){el("sbAddPhotos").onclick=()=>el("sbPhotoInput").click();el("sbPhotoInput").onchange=async event=>{try{await uploadPhotos(point.supabaseId,[...event.target.files]);await reload(point.supabaseId,getRegionById(point.regionId)?.supabaseId);renderPointModal()}catch(error){alert(error.message||"사진 업로드에 실패했습니다.")}};host.querySelectorAll("[data-sb-primary]").forEach(button=>button.onclick=()=>primaryPhoto(point,images.find(item=>String(item.id)===button.dataset.sbPrimary)).catch(error=>alert(error.message)));host.querySelectorAll("[data-sb-delete]").forEach(button=>button.onclick=()=>{const image=images.find(item=>String(item.id)===button.dataset.sbDelete);if(confirm("이 사진을 삭제할까요?"))deletePhoto(point,image).catch(error=>alert(error.message))})}}
 
-function bindSecretEntry(){const brand=document.querySelector(".brand-mark");if(!brand)return;[el("adminExport"),el("adminImport")].forEach(node=>{if(node)node.hidden=true});el("editPointName")?.removeAttribute("readonly");el("editPointName")?.classList.remove("admin-readonly");const activate=()=>{const now=Date.now();clickTimes=clickTimes.filter(time=>now-time<=3000);clickTimes.push(now);if(clickTimes.length>=5){clickTimes=[];openAdminLogin()}};brand.addEventListener("click",activate);brand.addEventListener("keydown",event=>{if(event.key==="Enter"||event.key===" "){event.preventDefault();activate()}})}
+function bindSecretEntry(){
+  const brands=document.querySelectorAll(".brand-mark, .home-hero-brand, #adminEntry");
+  [el("adminExport"),el("adminImport")].forEach(node=>{if(node)node.hidden=true});
+  el("editPointName")?.removeAttribute("readonly");
+  el("editPointName")?.classList.remove("admin-readonly");
+  const activate=()=>{
+    const now=Date.now();
+    clickTimes=clickTimes.filter(time=>now-time<=3000);
+    clickTimes.push(now);
+    if(clickTimes.length>=5){
+      clickTimes=[];
+      if(typeof openAdminLogin==="function")openAdminLogin();
+      else if(typeof window.openAdminLogin==="function")window.openAdminLogin();
+      else document.getElementById("adminLoginModal")?.classList.add("open");
+    }
+  };
+  brands.forEach(brand=>{
+    brand.style.cursor="pointer";
+    brand.addEventListener("click",activate);
+    brand.addEventListener("keydown",event=>{if(event.key==="Enter"||event.key===" "){event.preventDefault();activate()}});
+  });
+}
 
-window.SNORKYAdmin={login,logout,addRegion,renameRegion,deleteRegion,saveNew,saveDetail,persistCoordinates,deletePoint,uploadPhotos,restoreSession};
+window.SNORKYAdmin={login,logout,addRegion,renameRegion,deleteRegion,saveNew,saveDetail,persistCoordinates,deletePoint,uploadPhotos,restoreSession,bindSecretEntry};
 addAdminRegion=function(){return addRegion()};renameAdminRegion=function(id){return renameRegion(id)};deleteAdminRegion=function(id){return deleteRegion(id)};
 saveNewPoint=function(){return saveNew()};savePointDetailOverride=function(){return saveDetail()};persistPointCoordinate=function(regionName,point){return persistCoordinates(regionName,point)};
 saveCoordinateEdit=function(){return savePin()};
 deleteManagedPoint=function(point){return deletePoint(point)};refreshPointPhotos=function(point){return renderPhotos(point)};
 bindSecretEntry();
+window.addEventListener("load",bindSecretEntry,{once:true});
 function initializeAuth(){sb().auth.onAuthStateChange(event=>{if(event==="SIGNED_OUT"){authorized=false;setAdminMode(false)}});restoreSession()}
 if(window.supabase?.createClient)initializeAuth();else window.addEventListener("snorky:supabase-ready",initializeAuth,{once:true});
 })();

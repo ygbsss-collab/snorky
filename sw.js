@@ -1,10 +1,11 @@
 const CACHE_PREFIX = 'snorky-static-';
-const CACHE_NAME = `${CACHE_PREFIX}v48`;
+const CACHE_NAME = `${CACHE_PREFIX}v61`;
 const APP_SHELL = [
   './',
   './index.html',
   './manifest.webmanifest',
   './public/images/snorky-app-icon.png',
+  './public/images/snorky-home-hero-v3.jpg',
   './public/images/snorky-home-hero-v2.png',
   './public/images/pwa/icon-192.png',
   './public/images/pwa/icon-512.png',
@@ -13,6 +14,7 @@ const APP_SHELL = [
   './public/images/pwa/apple-touch-icon.png',
   './public/assets/icons/fins.png',
   './public/js/supabase-client.js',
+  './public/js/kma-weather-cache.js',
   './public/js/open-meteo-marine-cache.js',
   './public/js/supabase-migration.js',
   './public/js/supabase-read.js',
@@ -72,6 +74,7 @@ self.addEventListener('fetch', event => {
 
   const url = new URL(request.url);
   if (url.origin !== self.location.origin) return;
+  if (url.hostname === 'localhost' || url.hostname === '127.0.0.1' || url.hostname === '[::1]') return;
 
   if (request.mode === 'navigate') {
     event.respondWith(networkFirst(request));

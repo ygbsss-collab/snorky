@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<title>SNORKY V1.2 Engine Test</title>
+<style>
+  body { font-family: monospace; background: #0f172a; color: #e2e8f0; padding: 20px; }
+  .pass { color: #4ade80; } .fail { color: #f87171; } .info { color: #93c5fd; }
+  pre { font-size: 13px; line-height: 1.6; }
+  h2 { color: #7dd3fc; }
+  .summary { font-size: 16px; margin-top: 20px; padding: 12px; border-radius: 8px; }
+  .summary.all-pass { background: #052e16; border: 1px solid #4ade80; }
+  .summary.has-fail  { background: #450a0a; border: 1px solid #f87171; }
+</style>
+</head>
+<body>
+<h2>SNORKY V1.2 Engine Test</h2>
+<pre id="out"></pre>
+<div id="summary" class="summary"></div>
+
+<script src="/public/js/snorky-eval.js"></script>
+<script>
+(function(){
+const out = document.getElementById("out");
+let pass = 0, fail = 0;
+
+function log(msg, type="") {
+  const span = document.createElement("span");
+  span.className = type;
+  span.textContent = msg + "\n";
+  out.appendChild(span);
+}
+
+function assert(cond, label) {
+  if (cond) { log(`  ✅ PASS  ${label}`, "pass"); pass++; }
+  else       { log(`  ❌ FAIL  ${label}`, "fail"); fail++; }
+}
+function approx(a, b, tol=0.5) { return Math.abs(a-b) <= tol; }
+
+const E = window.SNORKYEval;
+
+// §5 Wave
+log("\n── §5 Wave Engine ──");
+assert(E.waveScore(0.10)===100, "0.10m → 100");
+assert(E.waveScore(0.15)===100, "0.15m → 100");
+assert(approx(E.waveScore(0.25),90), "0.25m → 90");
+assert(approx(E.waveScore(0.30),82), "0.30m → 82");
+assert(approx(E.waveScore(0.40),65), "0.40m → 65");
+assert(approx(E.waveScore(0.50),45), "0.50m → 45");
+assert(approx(E.waveScore(0.60),28), "0.60m → 28");
+assert(approx(E.waveScore(0.65),20), "0.65m → 20");
+assert(approx(E.waveScore(0.70),12), "0.70m → 12");
+assert(approx(E.waveScore(0.75), 6), "0.75m → 6");
+assert(E.waveScore(0.80)===0,   "0.80m → 0 (Safety Gate)");
+assert(approx(E.waveScore(0.45),55,1),"0.45m → ~55 (보간)");
+
+// §6 Current
+log("\n── §6 Current Engine ──");
+assert(E.currentScore(0.05)===100, "0.05m/s → 100");
+assert(E.currentScore(0.10)===100, "0.10m/s → 100");
+assert(approx(E.currentScore(0.15),95), "0.15 → 95");
+assert(approx(E.currentScore(0.30),65), "0.30 → 65");
+assert(approx(E.currentScore(0.50),15), "0.50 → 15");
+assert(approx(E.currentScore(0.60), 5), "0.60 → 5");
+assert(E.currentScore(null)===null, "null → null");
+
+// §7 Wind
+log("\n── §7 Wind Engine ──");
+assert(approx(E.windScore(3,null,{}),100), "3m/s → 100");
+assert(approx(E.windScore(5,null,{}),88,1), "5m/s → 88");
+assert(approx(E.windScore(8,null,{}),50,1), "8m/s → 50");
+assert(approx(E.windScore(12,null,{}),0,1), "12m/s → 0");
+const wHiE = E.windScore(6,90,{eastWindSensitivity:"high"});
+const wMed  = E.windScore(6,null,{});
+assert(wHiE < wMed, "동풍 high sensitivity → 점수 하락");
+assert(E.windScore(null,null,{})===null, "null → null");
+
+// §8 Entry A
+log("\n── §8 Entry A ──");
+const r1 = E.entryA(100,100,100);
+assert(approx(r1.a,100,1), "완벽 조건 A=100");
+const r2 = E.entryA(65,100,100);
+assert(r2.a < 80 && r2.a >= 65, "Wave=65 → A 65~79 (주의)");
+const r3 = E.entryA(45,25,88);
+assert(r3.a < 65, "Wave=45,Current=25 → A<65 (비추천)");
+assert(E.entryA(null,100,100).a===null, "Wave null → A null");
+
+// §9 Visibility Grade
+log("\n── §9 Visibility 등급 경계 ──");
+assert(E.visibilityGradeFromScore(85)==="좋음", "85 → 좋음");
+assert(E.visibilityGradeFromScore(84)==="양호", "84 → 양호");
+assert(E.visibilityGradeFromScore(65)==="양호", "65 → 양호");
+assert(E.visibilityGradeFromScore(64)==="보통/회복중", "64 → 보통/회복중");
+assert(E.visibilityGradeFromScore(44)==="나쁨", "44 → 나쁨");
+assert(E.visibilityGradeFromScore(24)==="매우나쁨", "24 → 매우나쁨");
+const visCalm = E.visibilityB({wave_height:0.10, wave_period:7},{}, []);
+assert(visCalm.score >= 85, `잔잔 → VB≥85 (got ${visCalm.score})`);
+const visRough = E.visibilityB({wave_height:0.60, wave_period:8},{}, []);
+assert(visRough.score < 65, `파고0.60 → VB<65 (got ${visRough.score})`);
+const histHigh = [{hoursAgo:6,wave_height:0.80,wave_period:9,precipitation:0},{hoursAgo:12,wave_height:0.60,wave_period:8,precipitation:2}];
+const visHist = E.visibilityB({wave_height:0.15,wave_period:6},{}, histHigh);
+assert(visHist.score < 85, `48h 고파도 이력 → VB<85 (got ${visHist.score})`);
+log(`  [INFO] 잔잔+고파도 이력: VB=${visHist.score} ${visHist.grade}: "${visHist.explanation}"`, "info");
+const visRock = E.visibilityB({wave_height:0.30,wave_period:7},{terrain:"rock"},[{hoursAgo:12,wave_height:0.60,wave_period:8,precipitation:0}]);
+const visSand = E.visibilityB({wave_height:0.30,wave_period:7},{terrain:"sand"},[{hoursAgo:12,wave_height:0.60,wave_period:8,precipitation:0}]);
+assert(visRock.score >= visSand.score, `rock(${visRock.score}) ≥ sand(${visSand.score})`);
+
+// §10 Comfort
+log("\n── §10 Comfort C ──");
+const cPerfect = E.comfortC({precipitation:0,temperature:25,sea_temperature:26,cloud_cover:20});
+assert(cPerfect >= 95, `완벽 C≥95 (got ${cPerfect})`);
+const cRainy = E.comfortC({precipitation:5,temperature:15,sea_temperature:18,cloud_cover:90});
+assert(cRainy < 60, `비+저온 C<60 (got ${cRainy})`);
+const cm = 0.95 + 0.05*(cPerfect/100);
+assert(cm >= 0.95 && cm <= 1.00, `CM 범위 (got ${cm.toFixed(3)})`);
+
+// §10 Final
+log("\n── §10 Final Score ──");
+const f1 = E.finalScore(90,90,90);
+assert(approx(f1,89.6,2), `A=90,B=90,C=90 → ~89.6 (got ${f1})`);
+assert(E.finalScore(0,50,80)===0, "A=0 → Final=0");
+
+// §11 Recommendation
+log("\n── §11 Recommendation ──");
+assert(E.recommendation(80,90)==="추천", "A=80 → 추천");
+assert(E.recommendation(79,90)==="주의", "A=79 → 주의");
+assert(E.recommendation(64,90)==="비추천", "A=64 → 비추천");
+assert(E.recommendation(90,44)==="주의", "A=90,B=44 → 주의(B하향)");
+assert(E.recommendation(70,40)==="비추천", "A=70,B=40 → 비추천(B하향)");
+
+// §12 Time Gate
+log("\n── §12 Activity Time Gate ──");
+const sun = {sunrise:"2026-08-19T05:30:00+09:00", sunset:"2026-08-19T19:20:00+09:00"};
+assert(E.applyActivityTimeGate("추천",sun,"2026-08-19T03:00:00+09:00")==="야간 비추천", "일출 전 → 야간 비추천");
+assert(E.applyActivityTimeGate("추천",sun,"2026-08-19T12:00:00+09:00")==="추천", "낮 12시 → 추천");
+assert(E.applyActivityTimeGate("추천",sun,"2026-08-19T18:30:00+09:00")==="해질녘 주의", "일몰 50분 전 → 해질녘 주의");
+assert(E.applyActivityTimeGate("추천",sun,"2026-08-19T19:00:00+09:00")==="해질녘 비추천", "일몰 20분 전 → 해질녘 비추천");
+assert(E.applyActivityTimeGate("추천",sun,"2026-08-19T20:00:00+09:00")==="야간 비추천", "일몰 후 → 야간 비추천");
+
+// §17.4 Full Pipeline
+log("\n── §17.4 공통 결과 객체 전체 파이프라인 ──");
+const sc1 = E.evaluate(
+  {wave_height:0.20,wave_period:7,swell_height:0.10,current_speed:0.10,wind_speed:2,wind_direction_degree:180,precipitation:0,temperature:26,sea_temperature:25,cloud_cover:20},
+  {environment:{terrain:"rock",exposure:"medium",breakwaterShelter:"medium",eastWindSensitivity:"medium"}},
+  {safety:{status:"PASS"},sunTimes:sun,evaluatedAt:"2026-08-19T11:00:00+09:00"}
+);
+log(`  [Sc1] 이상적: Score=${sc1.conditionScore}, Rec=${sc1.recommendation}, Vis=${sc1.visibilityGrade}`, "info");
+assert(sc1.safety==="PASS", "Sc1: Safety PASS");
+assert(sc1.recommendation==="추천", `Sc1: 추천 (got ${sc1.recommendation})`);
+assert(sc1.conditionScore >= 80, `Sc1: Score≥80 (got ${sc1.conditionScore})`);
+
+const sc2 = E.evaluate({wave_height:0.30},{},{safety:{status:"BLOCK",warning:{areaName:"동해중부앞바다",warningName:"풍랑주의보",levelName:""}},evaluatedAt:"2026-08-19T11:00:00+09:00"});
+assert(sc2.safety==="BLOCK", "Sc2: BLOCK");
+assert(sc2.conditionScore===null, "Sc2: Score=null");
+
+const sc3 = E.evaluate({wave_height:0.80,current_speed:0.20,wind_speed:7},{},{safety:{status:"PASS"},evaluatedAt:"2026-08-19T11:00:00+09:00"});
+assert(sc3.safety==="BLOCK", `Sc3: 파고0.80m → BLOCK (got ${sc3.safety})`);
+
+const sc4 = E.evaluate({current_speed:0.10},{},{});
+assert(sc4.safety==="UNKNOWN", `Sc4: wave없음 → UNKNOWN (got ${sc4.safety})`);
+
+const sc5 = E.evaluate(
+  {wave_height:0.10,current_speed:0.05,wind_speed:1,precipitation:0,temperature:24,sea_temperature:26,cloud_cover:0},
+  {},{safety:{status:"PASS"},sunTimes:sun,evaluatedAt:"2026-08-19T21:00:00+09:00"}
+);
+assert(sc5.recommendation==="야간 비추천", `Sc5: 야간 → 야간비추천 (got ${sc5.recommendation})`);
+assert(sc5.conditionScore !== null, "Sc5: conditionScore는 null 아님 (야간은 BLOCK 아님)");
+
+const sc6noHist = E.evaluate({wave_height:0.15,wave_period:6,precipitation:0,current_speed:0.10,wind_speed:2},{},{safety:{status:"PASS"},evaluatedAt:"2026-08-19T11:00:00+09:00"});
+const sc6Hist   = E.evaluate({wave_height:0.15,wave_period:6,precipitation:0,current_speed:0.10,wind_speed:2},{},{safety:{status:"PASS"},waveHistory:[{hoursAgo:6,wave_height:0.75,wave_period:9,precipitation:0},{hoursAgo:12,wave_height:0.60,wave_period:8,precipitation:3}],evaluatedAt:"2026-08-19T11:00:00+09:00"});
+log(`  [Sc6] 이력 없음 Score=${sc6noHist.conditionScore} / 48h 이력 Score=${sc6Hist.conditionScore}`, "info");
+assert(sc6Hist.conditionScore <= sc6noHist.conditionScore, "Sc6: 48h 이력 → 점수 낮거나 같음");
+assert(sc6Hist.visibilityScore < sc6noHist.visibilityScore, `Sc6: Vis 낮음 (${sc6Hist.visibilityScore}<${sc6noHist.visibilityScore})`);
+
+// 기존 vs V1.2 비교표
+log("\n── 기존 알고리즘 vs V1.2 비교 (연결 없음) ──");
+function legacyWave(v){if(!Number.isFinite(v))return null;if(v<=.3)return 100;if(v<=.5)return 82;if(v<=.8)return 48;if(v<=1)return 25;return 0}
+function legacyCurrent(v){if(!Number.isFinite(v))return null;if(v<=.15)return 100;if(v<=.3)return 82;if(v<=.5)return 48;if(v<=.7)return 25;return 0}
+function legacyWind(v){if(!Number.isFinite(v))return null;if(v<=2)return 100;if(v<=4)return 82;if(v<=6)return 48;if(v<=8)return 25;return 0}
+function legacyScore(row){const items=[[legacyWave(row.wave_height),22],[legacyCurrent(row.current_speed),18],[legacyWind(row.wind_speed),12]];let w=0,t=0;items.forEach(([s,wt])=>{if(Number.isFinite(s)){w+=s*wt;t+=wt}});return t?Math.round(w/t):0}
+const cmpScens=[
+  {label:"잔잔(이상적)",row:{wave_height:.15,current_speed:.10,wind_speed:2,precipitation:0,temperature:26,sea_temperature:25,cloud_cover:10}},
+  {label:"주의 경계",   row:{wave_height:.40,current_speed:.25,wind_speed:6,precipitation:0,temperature:22,sea_temperature:22,cloud_cover:40}},
+  {label:"비추천",      row:{wave_height:.60,current_speed:.35,wind_speed:8,precipitation:1,temperature:18,sea_temperature:18,cloud_cover:80}},
+];
+log("  시나리오         레거시   V1.2 Final  Rec          VisGrade");
+log("  " + "─".repeat(60));
+cmpScens.forEach(({label,row})=>{
+  const leg = legacyScore(row);
+  const v12 = E.evaluate(row,{},{safety:{status:"PASS"},evaluatedAt:"2026-08-19T11:00:00+09:00"});
+  const vf = v12.conditionScore ?? "--";
+  log(`  ${label.padEnd(16)} ${String(leg).padEnd(9)} ${String(vf).padEnd(12)} ${v12.recommendation.padEnd(13)} ${v12.visibilityGrade}`, "info");
+});
+
+// 최종 요약
+const summaryEl = document.getElementById("summary");
+summaryEl.className = `summary ${fail===0?"all-pass":"has-fail"}`;
+summaryEl.textContent = `테스트 결과: ✅ PASS ${pass}  /  ❌ FAIL ${fail}`;
+
+})();
+</script>
+</body>
+</html>
