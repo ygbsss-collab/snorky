@@ -783,13 +783,14 @@ function selectPointOnMap(point){
 
   const lat=Number(point.lat);
   const lng=Number(point.lng);
+
+  // 상세 바텀시트 프리뷰는 지도 SDK 준비 여부와 무관하게 표시
+  showPointPreviewCard(point);
+
   if(!snorkyMap||!window.kakao?.maps||!Number.isFinite(lat)||!Number.isFinite(lng))return;
 
   // 1. 마커 상태 갱신
   renderSnorkyMapMarkers();
-
-  // 2. 상세 바텀시트 프리뷰 카드 렌더링
-  showPointPreviewCard(point);
 
   // 3. 실제 포인트 lat/lng로 중심과 줌 레벨(3) 설정
   const pointLatLng=new kakao.maps.LatLng(lat,lng);
