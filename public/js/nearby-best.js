@@ -27,21 +27,22 @@ function activePoint(point){const points=Array.isArray(window.SNORKY_ACTIVE_POIN
 function pointImage(point){const images=Array.isArray(activePoint(point)?.images)?activePoint(point).images:[],primary=images.find(image=>image.isPrimary||image.is_primary)||images[0];return primary?.url||primary?.publicUrl||primary?.public_url||""}
 function passesOfficialMarineAdvisoryGate(point){return (point.v12?.safety==="PASS")||(window.SNORKYMarineSafety?.statusForPoint(point).status==="PASS")}
 function passesExistingHardSafetyGate(point){return point.v12?point.v12.safety!=="BLOCK":!point.hardLabel}
-function selectRecommendablePoints(points,limit=MAX_RESULTS){
+function isRecommendablePoint(point){
+  const v12=point?.v12;
+  if(v12){
+    return v12.safety==="PASS"&&Number.isFinite(v12.conditionScore)&&v12.conditionScore>=50;
+  }
+  return passesOfficialMarineAdvisoryGate(point)&&passesExistingHardSafetyGate(point)&&point.score>=50;
+}
+function selectRecommendablePoints(points,limit=10){
+  const rankBest=window.rankSnorkyBestPoints||window.SNORKYEval?.rankBestPoints;
+  if(rankBest)return rankBest(points,{limit});
   return points
-    .filter(point=>{
-      const v12=point.v12;
-      if(v12){
-        return v12.safety==="PASS" && Number.isFinite(v12.conditionScore) && (v12.recommendation==="추천"||v12.recommendation==="주의");
-      }
-      return passesOfficialMarineAdvisoryGate(point)&&passesExistingHardSafetyGate(point)&&point.score>=MIN_RECOMMENDATION_SCORE;
-    })
+    .filter(isRecommendablePoint)
     .sort((a,b)=>{
-      const distDiff=a.distance-b.distance;
-      if(distDiff!==0)return distDiff;
-      const scoreA=a.v12?.conditionScore??(Number.isFinite(a.score)?a.score:-Infinity);
-      const scoreB=b.v12?.conditionScore??(Number.isFinite(b.score)?b.score:-Infinity);
-      return scoreB-scoreA;
+      const scoreA=Number(a.v12?.conditionScore);
+      const scoreB=Number(b.v12?.conditionScore);
+      return scoreB-scoreA||(a.distance??Infinity)-(b.distance??Infinity)||String(a.region).localeCompare(String(b.region),"ko-KR")||String(a.name).localeCompare(String(b.name),"ko-KR")||String(a.id).localeCompare(String(b.id));
     })
     .slice(0,limit);
 }
@@ -68,7 +69,15 @@ function createDialog(){
   return overlay;
 }
 function getDialog(){return document.getElementById("nearbyBestOverlay")||createDialog()}
-function openDialog(){const overlay=getDialog();overlay.classList.add("open");overlay.setAttribute("aria-hidden","false");overlay.querySelector(".nearby-best-close").focus()}
+function openDialog(){
+  const overlay=getDialog();
+  const label=overlay.querySelector(".nearby-best-radius-label");
+  if(label)label.textContent=`${state.radius}km`;
+  overlay.querySelectorAll('input[name="nearbyBestRadius"]').forEach(input=>{input.checked=Number(input.value)===state.radius});
+  overlay.classList.add("open");
+  overlay.setAttribute("aria-hidden","false");
+  overlay.querySelector(".nearby-best-close").focus();
+}
 function setRadius(radius){
   const next=Number(radius);if(!ALLOWED_RADII.includes(next))return state.radius;
   state.radius=next;
@@ -195,6 +204,8 @@ function reusableTodayScores(){
 }
 
 async function runNearbyBest(latitude,longitude,radius){
+  state.coordinates={latitude,longitude};
+  state.radius=radius;
   const diagnostics=createDiagnostics();
   detailedFailureLogs=0;
   try{
@@ -250,14 +261,15 @@ function renderResults(successful,recommendations,failedCount,radius,nearest){
   const results=getDialog().querySelector(".nearby-best-results");
   if(!successful.length&&failedCount){results.innerHTML=`<section class="nearby-recommendations-section"><h3>🏆 내 주변 추천 BEST</h3><p class="nearby-best-status error"><strong>이 구역 내에는 추천할 포인트가 없어요</strong><br>범위를 넓혀보세요</p></section>${renderNearbyPoints(nearest)}`;return}
   if(!recommendations.length){results.innerHTML=`<section class="nearby-recommendations-section"><h3>🏆 내 주변 추천 BEST</h3><p class="nearby-best-status"><strong>이 구역 내에는 추천할 포인트가 없어요</strong><br>범위를 넓혀보세요</p></section>${renderNearbyPoints(nearest)}`;return}
-  results.innerHTML=`<section class="nearby-recommendations-section"><h3>🏆 내 주변 추천 BEST</h3><ol class="nearby-best-list">${recommendations.slice(0,3).map((point,index)=>{
+  results.innerHTML=`<section class="nearby-recommendations-section"><h3>🏆 내 주변 추천 BEST</h3><ol class="nearby-best-list">${recommendations.slice(0,10).map((point,index)=>{
     const image=pointImage(point);
     const v12=point.v12;
     const scoreVal=v12?.conditionScore!=null?Math.round(v12.conditionScore):(Number.isFinite(point.score)?point.score:null);
     const scoreText=scoreVal!=null?`${scoreVal}점`:"--";
-    const recText=v12?.recommendation||(Number.isFinite(scoreVal)?scoreLabel(scoreVal):"보통");
-    return`<li class="nearby-best-item nearby-detail-card" data-supabase-point-id="${escapeHtml(point.id)}" role="button" tabindex="0" aria-label="${escapeHtml(point.name)} 상세 보기"><span class="nearby-detail-rank rank-${index+1}">${index+1}</span><span class="nearby-detail-photo">${image?`<img src="${escapeHtml(image)}" alt="" loading="lazy">`:""}</span><div class="nearby-best-content"><div class="nearby-best-title"><div class="nearby-best-name">${escapeHtml(point.name)}</div>${point.region?`<span class="nearby-best-region">${escapeHtml(point.region)}</span>`:""}</div><div class="nearby-best-meta">${scoreText} · ${escapeHtml(recText)} · ${point.distance.toFixed(1)}km</div></div><span class="nearby-best-chevron" aria-hidden="true">›</span></li>`;
-  }).join("")}</ol>${failedCount?`<p class="nearby-best-status">일부 후보 ${failedCount}개의 예보를 불러오지 못했습니다.</p>`:""}</section>${renderNearbyPoints(nearest)}`;
+    const conditionText=window.getSnorkyConditionStatus?.(point)||"보통";
+    const rankClass=index<3?`rank-${index+1}`:"rank-neutral";
+    return`<li class="nearby-best-item nearby-detail-card" data-supabase-point-id="${escapeHtml(point.id)}" role="button" tabindex="0" aria-label="${escapeHtml(point.name)} 상세 보기"${index>=3?' hidden data-nearby-extra="recommendations"':''}><span class="nearby-detail-rank ${rankClass}">${index+1}</span><span class="nearby-detail-photo">${image?`<img src="${escapeHtml(image)}" alt="" loading="lazy">`:""}</span><div class="nearby-best-content"><div class="nearby-best-title"><div class="nearby-best-name">${escapeHtml(point.name)}</div>${point.region?`<span class="nearby-best-region">${escapeHtml(point.region)}</span>`:""}</div><div class="nearby-best-meta">${scoreText} · ${escapeHtml(conditionText)} · ${point.distance.toFixed(1)}km</div></div><span class="nearby-best-chevron" aria-hidden="true">›</span></li>`;
+  }).join("")}</ol>${recommendations.length>3?'<div class="nearby-detail-actions"><button type="button" data-nearby-toggle="recommendations">더보기 ›</button></div>':''}${failedCount?`<p class="nearby-best-status">일부 후보 ${failedCount}개의 예보를 불러오지 못했습니다.</p>`:""}</section>${renderNearbyPoints(nearest)}`;
 }
 function logDiagnostics(diagnostics,scored,recommendations){
   console.info("[SNORKY NEARBY BEST] 실제 Weather 요청 수",diagnostics.weatherRequests);
@@ -276,7 +288,7 @@ new MutationObserver(normalizeNearbyTitles).observe(document.body,{childList:tru
 document.addEventListener("click",event=>{const button=event.target.closest?.("#nearbyBestOverlay [data-nearby-toggle]");if(!button)return;const group=button.dataset.nearbyToggle,items=[...document.querySelectorAll(`#nearbyBestOverlay [data-nearby-extra="${group}"]`)],expand=items.some(item=>item.hidden);items.forEach(item=>item.hidden=!expand);button.textContent=expand?"접기 ∧":"더보기 ›"});
 document.addEventListener("click",event=>{const row=event.target.closest?.("#nearbyBestOverlay [data-supabase-point-id]");if(row)openPointDetail(row)});
 document.addEventListener("keydown",event=>{if(event.key!=="Enter"&&event.key!==" ")return;const row=event.target.closest?.("#nearbyBestOverlay [data-supabase-point-id]");if(!row)return;event.preventDefault();openPointDetail(row)});
-function openPointDetail(row){const source=row.closest(".nearby-points-section")?"nearbyPoint":"nearbyBest",returnState=captureReturnState(),pointId=row.dataset.supabasePointId;closeDialog();if(!window.SNORKYPointDetail?.openBySupabaseId(pointId,source,returnState))console.warn("[SNORKY BEST] Point 상세 진입 실패",{pointId})}
+function openPointDetail(row){const source=row.closest(".nearby-points-section")?"nearbyPoint":"nearbyBest",pointId=row.dataset.supabasePointId;closeDialog();if(typeof window.openPointOnMap==="function"){window.openPointOnMap(pointId,source);}else{const returnState=captureReturnState();if(!window.SNORKYPointDetail?.openBySupabaseId(pointId,source,returnState))console.warn("[SNORKY BEST] Point 상세 진입 실패",{pointId})}}
 document.addEventListener("keydown",event=>{if(event.key==="Escape"&&getDialog().classList.contains("open"))closeDialog()});
 async function evaluatePoints(points){
   const diagnostics=createDiagnostics(),normalized=points.filter(point=>isRecommendationActive(point)&&validPointCoordinates(point)).map(point=>({id:point.supabaseId||point.id,name:point.name||point[0],region:point.region||"",warningAreaCode:point.warningAreaCode||point.warning_area_code||null,lat:Number(point.lat??point[1]),lng:Number(point.lng??point[2]),environment:point.environment??null}));

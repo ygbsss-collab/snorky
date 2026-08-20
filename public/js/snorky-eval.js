@@ -715,6 +715,110 @@
   }
 
   // ─────────────────────────────────────────────────────────────
+  // §17.5  공통 컨디션 표시 단일 기준
+  // ─────────────────────────────────────────────────────────────
+  /**
+   * 전 화면 공통 컨디션 상태 산출 함수
+   * 80~100 -> 좋음 / 65~79 -> 보통 / 50~64 -> 주의 / 0~49 -> 나쁨 / BLOCK -> 입수 금지 / UNKNOWN -> 확인 필요
+   */
+  function getConditionStatus(pointOrScore, safety) {
+    let score = pointOrScore;
+    let s = safety;
+    if (typeof pointOrScore === "object" && pointOrScore !== null) {
+      const v12 = pointOrScore.v12 || pointOrScore;
+      s = s || v12.safety || pointOrScore.kma || pointOrScore.safety;
+      score = v12.conditionScore ?? pointOrScore.score;
+    }
+    if (s === "BLOCK") return "입수 금지";
+    if (s === "UNKNOWN") return "확인 필요";
+    const num = Number(score);
+    if (!Number.isFinite(num)) return "확인 필요";
+    if (num >= 80) return "좋음";
+    if (num >= 65) return "보통";
+    if (num >= 50) return "주의";
+    return "나쁨";
+  }
+
+  function getConditionStatusInfo(pointOrScore, safety) {
+    const status = getConditionStatus(pointOrScore, safety);
+    let color = "#64748b";
+    let dot = "⚪";
+    if (status === "좋음") { color = "#10b981"; dot = "🟢"; }
+    else if (status === "보통") { color = "#3b82f6"; dot = "🔵"; }
+    else if (status === "주의") { color = "#f59e0b"; dot = "🟡"; }
+    else if (status === "나쁨") { color = "#f97316"; dot = "🟠"; }
+    else if (status === "입수 금지") { color = "#ef4444"; dot = "🔴"; }
+    return { status, color, dot };
+  }
+
+  // ─────────────────────────────────────────────────────────────
+  // §17.6  공통 BEST Ranking SSOT
+  // ─────────────────────────────────────────────────────────────
+  /**
+   * 전 화면 공통 BEST 순위 산출 함수
+   * 후보 목록 -> (반경/지역 필터) -> Safety PASS -> conditionScore >= 50 -> conditionScore DESC 단 1회 정렬 -> rank 부여 -> 최대 10개
+   * @param {Array<object>} points
+   * @param {object} [options]
+   * @param {number} [options.radius]
+   * @param {{latitude: number, longitude: number}} [options.userCoords]
+   * @param {string} [options.region]
+   * @param {number} [options.limit=10]
+   * @returns {Array<object>}
+   */
+  function rankBestPoints(points, options = {}) {
+    if (!Array.isArray(points)) return [];
+
+    let candidates = points;
+    if (options.userCoords && Number.isFinite(Number(options.radius))) {
+      const radius = Number(options.radius);
+      candidates = candidates.filter(p => {
+        const dist = Number.isFinite(p.distance) ? p.distance : (
+          (p.lat != null && p.lng != null && window.SNORKYNearbyBest?.haversineKm)
+            ? window.SNORKYNearbyBest.haversineKm(options.userCoords.latitude, options.userCoords.longitude, Number(p.lat), Number(p.lng))
+            : Infinity
+        );
+        return dist <= radius;
+      });
+    }
+    if (options.region) {
+      candidates = candidates.filter(p => p.region === options.region || p.regionId === options.region || String(p.region).includes(options.region));
+    }
+
+    // 1. 적격 후보 필터링: Safety PASS && conditionScore >= 50
+    const eligible = candidates.filter(p => {
+      const v12 = p.v12;
+      if (!v12) return false;
+      const safety = v12.safety || p.kma;
+      const score = Number(v12.conditionScore);
+      return safety === "PASS" && Number.isFinite(score) && score >= 50;
+    });
+
+    // 2. conditionScore DESC 단 한 번 정렬 (오직 Number(point.v12.conditionScore)만 사용)
+    eligible.sort((a, b) => {
+      const scoreA = Number(a.v12?.conditionScore);
+      const scoreB = Number(b.v12?.conditionScore);
+      if (scoreB !== scoreA) return scoreB - scoreA;
+      if (a.sourceIndex != null && b.sourceIndex != null && a.sourceIndex !== b.sourceIndex) {
+        return a.sourceIndex - b.sourceIndex;
+      }
+      if (Number.isFinite(a.distance) && Number.isFinite(b.distance) && a.distance !== b.distance) {
+        return a.distance - b.distance;
+      }
+      return String(a.region || "").localeCompare(String(b.region || ""), "ko-KR") ||
+             String(a.name || "").localeCompare(String(b.name || ""), "ko-KR") ||
+             String(a.id || a.supabaseId || "").localeCompare(String(b.id || b.supabaseId || ""));
+    });
+
+    // 3. rank 부여
+    const limit = Number.isFinite(Number(options.limit)) ? Number(options.limit) : 10;
+    const sliced = eligible.slice(0, limit);
+    return sliced.map((point, index) => ({
+      ...point,
+      rank: index + 1
+    }));
+  }
+
+  // ─────────────────────────────────────────────────────────────
   // 공개 API
   // ─────────────────────────────────────────────────────────────
   const SNORKYEval = Object.freeze({
@@ -724,6 +828,9 @@
     evaluateWithMarineKma,
     waveHistoryFromMarineData,
     getV12Result,
+    getConditionStatus,
+    getConditionStatusInfo,
+    rankBestPoints,
     // 개별 엔진 (테스트/진단용)
     waveScore,
     wavePeriodCorrectedScore,
@@ -746,6 +853,9 @@
 
   if (typeof window !== "undefined") {
     window.SNORKYEval = SNORKYEval;
+    window.getSnorkyConditionStatus = getConditionStatus;
+    window.getSnorkyConditionStatusInfo = getConditionStatusInfo;
+    window.rankSnorkyBestPoints = rankBestPoints;
   }
   if (typeof module !== "undefined" && module.exports) {
     module.exports = SNORKYEval;

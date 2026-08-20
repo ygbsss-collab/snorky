@@ -13,7 +13,7 @@ function render(){
 function placeSearch(){if(mobileQuery.matches){if(shell.parentElement!==mobileAnchor)mobileAnchor.appendChild(shell)}else if(shell.parentElement!==desktopActions){desktopActions.insertBefore(shell,document.getElementById("favoriteNavDesktop"))}}
 function captureReturnState(){return{view:"pointSearch",query:input.value,resultsScrollTop:results.scrollTop,pageScrollY:window.scrollY}}
 function restoreReturnState(saved){input.value=String(saved?.query||"");render();requestAnimationFrame(()=>{results.scrollTop=Number(saved?.resultsScrollTop)||0;input.focus()})}
-function openDetail(button){const pointId=button.dataset.searchPointId,returnState=captureReturnState();if(!window.SNORKYPointDetail?.openBySupabaseId(pointId,"pointSearch",returnState))console.warn("[SNORKY Point Search] 상세 진입 실패",{pointId})}
+function openDetail(button){const pointId=button.dataset.searchPointId;if(typeof window.openPointOnMap==="function"){window.openPointOnMap(pointId,"search");}else{const returnState=captureReturnState();if(!window.SNORKYPointDetail?.openBySupabaseId(pointId,"pointSearch",returnState))console.warn("[SNORKY Point Search] 상세 진입 실패",{pointId})}}
 input.addEventListener("input",render);
 results.addEventListener("click",event=>{const button=event.target.closest("[data-search-point-id]");if(button)openDetail(button)});
 mobileQuery.addEventListener?.("change",placeSearch);placeSearch();

@@ -38,23 +38,28 @@ async function waitForPoints(){
   while(Date.now()-started<10000){if(Array.isArray(window.SNORKY_ACTIVE_POINTS)&&window.SNORKY_ACTIVE_POINTS.length)return window.SNORKY_ACTIVE_POINTS;await new Promise(resolve=>setTimeout(resolve,100))}
   throw new Error("전체 포인트 정보를 불러오지 못했습니다.");
 }
+function isRecommendablePoint(point){
+  const v12=point?.v12;
+  if(v12){
+    return v12.safety==="PASS"&&Number.isFinite(v12.conditionScore)&&v12.conditionScore>=50;
+  }
+  return !point.error&&Number.isFinite(point.score)&&!point.hardLabel&&point.score>=50;
+}
 function casePolicy(eligible,rows){
+  if(!eligible.length){
+    const blocked=rows.filter(p=>p.v12?.safety==="BLOCK"||p.kma==="BLOCK").length;
+    const unknown=rows.filter(p=>p.v12?.safety==="UNKNOWN"||p.kma==="UNKNOWN").length;
+    if(blocked||unknown){
+      const subtitle=blocked&&unknown?"공식 해상특보가 발효 중이거나 특보 정보를 확인할 수 없어 안전을 위해 추천하지 않습니다.":blocked?"공식 해상특보가 발효 중인 포인트는 추천에서 제외했습니다.":"해상특보 정보를 확인할 수 없어 안전을 위해 추천하지 않습니다.";
+      return{caseName:"KMA",title:"오늘은 추천할 만한 바다 날씨 상태가 아닙니다.",subtitle,detail:"해상특보 상태가 정상화된 뒤 다시 확인해 주세요.",rows:[],medals:false};
+    }
+    return{caseName:"E",title:"오늘은 추천할 만한 바다 날씨 상태가 아닙니다.",subtitle:"",sectionTitle:"",rows:[],medals:false};
+  }
   const topPoint=eligible[0];
   const highest=topPoint?.v12?.conditionScore??topPoint?.score;
-  if(highest>=80)return{caseName:"A",title:"",subtitle:"오늘 바다가 좋은 포인트를 골라봤어요.",rows:eligible.slice(0,MAX_RESULTS),medals:true};
-  if(highest>=65)return{caseName:"B",title:"",subtitle:"오늘 가볼 만한 포인트를 골라봤어요.",rows:eligible.slice(0,MAX_RESULTS),medals:true};
-  const evaluableWithoutHardSafety=rows.filter(point=>{
-    const v12=point.v12;
-    if(v12)return !point.error&&v12.safety!=="BLOCK";
-    return !point.error&&Number.isFinite(point.score)&&!point.hardLabel;
-  }),blocked=evaluableWithoutHardSafety.filter(point=>(point.v12?.safety==="BLOCK"||point.kma==="BLOCK")).length,unknown=evaluableWithoutHardSafety.filter(point=>(point.v12?.safety==="UNKNOWN"||point.kma==="UNKNOWN")).length,pass=evaluableWithoutHardSafety.filter(point=>(point.v12?.safety==="PASS"||point.kma==="PASS")).length;
-  if(!pass&&(blocked||unknown)){
-    const subtitle=blocked&&unknown?"공식 해상특보가 발효 중이거나 특보 정보를 확인할 수 없어 안전을 위해 추천하지 않습니다.":blocked?"공식 해상특보가 발효 중인 포인트는 추천에서 제외했습니다.":"해상특보 정보를 확인할 수 없어 안전을 위해 추천하지 않습니다.";
-    return{caseName:"KMA",title:"현재 추천할 만한 포인트가 없습니다.",subtitle,detail:"해상특보 상태가 정상화된 뒤 다시 확인해 주세요.",rows:[],medals:false};
-  }
-  if(highest>=50)return{caseName:"C",title:"현재 해상 상태로 추천할 만한 포인트가 없습니다.",subtitle:"그래도 지금 상태가 나은 포인트를 모아봤어요.",sectionTitle:"참고 포인트",rows:eligible.slice(0,MAX_RESULTS),medals:false};
-  if(highest>=35)return{caseName:"D",title:"현재 해상 상태로 추천할 만한 포인트가 없습니다.",subtitle:"오늘 바다는 전반적으로 많이 아쉬워요.",sectionTitle:"참고 포인트",rows:eligible.slice(0,MAX_RESULTS),medals:false};
-  return{caseName:"E",title:"오늘은 추천할 만한 포인트가 없습니다.",subtitle:"오늘은 바다 쉬어가는 게 좋겠어요.",sectionTitle:"참고 포인트",rows:eligible.slice(0,MAX_RESULTS),medals:false};
+  const count=eligible.length;
+  const subtitle=count>=3?"오늘 바다가 좋은 포인트를 골라봤어요.":`오늘 추천 가능한 ${count}개 포인트를 골라봤어요.`;
+  return{caseName:highest>=80?"A":highest>=65?"B":"C",title:"",subtitle,rows:eligible.slice(0,10),medals:true};
 }
 async function evaluate(){
   if(state.running)return;state.running=true;setLoading("SNORKY 전체 포인트를 확인 중입니다.");
@@ -68,32 +73,43 @@ async function evaluate(){
       const safety=v12?.safety||safetyFor(point).status;
       const hard=v12?.safety==="BLOCK"?(v12.safetyReasons?.[0]||"BLOCK"):(point.hardLabel||"NONE");
       const hasScore=v12?Number.isFinite(v12.conditionScore):Number.isFinite(point.score);
-      const success=!point.error&&hasScore;
-      const included=success&&safety==="PASS";
+      const isRecommendable=isRecommendablePoint(point);
+      const included=isRecommendable;
       let reason="";
-      if(!success)reason=point.error||"평가 실패";
+      if(!hasScore||point.error)reason=point.error||"평가 실패";
       else if(safety==="BLOCK")reason=v12?.safetyReasons?.[0]||"공식 해상특보";
       else if(safety==="UNKNOWN")reason=v12?.safetyReasons?.[0]||"해상특보 확인 불가";
-      else if(point.hardLabel)reason=point.hardLabel;
+      else if(v12?.conditionScore!=null&&v12.conditionScore<50)reason="50점 미만 (나쁨)";
       return{...point,sourceIndex:index,kma:safety,hard,included,reason,v12};
-    }).sort(stableSort);
-    const eligible=rows.filter(row=>row.included),policy=casePolicy(eligible,rows),sourceById=new Map(points.flatMap(point=>[[String(point.supabaseId??""),point],[String(point.id??""),point]])),homeRows=eligible.slice(0,10).map(point=>({...sourceById.get(String(point.id)),...point,images:sourceById.get(String(point.id))?.images||[],v12:point.v12})),snapshot={createdAt:Date.now(),pointsTotal:points.length,rows,eligible,homeRows,policy,diagnostics};state.snapshot=snapshot;render(snapshot);document.dispatchEvent(new CustomEvent("snorky:today-best-ready",{detail:snapshot}));logDevelopment(snapshot);
+    });
+    const rankBest=window.rankSnorkyBestPoints||window.SNORKYEval?.rankBestPoints;
+    const eligible=rankBest?rankBest(rows,{limit:100}):rows.filter(isRecommendablePoint);
+    const top10=eligible.slice(0,10);
+    const policy=casePolicy(top10,rows);
+    const sourceById=new Map(points.flatMap(point=>[[String(point.supabaseId??""),point],[String(point.id??""),point]]));
+    const homeRows=top10.map(point=>({...sourceById.get(String(point.id)),...point,images:sourceById.get(String(point.id))?.images||[],v12:point.v12}));
+    const snapshot={createdAt:Date.now(),pointsTotal:points.length,rows,eligible:top10,homeRows,policy,diagnostics};
+    state.snapshot=snapshot;
+    render(snapshot);
+    document.dispatchEvent(new CustomEvent("snorky:today-best-ready",{detail:snapshot}));
+    logDevelopment(snapshot);
   }catch(error){console.error("[SNORKY TODAY BEST] 실행 실패",error);getDialog().querySelector(".today-best-results").innerHTML=`<p class="nearby-best-status error">${escapeHtml(error?.message||"오늘의 BEST를 계산하지 못했습니다.")}</p>`;document.dispatchEvent(new CustomEvent("snorky:today-best-error",{detail:error}))}
   finally{state.running=false;if(state.pendingRefresh){state.pendingRefresh=false;queueMicrotask(evaluate)}}
 }
 function render(snapshot){
-  const {policy}=snapshot,icons=policy.medals?["🥇","🥈","🥉"]:["1","2","3"];
+  const {policy}=snapshot;
   const rows=policy.rows.map((point,index)=>{
     const v12=point.v12;
     const scoreVal=v12?.conditionScore!=null?Math.round(v12.conditionScore):(Number.isFinite(point.score)?point.score:null);
     const scoreText=scoreVal!=null?`${scoreVal}점`:"--";
-    const recText=v12?.recommendation||(Number.isFinite(scoreVal)?grade(scoreVal):"보통");
-    return`<li class="nearby-best-item today-best-item" data-supabase-point-id="${escapeHtml(point.id)}" role="button" tabindex="0" aria-label="${escapeHtml(point.name)} 상세 보기"><span class="nearby-best-rank">${icons[index]}</span><div class="nearby-best-content"><div class="nearby-best-title"><div class="nearby-best-name">${escapeHtml(point.name)}</div>${point.region?`<span class="nearby-best-region">${escapeHtml(point.region)}</span>`:""}</div><div class="nearby-best-meta">${scoreText} · ${escapeHtml(recText)}</div></div><span class="nearby-best-chevron" aria-hidden="true">›</span></li>`;
+    const conditionText=window.getSnorkyConditionStatus?.(point)||"보통";
+    const rankLabel=index<3?["🥇","🥈","🥉"][index]:String(index+1);
+    return`<li class="nearby-best-item today-best-item" data-supabase-point-id="${escapeHtml(point.id)}" role="button" tabindex="0" aria-label="${escapeHtml(point.name)} 상세 보기"><span class="nearby-best-rank">${rankLabel}</span><div class="nearby-best-content"><div class="nearby-best-title"><div class="nearby-best-name">${escapeHtml(point.name)}</div>${point.region?`<span class="nearby-best-region">${escapeHtml(point.region)}</span>`:""}</div><div class="nearby-best-meta">${scoreText} · ${escapeHtml(conditionText)}</div></div><span class="nearby-best-chevron" aria-hidden="true">›</span></li>`;
   }).join("");
-  const recommendable=policy.caseName==="A"||policy.caseName==="B",primary=recommendable?`<section class="nearby-recommendations-section">${policy.subtitle?`<p class="nearby-best-status">${policy.subtitle}</p>`:""}<h3>오늘 추천 포인트</h3><ol class="nearby-best-list">${rows}</ol></section>`:`<section class="nearby-recommendations-section"><p class="nearby-best-status"><strong>⚠️ ${policy.title}</strong>${policy.subtitle?`<br>${policy.subtitle}`:""}${policy.detail?`<br>${policy.detail}`:""}</p></section>`,reference=!recommendable&&rows?`<section class="nearby-points-section"><h3>${policy.sectionTitle||"참고 포인트"}</h3><ol class="nearby-best-list">${rows}</ol></section>`:"";
+  const recommendable=policy.caseName==="A"||policy.caseName==="B"||policy.caseName==="C",primary=recommendable?`<section class="nearby-recommendations-section">${policy.subtitle?`<p class="nearby-best-status">${policy.subtitle}</p>`:""}<h3>오늘 추천 포인트</h3><ol class="nearby-best-list">${rows}</ol></section>`:`<section class="nearby-recommendations-section"><p class="nearby-best-status"><strong>⚠️ ${policy.title}</strong>${policy.subtitle?`<br>${policy.subtitle}`:""}${policy.detail?`<br>${policy.detail}`:""}</p></section>`,reference=!recommendable&&rows?`<section class="nearby-points-section"><h3>${policy.sectionTitle||"참고 포인트"}</h3><ol class="nearby-best-list">${rows}</ol></section>`:"";
   getDialog().querySelector(".today-best-results").innerHTML=primary+reference;
 }
-function openPointDetail(row){const pointId=row.dataset.supabasePointId,returnState=captureReturnState();closeDialog();if(!window.SNORKYPointDetail?.openBySupabaseId(pointId,"todayBest",returnState))console.warn("[SNORKY TODAY BEST] Point 상세 진입 실패",{pointId})}
+function openPointDetail(row){const pointId=row.dataset.supabasePointId;closeDialog();if(typeof window.openPointOnMap==="function"){window.openPointOnMap(pointId,"todayBest");}else{const returnState=captureReturnState();if(!window.SNORKYPointDetail?.openBySupabaseId(pointId,"todayBest",returnState))console.warn("[SNORKY TODAY BEST] Point 상세 진입 실패",{pointId})}}
 function logDevelopment(snapshot){
   if(!document.documentElement.classList.contains("admin-mode")&&!new URLSearchParams(location.search).has("debug"))return;
   console.info("[SNORKY TODAY BEST]",{points:snapshot.pointsTotal,case:snapshot.policy.caseName,eligible:snapshot.eligible.length,weatherRequests:snapshot.diagnostics.weatherRequests,marineRequests:snapshot.diagnostics.marineRequests});
