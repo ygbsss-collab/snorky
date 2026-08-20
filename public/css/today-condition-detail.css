@@ -328,6 +328,7 @@
    Square Hourly Scroller (85x85px Cards)
    ───────────────────────────────────────────────────────────── */
 .tc-hourly-section {
+  flex-shrink: 0;
   width: calc(100% + 32px);
   margin: 0 -16px;
   padding: 2px 16px 6px;
@@ -494,6 +495,7 @@
    ───────────────────────────────────────────────────────────── */
 .tc-hero-card {
   position: relative;
+  flex-shrink: 0;
   width: 100%;
   border-radius: 18px;
   overflow: hidden;
