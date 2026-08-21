@@ -1,9 +1,9 @@
 /**
- * SNORKY 2.0 — V1.2 공통 평가 엔진
- * 기준: SNORKY_2.0_컨디션_및_예상수중시야_알고리즘_최종명세서_V1.2_구현규칙확정본
- * 확정일: 2026-08-19
+ * SNORKY 2.0 — V1.4 공통 평가 엔진
+ * 기준: SNORKY_2.0_컨디션_및_예상수중시야_알고리즘_최종명세서_V1.4_최종통합확정본
+ * 확정일: 2026-08-21
  *
- * [중요] 이 파일은 신규 V1.2 엔진이다.
+ * [중요] V1.3 구조와 Final Visual Visibility를 유지하고 Wind/Period/Temperature 정책만 확장한다.
  * 기존 today-best.js / nearby-best.js / 화면 출력에는 아직 연결하지 않는다.
  * 기존 calculateSnorkelingScore / estimateUnderwaterVisibility 는 삭제하지 않는다.
  *
@@ -16,12 +16,12 @@
  *   window.SNORKYEval.visibilityB(row, env, history)  → {score, grade, explanation}
  *   window.SNORKYEval.comfortC(row)                   → number
  *   window.SNORKYEval.finalScore(entryA, visB, comfortC) → number
- *   window.SNORKYEval.VERSION                         → "1.2"
+ *   window.SNORKYEval.VERSION                         → "1.4"
  */
 (function () {
   "use strict";
 
-  const VERSION = "1.2";
+  const VERSION = "1.4";
 
   // ─────────────────────────────────────────────────────────────
   // §4  Data Quality Gate
@@ -76,21 +76,30 @@
     return linearInterpolate(WAVE_BREAKPOINTS, waveHeight);
   }
 
-  /**
-   * 파주기(wave_period)는 파고 위험의 보정계수로만 사용 (§5)
-   * 장주기(≥9s) + 너울(swell_height≥0.3) 일 때 waveScore를 하향 보정.
-   * 독립 점수 항목으로 사용하지 않는다.
-   */
-  function wavePeriodCorrectedScore(rawWaveScore, wavePeriod, swellHeight) {
-    if (!Number.isFinite(rawWaveScore)) return rawWaveScore;
-    if (!Number.isFinite(wavePeriod)) return rawWaveScore;
-    // 장주기 너울 위험 증가: period≥9 AND swell≥0.3 → 최대 15점 추가 감점
-    if (wavePeriod >= 9 && Number.isFinite(swellHeight) && swellHeight >= 0.3) {
-      const severityFactor = Math.min(1, (swellHeight - 0.3) / 0.4); // 0.3→0, 0.7→1
-      const penalty = Math.round(15 * severityFactor);
-      return Math.max(0, rawWaveScore - penalty);
+  const PERIOD_FACTOR_BREAKPOINTS = [[6, 1], [8, 1.05], [10, 1.10], [12, 1.18], [14, 1.25]];
+  const SENSITIVITY_FACTORS = Object.freeze({ low: 0.75, medium: 1, high: 1.25 });
+
+  function wavePeriodAdjustment(rawWaveScore, wavePeriod, environment = {}) {
+    if (!Number.isFinite(rawWaveScore)) {
+      return { periodFactor: 1, effectivePeriodFactor: 1, baseWaveScore: rawWaveScore, finalWaveScore: rawWaveScore, periodImpact: "UNKNOWN" };
     }
-    return rawWaveScore;
+    const periodFactor = Number.isFinite(wavePeriod) ? linearInterpolate(PERIOD_FACTOR_BREAKPOINTS, wavePeriod) : 1;
+    const sensitivity = environment?.swellSensitivity ?? "medium";
+    const sensitivityFactor = SENSITIVITY_FACTORS[sensitivity] ?? SENSITIVITY_FACTORS.medium;
+    const effectivePeriodFactor = 1 + (periodFactor - 1) * sensitivityFactor;
+    const waveLoss = 100 - rawWaveScore;
+    const finalWaveScore = Math.max(0, Math.min(100, Math.round((100 - waveLoss * effectivePeriodFactor) * 10) / 10));
+    const periodImpact = !Number.isFinite(wavePeriod) || finalWaveScore === rawWaveScore
+      ? "NONE"
+      : periodFactor === PERIOD_FACTOR_BREAKPOINTS.at(-1)[1] ? "MAXIMUM" : "APPLIED";
+    return { periodFactor, effectivePeriodFactor, baseWaveScore: rawWaveScore, finalWaveScore, periodImpact };
+  }
+
+  function wavePeriodCorrectedScore(rawWaveScore, wavePeriod, swellHeightOrEnvironment, environment = {}) {
+    const env = swellHeightOrEnvironment && typeof swellHeightOrEnvironment === "object"
+      ? swellHeightOrEnvironment
+      : environment;
+    return wavePeriodAdjustment(rawWaveScore, wavePeriod, env).finalWaveScore;
   }
 
   // ─────────────────────────────────────────────────────────────
@@ -133,30 +142,48 @@
     [12, 0],
   ];
 
-  /**
-   * V1.2 §7 Wind Score.
-   * eastWindSensitivity: 동풍 성분(67.5°~112.5°)이 실제 존재할 때만 보정.
-   * 일반 windExposureDirection은 미구현(DB 필드 없음) — 사용하지 않음.
-   */
-  function windScore(windSpeed, windDirectionDeg, environment) {
-    if (!Number.isFinite(windSpeed)) return null;
-    let base;
-    if (windSpeed <= 3) base = 100;
-    else if (windSpeed >= 12) base = 0;
-    else base = linearInterpolate(WIND_BREAKPOINTS, windSpeed);
+  const DIRECTION_FACTOR_BREAKPOINTS = [[0, 1.20], [45, 1.10], [90, 1], [135, 0.95], [180, 0.90]];
+  const DIRECTION_DEGREES = Object.freeze({ N: 0, NE: 45, E: 90, SE: 135, S: 180, SW: 225, W: 270, NW: 315 });
 
-    // eastWindSensitivity 보정: 동풍 방향(±22.5° of 90°)에서만 적용
-    const sensitivity = environment?.eastWindSensitivity ?? environment?.onshoreWindSensitivity ?? "medium";
-    const isEastWind = Number.isFinite(windDirectionDeg) &&
-      Math.abs(((windDirectionDeg % 360 + 360) % 360) - 90) <= 22.5;
-    if (isEastWind && sensitivity !== "medium") {
-      const factors = { low: 0.90, medium: 1.00, high: 1.10 };
-      const f = factors[sensitivity] ?? 1.00;
-      // factor > 1 → 더 위험하게 취급 → 점수 낮춤 (clamp ±15%)
-      const raw = 100 - (100 - base) * Math.max(0.85, Math.min(1.15, f));
-      base = Math.max(0, Math.min(100, raw));
+  function windBaseScore(windSpeed) {
+    if (!Number.isFinite(windSpeed)) return null;
+    if (windSpeed <= 3) return 100;
+    if (windSpeed >= 12) return 0;
+    return linearInterpolate(WIND_BREAKPOINTS, windSpeed);
+  }
+
+  function relativeDirectionAngle(windDirectionDeg, exposureDirection) {
+    const exposureDeg = DIRECTION_DEGREES[exposureDirection];
+    if (!Number.isFinite(windDirectionDeg) || !Number.isFinite(exposureDeg)) return null;
+    const windDeg = ((windDirectionDeg % 360) + 360) % 360;
+    const difference = Math.abs(windDeg - exposureDeg);
+    return Math.min(difference, 360 - difference);
+  }
+
+  function windAdjustment(windSpeed, windDirectionDeg, environment = {}) {
+    const baseWindScore = windBaseScore(windSpeed);
+    if (!Number.isFinite(baseWindScore)) {
+      return { relativeAngle: null, directionFactor: 1, effectiveDirectionFactor: 1, baseWindScore: null, finalWindScore: null, directionImpact: "UNKNOWN" };
     }
-    return Math.round(base * 10) / 10;
+    const relativeAngle = relativeDirectionAngle(windDirectionDeg, environment?.exposureDirection);
+    const directionFactor = relativeAngle === null ? 1 : linearInterpolate(DIRECTION_FACTOR_BREAKPOINTS, relativeAngle);
+    const sensitivity = environment?.windSensitivity ?? environment?.onshoreWindSensitivity ?? environment?.eastWindSensitivity ?? "medium";
+    const sensitivityFactor = SENSITIVITY_FACTORS[sensitivity] ?? SENSITIVITY_FACTORS.medium;
+    const effectiveDirectionFactor = windSpeed <= 3 || relativeAngle === null
+      ? 1
+      : 1 + (directionFactor - 1) * sensitivityFactor;
+    const windLoss = 100 - baseWindScore;
+    const finalWindScore = Math.max(0, Math.min(100, Math.round((100 - windLoss * effectiveDirectionFactor) * 10) / 10));
+    const directionImpact = relativeAngle === null
+      ? "UNKNOWN"
+      : effectiveDirectionFactor === 1
+      ? "NONE"
+      : effectiveDirectionFactor > 1 ? "ADVERSE" : "FAVORABLE";
+    return { relativeAngle, directionFactor, effectiveDirectionFactor, baseWindScore, finalWindScore, directionImpact };
+  }
+
+  function windScore(windSpeed, windDirectionDeg, environment) {
+    return windAdjustment(windSpeed, windDirectionDeg, environment).finalWindScore;
   }
 
   // ─────────────────────────────────────────────────────────────
@@ -322,6 +349,132 @@
     return "매우나쁨";
   }
 
+  // ─────────────────────────────────────────────────────────────
+  // V1.3  Final Visual Visibility — Base Visibility와 독립
+  // ─────────────────────────────────────────────────────────────
+  const VISUAL_CONDITION_PENALTIES = Object.freeze({
+    DAY: Object.freeze({ CLEAR: 0, MOSTLY_CLOUDY: -5, OVERCAST: -10, RAIN: -25 }),
+    SUNRISE_EFFECT: Object.freeze({ CLEAR: -10, MOSTLY_CLOUDY: -15, OVERCAST: -20, RAIN: -35 }),
+    SUNSET_EFFECT: Object.freeze({ CLEAR: -10, MOSTLY_CLOUDY: -15, OVERCAST: -20, RAIN: -35 }),
+  });
+
+  function parseForecastDate(value, referenceDate = null) {
+    if (value instanceof Date) return new Date(value.getTime());
+    if (Number.isFinite(value) && referenceDate instanceof Date) {
+      const date = new Date(referenceDate.getTime());
+      date.setHours(Number(value), 0, 0, 0);
+      return date;
+    }
+    const raw = typeof value === "object" && value !== null
+      ? (value.timestamp ?? value.datetime ?? value.time)
+      : value;
+    if (typeof raw !== "string" || !raw.trim()) return null;
+    const normalized = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/.test(raw)
+      ? `${raw}:00+09:00`
+      : raw;
+    const date = new Date(normalized);
+    return isNaN(date.getTime()) ? null : date;
+  }
+
+  function slotTimestamp(date) {
+    if (!(date instanceof Date) || isNaN(date.getTime())) return null;
+    const parts = new Intl.DateTimeFormat("en-CA", {
+      timeZone: "Asia/Seoul", year: "numeric", month: "2-digit", day: "2-digit",
+      hour: "2-digit", minute: "2-digit", hourCycle: "h23",
+    }).formatToParts(date).reduce((acc, part) => {
+      if (part.type !== "literal") acc[part.type] = part.value;
+      return acc;
+    }, {});
+    return `${parts.year}-${parts.month}-${parts.day}T${parts.hour}:${parts.minute}`;
+  }
+
+  function resolveRepresentativeSunSlots(sunTimes, forecastSlots = [], evaluatedAt = null) {
+    const reference = parseForecastDate(evaluatedAt);
+    const sunrise = parseForecastDate(sunTimes?.sunrise);
+    const sunset = parseForecastDate(sunTimes?.sunset);
+    const referenceDay = slotTimestamp(reference)?.slice(0, 10);
+    const slots = (Array.isArray(forecastSlots) ? forecastSlots : [])
+      .map(slot => parseForecastDate(slot, reference))
+      .filter(slot => slot && (!referenceDay || slotTimestamp(slot)?.slice(0, 10) === referenceDay));
+    const nearest = target => {
+      if (!target || !slots.length) return null;
+      return [...slots].sort((a, b) => {
+        const diff = Math.abs(a.getTime() - target.getTime()) - Math.abs(b.getTime() - target.getTime());
+        return diff || a.getTime() - b.getTime();
+      })[0];
+    };
+    return {
+      sunriseEffectSlot: slotTimestamp(nearest(sunrise)),
+      sunsetEffectSlot: slotTimestamp(nearest(sunset)),
+    };
+  }
+
+  function resolveVisualLightState(evaluatedAt, sunTimes, forecastSlots = []) {
+    const evaluated = parseForecastDate(evaluatedAt);
+    const sunrise = parseForecastDate(sunTimes?.sunrise);
+    const sunset = parseForecastDate(sunTimes?.sunset);
+    const effectSlots = resolveRepresentativeSunSlots(sunTimes, forecastSlots, evaluatedAt);
+    const evaluatedSlot = slotTimestamp(evaluated);
+
+    if (evaluatedSlot && evaluatedSlot === effectSlots.sunriseEffectSlot) return { lightState: "SUNRISE_EFFECT", ...effectSlots };
+    if (evaluatedSlot && evaluatedSlot === effectSlots.sunsetEffectSlot) return { lightState: "SUNSET_EFFECT", ...effectSlots };
+    if (evaluated && sunrise && sunset && (evaluated < sunrise || evaluated >= sunset)) {
+      return { lightState: "NIGHT", ...effectSlots };
+    }
+    return { lightState: "DAY", ...effectSlots };
+  }
+
+  function classifyVisualWeather(row) {
+    if (Number.isFinite(row?.precipitation) && row.precipitation > 0) return "RAIN";
+    const skyCode = Number(row?.sky_code);
+    if (skyCode === 1) return "CLEAR";
+    if (skyCode === 3) return "MOSTLY_CLOUDY";
+    if (skyCode === 4) return "OVERCAST";
+    if (Number.isFinite(row?.cloud_cover)) {
+      if (row.cloud_cover >= 80) return "OVERCAST";
+      if (row.cloud_cover >= 40) return "MOSTLY_CLOUDY";
+    }
+    return "CLEAR";
+  }
+
+  function visualConditionPenalty(lightState, weatherState) {
+    if (lightState === "NIGHT") return 0;
+    return VISUAL_CONDITION_PENALTIES[lightState]?.[weatherState] ?? 0;
+  }
+
+  function finalVisualVisibilityGrade(score) {
+    if (!Number.isFinite(score)) return "UNKNOWN";
+    if (score >= 85) return "좋음";
+    if (score >= 65) return "양호";
+    if (score >= 45) return "보통";
+    if (score >= 25) return "나쁨";
+    return "매우 나쁨";
+  }
+
+  function finalVisualVisibility(baseVisibilityScore, lightState, weatherState) {
+    if (!Number.isFinite(baseVisibilityScore)) {
+      return { score: null, grade: "UNKNOWN", penalty: 0, explanation: "Base Visibility를 계산할 수 없습니다." };
+    }
+    if (lightState === "NIGHT") {
+      return {
+        score: 0,
+        grade: "매우 나쁨",
+        penalty: 0,
+        explanation: "바다 자체의 투명도는 좋지만, 밤 시간대로 자연광이 없어 실제 물속 시야 확보가 어렵습니다.",
+      };
+    }
+    const penalty = visualConditionPenalty(lightState, weatherState);
+    const score = Math.max(0, Math.min(100, Math.round(baseVisibilityScore + penalty)));
+    return {
+      score,
+      grade: finalVisualVisibilityGrade(score),
+      penalty,
+      explanation: penalty === 0
+        ? "물 상태와 자연광 조건이 양호해 실제 물속 시야가 잘 확보될 것으로 예상됩니다."
+        : `물 자체의 투명도에 자연광·기상 시각조건 ${penalty}점이 적용되었습니다.`,
+    };
+  }
+
   /** §13 Explain Layer — 자동 설명문 */
   function buildVisibilityExplanation(currentWaveHeight, normWave, normPrecip, terrain, hasHistory, grade) {
     const currentWaveHigh = Number.isFinite(currentWaveHeight) && currentWaveHeight >= 0.4;
@@ -396,6 +549,29 @@
     return Math.round(scores.reduce((sum, s) => sum + s, 0) / scores.length);
   }
 
+  function temperatureActivitySuitability(seaTemperature) {
+    if (!Number.isFinite(seaTemperature)) {
+      return Object.freeze({ label: "수온 정보 확인 필요", recommendationCap: null });
+    }
+    if (seaTemperature >= 28) return Object.freeze({ label: "최상", recommendationCap: null });
+    if (seaTemperature >= 24) return Object.freeze({ label: "좋음", recommendationCap: null });
+    if (seaTemperature >= 20) return Object.freeze({ label: "보통", recommendationCap: null });
+    if (seaTemperature >= 16) return Object.freeze({ label: "주의", recommendationCap: "주의" });
+    if (seaTemperature >= 12) return Object.freeze({ label: "위험·제한적", recommendationCap: "비추천" });
+    return Object.freeze({ label: "입수 비추천", recommendationCap: "비추천" });
+  }
+
+  function applyTemperatureRecommendationCap(baseRecommendation, recommendationCap) {
+    if (!recommendationCap) return baseRecommendation;
+    const isNotRecommended = typeof baseRecommendation === "string" && baseRecommendation.includes("비추천");
+    const isCaution = typeof baseRecommendation === "string" && baseRecommendation.includes("주의");
+    if (recommendationCap === "비추천") return isNotRecommended ? baseRecommendation : "비추천";
+    if (recommendationCap === "주의") {
+      return isNotRecommended || isCaution ? baseRecommendation : "주의";
+    }
+    return baseRecommendation;
+  }
+
   /**
    * CM = 0.95 + 0.05 × (C / 100)   →  C=100이면 CM=1.00, C=0이면 CM=0.95
    * Core = 100 × (A/100)^0.63 × (B/100)^0.37
@@ -444,10 +620,10 @@
    */
   function applyActivityTimeGate(baseRecommendation, sunTimes, evaluatedAt) {
     if (!sunTimes?.sunrise || !sunTimes?.sunset) return baseRecommendation;
-    const now = new Date(evaluatedAt ?? new Date());
-    const sunrise = new Date(sunTimes.sunrise);
-    const sunset  = new Date(sunTimes.sunset);
-    if (isNaN(sunrise.getTime()) || isNaN(sunset.getTime())) return baseRecommendation;
+    const now = parseForecastDate(evaluatedAt ?? new Date());
+    const sunrise = parseForecastDate(sunTimes.sunrise);
+    const sunset  = parseForecastDate(sunTimes.sunset);
+    if (!now || !sunrise || !sunset) return baseRecommendation;
 
     const minsToSunset = (sunset.getTime() - now.getTime()) / 60000;
     const afterSunset  = now >= sunset;
@@ -499,6 +675,7 @@
     const env = (typeof window !== "undefined" && typeof window.normalizePointEnvironment === "function")
       ? window.normalizePointEnvironment(point?.environment)
       : (point?.environment ?? {});
+    const temperatureActivity = temperatureActivitySuitability(row?.sea_temperature);
 
     // ── §4 Data Quality Gate ──
     const dq = dataQualityGate(row);
@@ -511,7 +688,7 @@
         visibilityScore: null, visibilityGrade: "UNKNOWN",
         visibilityExplanation: "필수 안전 데이터가 없어 수중시야를 예측할 수 없습니다.",
         comfortScore: null, finalRaw: null,
-        evaluatedAt, row, env,
+        evaluatedAt, row, env, temperatureActivity,
       });
     }
 
@@ -546,19 +723,21 @@
         visibilityScore: null, visibilityGrade: "UNKNOWN",
         visibilityExplanation: safety === "BLOCK" ? "입수 금지 상태로 예상 수중시야를 제공하지 않습니다." : "안전정보를 확인할 수 없습니다.",
         comfortScore: null, finalRaw: null,
-        evaluatedAt, row, env,
+        evaluatedAt, row, env, temperatureActivity,
       });
     }
 
     // ── §5 Wave ──
     const rawWave = waveScore(waveHs);
-    const correctedWave = wavePeriodCorrectedScore(rawWave, row.wave_period, row.swell_height);
+    const periodAdjustment = wavePeriodAdjustment(rawWave, row.wave_period, env);
+    const correctedWave = periodAdjustment.finalWaveScore;
 
     // ── §6 Current ──
     const curS = currentScore(row.current_speed);
 
     // ── §7 Wind ──
-    const wndS = windScore(row.wind_speed, row.wind_direction_degree, env);
+    const windAdjustmentResult = windAdjustment(row.wind_speed, row.wind_direction_degree, env);
+    const wndS = windAdjustmentResult.finalWindScore;
 
     // ── §8 Entry A ──
     const entryResult = entryA(correctedWave, curS, wndS);
@@ -573,11 +752,26 @@
     // ── §10 Final Score ──
     const final = finalScore(entryAScore, visResult.score, comfortScore);
 
+    // ── V1.3 Final Visual Visibility (종합점수와 독립) ──
+    const lightResult = resolveVisualLightState(evaluatedAt, options.sunTimes, options.forecastSlots ?? []);
+    const weatherState = classifyVisualWeather(row);
+    const finalVisual = finalVisualVisibility(visResult.score, lightResult.lightState, weatherState);
+    const visualCondition = Object.freeze({
+      lightState: lightResult.lightState,
+      weatherState,
+      penalty: finalVisual.penalty,
+      sunriseEffectSlot: lightResult.sunriseEffectSlot,
+      sunsetEffectSlot: lightResult.sunsetEffectSlot,
+    });
+
     // ── §11 Recommendation ──
     const baseRec = recommendation(entryAScore, visResult.score);
 
     // ── §12 Activity Time Gate ──
-    const finalRec = applyActivityTimeGate(baseRec, options.sunTimes, evaluatedAt);
+    const activityTimeRecommendation = applyActivityTimeGate(baseRec, options.sunTimes, evaluatedAt);
+
+    // ── V1.4 Temperature Recommendation Cap ──
+    const finalRec = applyTemperatureRecommendationCap(activityTimeRecommendation, temperatureActivity.recommendationCap);
 
     return makeResult({
       safety: "PASS", safetyReasons: [],
@@ -587,15 +781,27 @@
       entryA: entryResult,
       visibilityScore: visResult.score, visibilityGrade: visResult.grade,
       visibilityExplanation: visResult.explanation,
+      baseVisibilityScore: visResult.score, baseVisibilityGrade: visResult.grade,
+      baseVisibilityExplanation: visResult.explanation,
+      visualCondition,
+      finalVisualVisibilityScore: finalVisual.score,
+      finalVisualVisibilityGrade: finalVisual.grade,
+      finalVisualVisibilityExplanation: finalVisual.explanation,
+      wavePeriodAdjustment: periodAdjustment,
+      windAdjustment: windAdjustmentResult,
+      temperatureActivity,
       comfortScore, finalRaw: final,
       evaluatedAt, row, env,
       _detail: {
         rawWaveScore: rawWave,
         wavePeriodCorrectedScore: correctedWave,
+        wavePeriodAdjustment: periodAdjustment,
+        windAdjustment: windAdjustmentResult,
         visibilityDetail: visResult.detail,
         entryA0: entryResult.a0,
         entryGate: entryResult.g,
         baseRecommendation: baseRec,
+        activityTimeRecommendation,
         comfortModifier: 0.95 + 0.05 * (comfortScore / 100),
       },
     });
@@ -605,6 +811,10 @@
     safety, safetyReasons, recommendation: rec,
     conditionScore, waveScore: wS, currentScore: cS, windScore: wndS,
     entryA: eA, visibilityScore, visibilityGrade, visibilityExplanation,
+    baseVisibilityScore = null, baseVisibilityGrade = "UNKNOWN", baseVisibilityExplanation = null,
+    visualCondition = null,
+    finalVisualVisibilityScore = null, finalVisualVisibilityGrade = "UNKNOWN", finalVisualVisibilityExplanation = null,
+    wavePeriodAdjustment = null, windAdjustment = null, temperatureActivity = null,
     comfortScore, finalRaw, evaluatedAt, row, env, _detail,
   }) {
     return Object.freeze({
@@ -616,6 +826,16 @@
       visibilityScore,           // 0~100 또는 null
       visibilityGrade,           // "좋음"|"양호"|"보통/회복중"|"나쁨"|"매우나쁨"|"UNKNOWN"
       visibilityExplanation,     // string
+      baseVisibilityScore,
+      baseVisibilityGrade,
+      baseVisibilityExplanation,
+      visualCondition,
+      finalVisualVisibilityScore,
+      finalVisualVisibilityGrade,
+      finalVisualVisibilityExplanation,
+      wavePeriodAdjustment,
+      windAdjustment,
+      temperatureActivity,
       evaluatedAt,               // ISO8601
       // 대표 지표 요약
       metrics: Object.freeze({
@@ -833,16 +1053,28 @@
     rankBestPoints,
     // 개별 엔진 (테스트/진단용)
     waveScore,
+    wavePeriodAdjustment,
     wavePeriodCorrectedScore,
     currentScore,
+    windBaseScore,
+    relativeDirectionAngle,
+    windAdjustment,
     windScore,
     entryA,
     visibilityB,
     visibilityGradeFromScore,
+    resolveRepresentativeSunSlots,
+    resolveVisualLightState,
+    classifyVisualWeather,
+    visualConditionPenalty,
+    finalVisualVisibility,
+    finalVisualVisibilityGrade,
     comfortC,
+    temperatureActivitySuitability,
     finalScore,
     recommendation,
     applyActivityTimeGate,
+    applyTemperatureRecommendationCap,
     conditionLabel,
     // 내부 상수 (테스트용)
     _WAVE_BREAKPOINTS: WAVE_BREAKPOINTS,

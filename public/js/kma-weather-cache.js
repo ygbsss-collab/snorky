@@ -29,8 +29,8 @@ function nearestHourly(cache,timestamp,maxMinutes=45){const rows=cache?.forecast
 function hourlyTimestamps(cache){return(cache?.forecastData?.hourly||[]).map(row=>String(row?.datetime||"").slice(0,16)).filter(value=>/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/.test(value))}
 function dailyForDate(cache,date){const rows=cache?.forecastData?.daily;if(!Array.isArray(rows))return null;return rows.find(row=>String(row?.date||"").slice(0,10)===date)||null}
 function number(primary,fallback){return finite(primary)?Number(primary):finite(fallback)?Number(fallback):null}
-function precipitationMm(value){return finite(value?.mm)?Number(value.mm):finite(value)?Number(value):null}
-function mergeWeatherData(kma,openMeteo={}){return{temperature:number(kma?.temperature,openMeteo.temperature),windSpeed:number(kma?.windSpeed,openMeteo.windSpeed),windDirectionDegree:number(kma?.windDirection,openMeteo.windDirectionDegree),precipitation:number(precipitationMm(kma?.precipitation),openMeteo.precipitation),precipitationProbability:number(kma?.precipitationProbability,openMeteo.precipitationProbability),cloudCover:number(null,openMeteo.cloudCover),pressure:number(null,openMeteo.pressure),source:kma?"kma_cache":"open_meteo"}}
+function precipitationMm(value){return finite(value?.mm)?Number(value.mm):value?.raw==="강수없음"?0:finite(value)?Number(value):null}
+function mergeWeatherData(kma,openMeteo={}){return{temperature:number(kma?.temperature,openMeteo.temperature),windSpeed:number(kma?.windSpeed,openMeteo.windSpeed),windDirectionDegree:number(kma?.windDirection,openMeteo.windDirectionDegree),precipitation:number(precipitationMm(kma?.precipitation),openMeteo.precipitation),precipitationProbability:number(kma?.precipitationProbability,openMeteo.precipitationProbability),skyCode:number(kma?.sky?.code,null),cloudCover:number(null,openMeteo.cloudCover),pressure:number(null,openMeteo.pressure),source:kma?"kma_cache":"open_meteo"}}
 function clearMemoryCache(){gridRequests.clear()}
 window.SNORKYKmaWeatherCache=Object.freeze({fetch:fetchCache,toGrid,nearestHourly,hourlyTimestamps,dailyForDate,mergeWeatherData,clearMemoryCache,get requestCount(){return gridRequests.size}});
 })();

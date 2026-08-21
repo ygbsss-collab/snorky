@@ -240,6 +240,24 @@
   color: var(--tc-on-surface);
 }
 
+.tc-weather-label-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 3px;
+}
+
+.tc-weather-live-badge {
+  padding: 2px 6px;
+  border-radius: 999px;
+  background: #e7f5fb;
+  color: #087ca7;
+  font-size: 9px;
+  font-weight: 800;
+  line-height: 1.25;
+  white-space: nowrap;
+}
+
 .tc-weather-divider {
   width: 1px;
   height: 38px;
@@ -398,6 +416,24 @@
 
 .tc-hour-card.active .tc-hour-time {
   color: rgba(255, 255, 255, 0.9);
+}
+
+.tc-hour-current-badge {
+  position: absolute;
+  top: 4px;
+  right: 5px;
+  padding: 2px 4px;
+  border-radius: 5px;
+  background: rgba(0, 85, 164, 0.1);
+  color: var(--tc-primary);
+  font-size: 8px;
+  font-weight: 800;
+  line-height: 1;
+}
+
+.tc-hour-card.active .tc-hour-current-badge {
+  background: rgba(255, 255, 255, 0.18);
+  color: #ffffff;
 }
 
 .tc-hour-mid {
