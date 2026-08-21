@@ -22,10 +22,11 @@ function registerPoints(points){for(const point of points||[]){const code=pointA
 function ensureBanner(){
   let banner=document.getElementById("kmaSafetyBanner");
   if(banner)return banner;
-  const header=document.querySelector(".masthead");if(!header)return null;
+  const mountAnchor=document.getElementById("kmaSafetyBannerAnchor")||document.querySelector(".masthead");
+  if(!mountAnchor)return null;
   const style=document.createElement("style");
   style.textContent=".kma-safety-banner{display:none;align-items:center;justify-content:center;gap:9px;margin:-1px 0 10px;padding:11px 16px;border:1px solid #ef9a9a;border-radius:13px;background:#fff1f0;color:#a61b1b;font-size:14px;font-weight:900;box-shadow:0 5px 14px rgba(166,27,27,.08)}.kma-safety-banner.visible{display:flex}.kma-safety-banner.unknown{border-color:#cbd5e1;background:#f8fafc;color:#475569}@media(max-width:700px){.kma-safety-banner{align-items:flex-start;flex-direction:column;gap:3px;margin-top:0;font-size:13px}}";
-  document.head.appendChild(style);banner=document.createElement("div");banner.id="kmaSafetyBanner";banner.className="kma-safety-banner";banner.setAttribute("role","status");header.insertAdjacentElement("afterend",banner);return banner;
+  document.head.appendChild(style);banner=document.createElement("div");banner.id="kmaSafetyBanner";banner.className="kma-safety-banner";banner.setAttribute("role","status");mountAnchor.insertAdjacentElement("afterend",banner);return banner;
 }
 function renderBanner(){
   const banner=ensureBanner();if(!banner)return;

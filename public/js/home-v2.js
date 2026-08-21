@@ -3,7 +3,8 @@
 const state={todayExpanded:false,todayRows:[],nearbyExpanded:false,nearbyRows:[],nearbyRadius:100,nearestExpanded:false,hasLocation:false,userCoords:null};
 const section=document.createElement("section");section.className="home-v2 home-reference";section.setAttribute("aria-label","SNORKY 홈");
 section.innerHTML=`<section id="homeHero" class="home-hero" style="background-image:url('./public/images/snorky-home-hero-v3.jpg')"><div class="home-hero-shade"></div><div class="home-hero-content"><div class="home-hero-brand brand-mark" role="button" tabindex="0" aria-label="SNORKY 로고" style="cursor:pointer"><img src="./public/images/snorky-app-icon.png" alt="SNORKY" class="home-hero-logo"><span class="home-hero-brand-name">SNORKY</span></div><div class="home-hero-body"><h1 class="home-hero-title">오늘, 어디 바다로 갈까?</h1><p class="home-hero-subtitle">스노클링 · 프리다이빙 포인트를 바다 컨디션으로 추천해드려요!</p></div></div></section><section id="homeMarineWarning" class="home-marine-warning" aria-live="polite"><span class="home-warning-text">🌊 현재 해상특보 없음 · 안전한 바다 확인 중</span></section><section class="home-discovery"><div id="homeSearchAnchor" class="home-search-anchor"></div><button class="home-filter-button" type="button" aria-label="상세 필터">☷</button></section><div class="home-filter-row" aria-label="포인트 필터"><label class="home-filter-chip active"><span>⌖ 지역</span><select id="homeRegionFilter" aria-label="지역 선택"><option value="">전체</option></select></label><label class="home-filter-chip"><span>♒ 지형</span><select aria-label="지형 선택"><option>전체</option></select></label><label class="home-filter-chip"><span>☆ 추천조건</span><select aria-label="추천조건 선택"><option>전체</option></select></label></div><section class="home-section home-best-section"><div class="home-reference-head"><h2>오늘의 추천 BEST</h2><button class="home-inline-more" type="button" data-toggle-today hidden>더보기 ›</button></div><div id="homeTodayBest" aria-live="polite"><div class="home-empty"><strong>오늘의 바다를 확인하고 있어요.</strong>잠시만 기다려 주세요.</div></div></section><section class="home-section home-nearby-section"><div class="home-reference-head"><h2>내 주변 추천 BEST</h2><button class="home-inline-more" type="button" data-toggle-nearby hidden>더보기 ›</button></div><div id="homeNearbyBest" aria-live="polite"></div></section><section class="home-section home-nearest-section"><div class="home-reference-head"><h2>가까운 포인트</h2><button class="home-inline-more" type="button" data-toggle-nearest hidden>더보기 ›</button></div><div id="homeNearestBest" aria-live="polite"></div></section>`;
-document.querySelector(".masthead")?.insertAdjacentElement("afterend",section);
+const homeMountRoot=document.getElementById("homeV2Root")||document.querySelector(".app")||document.body;
+homeMountRoot.appendChild(section);
 window.SNORKYAdmin?.bindSecretEntry?.();
 let heroLogoClicks=[];
 document.addEventListener("click",event=>{
@@ -270,7 +271,18 @@ section.addEventListener("change",event=>{
     }
   }
 });
-document.getElementById("homeRegionFilter").onchange=event=>{if(event.target.value)document.querySelector(`.region-tab[data-region-id="${CSS.escape(event.target.value)}"]`)?.click();};
+const homeRegionSelect=document.getElementById("homeRegionFilter");
+if(homeRegionSelect){
+  homeRegionSelect.onchange=event=>{
+    const val=event.target.value;
+    if(!val){
+      openPointOnMap(null,"all");
+      return;
+    }
+    const regionName=event.target.options[event.target.selectedIndex]?.text||val;
+    openPointOnMap(null,"region",{region:regionName});
+  };
+}
 section.querySelectorAll("[data-home-target]").forEach(button=>button.onclick=()=>{const target=button.dataset.homeTarget;if(target==="favorites"){if(typeof openFavoritesOnMap==="function")openFavoritesOnMap();else openMapScreen();}else if(target==="today"){openPointOnMap(null,"todayBest")}else if(target==="forecast"){openPointOnMap(null,"all")}});
 
 const mapScreen=document.createElement("section");
