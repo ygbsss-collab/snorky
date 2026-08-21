@@ -316,6 +316,12 @@
       if (e.target === modalEl) close(true);
     });
 
+    document.addEventListener("snorky:favorites-updated", () => {
+      if (isOpen && activePoint) {
+        updateFavoriteState();
+      }
+    });
+
     return modalEl;
   }
 
@@ -527,21 +533,35 @@
     if (!activePoint) return;
     const btn = document.getElementById("tcFavoriteBtn");
     const isFav = window.SNORKYEngagement?.toggleFavorite?.(activePoint);
+    const currentFav = typeof isFav === "boolean" ? isFav : Boolean(window.SNORKYEngagement?.isFavorite?.(activePoint));
     if (btn) {
-      btn.classList.toggle("active", Boolean(isFav));
+      btn.classList.toggle("active", currentFav);
+      const svg = btn.querySelector("svg");
+      if (svg) svg.setAttribute("fill", currentFav ? "currentColor" : "none");
     }
     const modalFav = document.getElementById("pointFavoriteToggle");
     if (modalFav) {
-      modalFav.classList.toggle("active", Boolean(isFav));
-      modalFav.setAttribute("aria-pressed", String(Boolean(isFav)));
+      modalFav.classList.toggle("active", currentFav);
+      modalFav.setAttribute("aria-pressed", String(currentFav));
+      const modalSvg = modalFav.querySelector("svg");
+      if (modalSvg) modalSvg.setAttribute("fill", currentFav ? "currentColor" : "none");
     }
   }
 
   function updateFavoriteState() {
     const btn = document.getElementById("tcFavoriteBtn");
     if (!btn || !activePoint) return;
-    const isFav = window.SNORKYEngagement?.isFavorite?.(activePoint) || false;
+    const isFav = Boolean(window.SNORKYEngagement?.isFavorite?.(activePoint));
     btn.classList.toggle("active", isFav);
+    const svg = btn.querySelector("svg");
+    if (svg) svg.setAttribute("fill", isFav ? "currentColor" : "none");
+    const modalFav = document.getElementById("pointFavoriteToggle");
+    if (modalFav) {
+      modalFav.classList.toggle("active", isFav);
+      modalFav.setAttribute("aria-pressed", String(isFav));
+      const modalSvg = modalFav.querySelector("svg");
+      if (modalSvg) modalSvg.setAttribute("fill", isFav ? "currentColor" : "none");
+    }
   }
 
   // ─────────────────────────────────────────────────────────────
