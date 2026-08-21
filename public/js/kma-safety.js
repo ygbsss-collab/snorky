@@ -7,7 +7,18 @@ const state={status:"UNKNOWN",warnings:[],updatedAt:null,error:null};
 const registeredAreaCodes=new Set();
 
 function snapshot(){return{status:state.status,warnings:[...state.warnings],updatedAt:state.updatedAt,error:state.error}}
-function pointAreaCode(point){const code=String(point?.warningAreaCode||point?.warning_area_code||"").trim();return/^S\d{7}$/.test(code)?code:null}
+function pointAreaCode(point){
+  const code=String(point?.warningAreaCode||point?.warning_area_code||"").trim();
+  if(/^S\d{7}$/.test(code))return code;
+  const lat=Number(point?.lat??point?.[1]),lng=Number(point?.lng??point?.[2]);
+  if(Number.isFinite(lat)&&Number.isFinite(lng)&&typeof window.SNORKYWarningZones?.resolveWarningAreaCode==="function"){
+    const resolved=window.SNORKYWarningZones.resolveWarningAreaCode(lat,lng);
+    if(/^S\d{7}$/.test(resolved||""))return resolved;
+  }
+  const regCode=String(point?.region?.warningAreaCode||point?.region?.warning_area_code||"").trim();
+  if(/^S\d{7}$/.test(regCode))return regCode;
+  return null;
+}
 function statusForCode(code,areaName=null){
   if(!/^S\d{7}$/.test(code||""))return{status:"UNKNOWN",warningAreaCode:null,areaName,warning:null};
   if(state.status!=="READY")return{status:"UNKNOWN",warningAreaCode:code,areaName,warning:null};

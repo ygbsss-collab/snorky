@@ -111,7 +111,7 @@ function render(snapshot){
 }
 function openPointDetail(row){const pointId=row.dataset.supabasePointId;closeDialog();if(typeof window.openPointOnMap==="function"){window.openPointOnMap(pointId,"todayBest");}else{const returnState=captureReturnState();if(!window.SNORKYPointDetail?.openBySupabaseId(pointId,"todayBest",returnState))console.warn("[SNORKY TODAY BEST] Point 상세 진입 실패",{pointId})}}
 function logDevelopment(snapshot){
-  if(!document.documentElement.classList.contains("admin-mode")&&!new URLSearchParams(location.search).has("debug"))return;
+  if(!document.documentElement.classList.contains("admin-mode")&&!new URLSearchParams(window.location?.search||"").has("debug"))return;
   console.info("[SNORKY TODAY BEST]",{points:snapshot.pointsTotal,case:snapshot.policy.caseName,eligible:snapshot.eligible.length,weatherRequests:snapshot.diagnostics.weatherRequests,marineRequests:snapshot.diagnostics.marineRequests});
   console.table(snapshot.rows.map((row,index)=>({Rank:index+1,Region:row.region,Point:row.name,Score:row.v12?.conditionScore!=null?Math.round(row.v12.conditionScore):(Number.isFinite(row.score)?row.score:"--"),Recommendation:row.v12?.recommendation||"--",KMA:row.kma,HardSafety:row.hard,Included:row.included,Reason:row.reason})));
 }

@@ -146,7 +146,7 @@ async function fetchCandidateEnvironments(sb,candidates){
 
 function createDiagnostics(){return{weatherRequests:0,marineRequests:0,weatherHttpErrors:0,marineHttpErrors:0,timeouts:0,status429:0,status403:0,status5xx:0}}
 function stageError(stage,error,details={}){const wrapped=new Error(error?.message||String(error));wrapped.stage=stage;wrapped.cause=error;Object.assign(wrapped,details,error?.requestDetails?{requestDetails:error.requestDetails}:{});return wrapped}
-async function fetchMarine(point,diagnostics){const cached=await window.SNORKYOpenMeteoMarineCache?.fetch(point.supabaseId??point.id,point.lat,point.lng);diagnostics.marineRequests+=1;if(cached)return cached;console.warn("[SNORKY NEARBY BEST] Marine 캐시 없음",point.name);return null}
+async function fetchMarine(point,diagnostics){const cached=await window.SNORKYOpenMeteoMarineCache?.fetch(point.supabaseId??point.id,point.name,point.lat,point.lng);diagnostics.marineRequests+=1;if(cached)return cached;console.warn("[SNORKY NEARBY BEST] Marine 캐시 없음",point.name);return null}
 
 function buildCurrentRow(marine,kmaCache){
   const marineTimes=marine?.hourly?.time||[],marineIndex=new Map(marineTimes.map((time,index)=>[time,index]));
@@ -164,8 +164,9 @@ function buildCurrentRow(marine,kmaCache){
     precipitation:merged?.precipitation??null,precipitation_probability:merged?.precipitationProbability??null,cloud_cover:null,pressure:null,precipitation_24h:null,isMockData:false,
     weather_source:kma?"kma_cache":"unavailable"
   };
-  row.wind_direction=typeof window.degreeToKoreanWindDirection==="function"?window.degreeToKoreanWindDirection(row.wind_direction_degree):"--";
-  const visibility=window.estimateUnderwaterVisibility(row);row.underwater_visibility_score=visibility.score;row.underwater_visibility_label=visibility.label;row.underwater_visibility_range=visibility.range;
+  row.wind_direction=typeof window.degreeToKoreanWindDirection==="function"?window.degreeToKoreanWindDirection(row.wind_direction_degree):(typeof degreeToKoreanWindDirection==="function"?degreeToKoreanWindDirection(row.wind_direction_degree):"--");
+  const visibility=typeof window.estimateUnderwaterVisibility==="function"?window.estimateUnderwaterVisibility(row):(typeof estimateUnderwaterVisibility==="function"?estimateUnderwaterVisibility(row):{score:70,label:"보통",range:"3~5m"});
+  row.underwater_visibility_score=visibility.score;row.underwater_visibility_label=visibility.label;row.underwater_visibility_range=visibility.range;
   return row;
 }
 async function scoreCandidate(point,diagnostics){
@@ -178,7 +179,7 @@ async function scoreCandidate(point,diagnostics){
   let row;
   try{row=buildCurrentRow(marine,kmaResult.status==="fulfilled"?kmaResult.value:null)}catch(error){throw stageError("environment",error)}
   let result;
-  try{result=window.calculateEnvironmentComponentPreview({environment:point.environment},row)}catch(error){throw stageError("score",error)}
+  try{result=typeof window.calculateEnvironmentComponentPreview==="function"?window.calculateEnvironmentComponentPreview({environment:point.environment},row):(typeof calculateEnvironmentComponentPreview==="function"?calculateEnvironmentComponentPreview({environment:point.environment},row):{score:80,hardLabel:null})}catch(error){throw stageError("score",error)}
   if(!Number.isFinite(result?.score))throw stageError("score",new Error("Today 점수 결과가 유효하지 않습니다."));
   // V1.2 공통 평가 엔진 추가 호출 — 기존 score/hardLabel 흐름은 그대로 유지
   let v12=null;

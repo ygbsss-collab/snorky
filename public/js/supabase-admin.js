@@ -80,13 +80,17 @@ async function deleteRegion(id){
   catch(error){alert(error.message||"지역을 삭제하지 못했습니다.")}
 }
 
-function pointPayload(point,regionId){return{
-  region_id:regionId,name:point.name,lat:point.lat,lng:point.lng,warning_area_code:point.warningAreaCode||getRegionById(point.regionId)?.warningAreaCode||null,parking_lat:point.parkingLat??null,parking_lng:point.parkingLng??null,
-  point_feature:point.pointFeature||"",snorkeling_info:point.snorkelingInfo||"",parking:point.parking||"",toilet:point.toilet||"",shower:point.shower||"",camping:point.camping||"",cooking:point.cooking||"",
-  facilities:values(point.facilities),notes:values(point.notes),description:point.description||"",access_guide:point.accessGuide||"",access_steps:values(point.accessSteps),
-  parking_available:typeof point.parkingAvailable==="boolean"?point.parkingAvailable:null,parking_guide:point.parkingGuide||"",entry_guide:point.entryGuide||"",entry_lat:point.entryLat??null,entry_lng:point.entryLng??null,
-  depth_range:point.depthRange||"",difficulty:point.difficulty||"",point_type:point.pointType||"",warnings:values(point.warnings),environment:point.environment==null?null:normalizePointEnvironment(point.environment),sort_order:Number.isInteger(point.sortOrder)?point.sortOrder:0
-}}
+function pointPayload(point,regionId){
+  const reg=getRegionById(point.regionId)||getRegionById(regionId)||(getEffectiveRegions().find(r=>String(r.supabaseId)===String(regionId)||String(r.id)===String(regionId)));
+  const autoCode=typeof window.SNORKYWarningZones?.resolveWarningAreaCode==="function"?window.SNORKYWarningZones.resolveWarningAreaCode(point.lat,point.lng):null;
+  return{
+    region_id:regionId,name:point.name,lat:point.lat,lng:point.lng,warning_area_code:point.warningAreaCode||autoCode||reg?.warningAreaCode||reg?.warning_area_code||null,parking_lat:point.parkingLat??null,parking_lng:point.parkingLng??null,
+    point_feature:point.pointFeature||"",snorkeling_info:point.snorkelingInfo||"",parking:point.parking||"",toilet:point.toilet||"",shower:point.shower||"",camping:point.camping||"",cooking:point.cooking||"",
+    facilities:values(point.facilities),notes:values(point.notes),description:point.description||"",access_guide:point.accessGuide||"",access_steps:values(point.accessSteps),
+    parking_available:typeof point.parkingAvailable==="boolean"?point.parkingAvailable:null,parking_guide:point.parkingGuide||"",entry_guide:point.entryGuide||"",entry_lat:point.entryLat??null,entry_lng:point.entryLng??null,
+    depth_range:point.depthRange||"",difficulty:point.difficulty||"",point_type:point.pointType||"",warnings:values(point.warnings),environment:point.environment==null?null:normalizePointEnvironment(point.environment),sort_order:Number.isInteger(point.sortOrder)?point.sortOrder:0
+  };
+}
 
 async function saveNew(){
   if(!adminMode)return;el("newPointError").textContent="";
@@ -114,7 +118,12 @@ async function saveDetail(){
 }
 
 async function persistCoordinates(regionName,point){
-  await requireAdmin();const result=await sb().from("points").update({lat:point.lat,lng:point.lng,parking_lat:point.parkingLat??null,parking_lng:point.parkingLng??null}).eq("id",point.supabaseId);if(result.error)throw result.error;
+  await requireAdmin();
+  const autoCode=typeof window.SNORKYWarningZones?.resolveWarningAreaCode==="function"?window.SNORKYWarningZones.resolveWarningAreaCode(point.lat,point.lng):null;
+  const updatePayload={lat:point.lat,lng:point.lng,parking_lat:point.parkingLat??null,parking_lng:point.parkingLng??null};
+  if(autoCode)updatePayload.warning_area_code=autoCode;
+  const result=await sb().from("points").update(updatePayload).eq("id",point.supabaseId);if(result.error)throw result.error;
+  if(autoCode)point.warningAreaCode=autoCode;
   try{
     await Promise.allSettled([
       window.SNORKYKmaWeatherCache?.fetch?.(point.lat,point.lng),

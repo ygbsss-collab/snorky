@@ -8,9 +8,10 @@ const internalRegionId=id=>`sb-region-${id}`;
 
 function pointFromRow(row,regionItem){
   const lat=numberOrNull(row.lat),lng=numberOrNull(row.lng),point=[row.name,lat,lng];
+  const autoCode=(Number.isFinite(lat)&&Number.isFinite(lng)&&typeof window.SNORKYWarningZones?.resolveWarningAreaCode==="function")?window.SNORKYWarningZones.resolveWarningAreaCode(lat,lng):null;
   return Object.assign(point,{
     id:row.legacy_id||String(row.id),supabaseId:row.id,supabaseRead:true,adminAdded:false,
-    regionId:internalRegionId(row.region_id),region:regionItem.name,name:row.name,lat,lng,warningAreaCode:row.warning_area_code||regionItem.warningAreaCode||null,
+    regionId:internalRegionId(row.region_id),region:regionItem.name,name:row.name,lat,lng,warningAreaCode:row.warning_area_code||autoCode||regionItem.warningAreaCode||null,
     parkingLat:numberOrNull(row.parking_lat),parkingLng:numberOrNull(row.parking_lng),
     pointFeature:row.point_feature||"",snorkelingInfo:row.snorkeling_info||"",parking:row.parking||"",toilet:row.toilet||"",shower:row.shower||"",camping:row.camping||"",cooking:row.cooking||"",
     facilities:list(row.facilities),notes:list(row.notes),description:row.description||"",accessGuide:row.access_guide||"",accessSteps:list(row.access_steps),

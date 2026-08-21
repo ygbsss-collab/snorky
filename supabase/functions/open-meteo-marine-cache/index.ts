@@ -47,7 +47,11 @@ Deno.serve(async request => {
           pointResult = await db.from("points").select("id,lat,lng").eq("id", pointId).maybeSingle();
     if (pointResult.error) throw pointResult.error;
 
-    const latitude = Number(pointResult.data?.lat), longitude = Number(pointResult.data?.lng);
+    let latitude = Number(pointResult.data?.lat), longitude = Number(pointResult.data?.lng);
+    if (!Number.isFinite(latitude) || !Number.isFinite(longitude)) {
+      latitude = Number(input.latitude);
+      longitude = Number(input.longitude);
+    }
     if (!Number.isFinite(latitude) || !Number.isFinite(longitude)) return json({ status: "ERROR", code: "POINT_NOT_FOUND", hourly: null }, 404);
 
     const cacheKey = coordinateKey(latitude, longitude);

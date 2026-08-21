@@ -1589,6 +1589,7 @@ bottom.onclick=event=>{
 };
 
 document.addEventListener("snorky:today-best-ready",event=>{const policy=event.detail?.policy,recommendable=policy?.caseName!=="E"&&policy?.caseName!=="KMA";state.todayRows=recommendable?(event.detail.homeRows||[]):[];renderToday();populateRegions();renderWarning();renderSnorkyMapMarkers();renderSnorkyMapBottomCards();});
+document.addEventListener("snorky:today-best-error",event=>{if(!state.todayRows.length){const host=document.getElementById("homeTodayBest");if(host)host.innerHTML='<div class="home-empty"><strong>오늘의 추천 포인트를 불러오지 못했습니다.</strong>잠시 후 다시 시도해 주세요.</div>'}populateRegions();renderWarning();});
 document.addEventListener("snorky:nearby-best-ready",event=>{state.nearbyRows=event.detail?.rows||[];state.nearbyRadius=event.detail?.radius||state.nearbyRadius||100;if(event.detail?.coordinates){state.userCoords=event.detail.coordinates;state.hasLocation=true}renderNearbySection();renderNearestSection();renderSnorkyMapMarkers();renderSnorkyMapBottomCards();});
 document.addEventListener("snorky:nearby-radius-change",event=>{state.nearbyRadius=event.detail?.radius||100;state.nearbyExpanded=false;section.querySelectorAll('input[name="homeNearbyRadius"]').forEach(input=>{input.checked=Number(input.value)===state.nearbyRadius})});
 document.addEventListener("snorky:points-ready",()=>{populateRegions();setHeroImage();window.SNORKYTodayBest?.refresh?.();renderNearestSection();renderWarning();renderSnorkyMapMarkers();renderSnorkyMapBottomCards();});
