@@ -95,8 +95,15 @@ async function saveNew(){
     if(!name||!regionItem)throw new Error("포인트명과 지역은 필수입니다.");if(!Number.isFinite(newPointDraft.lat)||!Number.isFinite(newPointDraft.lng))throw new Error("지도에서 스노클링 포인트 위치를 선택해 주세요.");
     const point={name,lat:newPointDraft.lat,lng:newPointDraft.lng,parkingLat:newPointDraft.parkingLat,parkingLng:newPointDraft.parkingLng,pointFeature:el("newPointFeature").value.trim(),snorkelingInfo:el("newSnorkelingInfo").value.trim(),parking:el("newParking").value.trim(),toilet:el("newToilet").value.trim(),shower:el("newShower").value.trim(),camping:el("newCamping")?.value.trim()||"",cooking:el("newCooking")?.value.trim()||"",accessGuide:el("newAccessGuide").value.trim(),facilities:el("newFacilities").value.split(",").map(v=>v.trim()).filter(Boolean),notes:el("newNotes").value.split(",").map(v=>v.trim()).filter(Boolean),sortOrder:(locations[regionItem.name]||[]).length};
     const payload={...pointPayload(point,regionItem.supabaseId),legacy_id:crypto.randomUUID()};const result=await sb().from("points").insert(payload).select("id").single();if(result.error)throw result.error;
-    const files=[...el("newPointPhotos").files];if(files.length)await uploadPhotos(result.data.id,files);
-    closeNewPointModal();closePointManager();await reload(result.data.id,regionItem.supabaseId);openPointModal();
+    const newPointId=result.data.id;
+    try{
+      await Promise.allSettled([
+        window.SNORKYKmaWeatherCache?.fetch?.(point.lat,point.lng),
+        window.SNORKYOpenMeteoMarineCache?.fetch?.(newPointId,point.name,point.lat,point.lng)
+      ]);
+    }catch(_warmErr){}
+    const files=[...el("newPointPhotos").files];if(files.length)await uploadPhotos(newPointId,files);
+    closeNewPointModal();closePointManager();await reload(newPointId,regionItem.supabaseId);openPointModal();
   }catch(error){console.error("[SNORKY Admin] 포인트 추가 실패",error);message("newPointError",error,"포인트를 저장하지 못했습니다.")}
 }
 
@@ -108,6 +115,12 @@ async function saveDetail(){
 
 async function persistCoordinates(regionName,point){
   await requireAdmin();const result=await sb().from("points").update({lat:point.lat,lng:point.lng,parking_lat:point.parkingLat??null,parking_lng:point.parkingLng??null}).eq("id",point.supabaseId);if(result.error)throw result.error;
+  try{
+    await Promise.allSettled([
+      window.SNORKYKmaWeatherCache?.fetch?.(point.lat,point.lng),
+      window.SNORKYOpenMeteoMarineCache?.fetch?.(point.supabaseId||point.id,point.name,point.lat,point.lng)
+    ]);
+  }catch(_warmErr){}
 }
 
 async function savePin(){

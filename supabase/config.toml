@@ -21,3 +21,6 @@ verify_jwt = false
 
 [functions.open-meteo-marine-cache]
 verify_jwt = false
+
+[functions.kma-weather-cache]
+verify_jwt = false
