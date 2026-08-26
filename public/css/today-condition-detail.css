@@ -29,7 +29,12 @@
   font-family: var(--tc-font);
   color: var(--tc-on-surface);
   overflow: hidden;
+  box-sizing: border-box;
 }
+
+.today-condition-modal *,
+.today-condition-modal *::before,
+.today-condition-modal *::after { box-sizing: border-box; }
 
 .today-condition-modal.open {
   display: flex;
@@ -84,13 +89,13 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 40px;
-  height: 40px;
+  width: 42px;
+  height: 42px;
   padding: 0;
-  border: 0;
+  border: 1px solid #d9e1e5;
   border-radius: 50%;
-  background: transparent;
-  color: var(--tc-on-surface-variant);
+  background: #eef2f4;
+  color: #526b76;
   cursor: pointer;
   transition: transform 0.15s ease, background 0.15s ease, color 0.15s ease;
 }
@@ -118,6 +123,7 @@
   padding: 0 8px;
 }
 
+
 .tc-favorite-btn.active {
   color: #ef4444;
 }
@@ -126,6 +132,27 @@
   fill: #ef4444;
   stroke: #ef4444;
 }
+.tc-top-app-bar.tc-title-compact { padding-left: 14px; padding-right: 14px; }
+.tc-top-app-bar.tc-title-tight { padding-left: 10px; padding-right: 10px; }
+.tc-top-app-bar.tc-title-overflow { padding-left: 6px; padding-right: 6px; }
+.tc-title-compact .tc-icon-btn { width: 38px; height: 38px; }
+.tc-title-tight .tc-icon-btn { width: 34px; height: 34px; }
+.tc-title-overflow .tc-icon-btn { width: 30px; height: 30px; }
+.tc-title-compact .tc-app-title { font-size: 16px; }
+.tc-title-tight .tc-app-title { font-size: 14px; }
+.tc-title-overflow .tc-app-title { font-size: 12px; }
+.tc-top-app-bar,.point-modal-head { min-height:72px; }
+.tc-top-app-bar .tc-icon-btn,.point-modal-head .point-modal-close,.point-modal-head .point-modal-favorite { width:46px; height:46px; }
+.point-modal-head .point-modal-title-row h2 { width:100%; max-width:calc(100vw - 124px); font-size:18px; white-space:nowrap; overflow:visible; text-overflow:clip; }
+@media (max-width:700px) {
+  .point-modal-head .point-modal-title-row h2 { max-width:calc(100vw - 124px); font-size:18px!important; }
+}
+@media (max-width:360px) {
+  .point-modal-head .point-modal-title-row h2 { font-size:16px!important; }
+}
+@media (max-width: 380px) {
+  .tc-title-overflow .tc-app-title { overflow: hidden; text-overflow: ellipsis; }
+}
 
 /* ─────────────────────────────────────────────────────────────
    Scrollable Body Container
@@ -133,6 +160,7 @@
 .tc-body {
   flex: 1;
   overflow-y: auto;
+  overflow-x: hidden;
   -webkit-overflow-scrolling: touch;
   padding: 14px 16px 36px;
   display: flex;
@@ -367,6 +395,7 @@
   padding: 4px 2px;
 }
 
+
 .tc-hour-card {
   position: relative;
   flex: 0 0 85px;
@@ -463,6 +492,40 @@
 .tc-hour-card.active .tc-hour-temp {
   color: #ffffff;
 }
+
+.tc-hour-rain {
+  min-height: 11px;
+  margin: 1px 0 3px;
+  color: #4b83b8;
+  font-size: 9px;
+  font-weight: 700;
+  line-height: 1.1;
+  white-space: nowrap;
+}
+
+.tc-hour-card.active .tc-hour-rain {
+  color: rgba(255, 255, 255, 0.9);
+}
+
+.tc-tide-graph { padding: 5px 4px 0; border-radius: 8px; background: linear-gradient(180deg,#dff4ff,#f8fcff); }
+.tc-tide-graph svg { display:block; width:100%; height:96px; overflow:visible; }
+.tc-tide-area { fill:#9eddf2; opacity:.65; }
+.tc-tide-line { fill:none; stroke:#1185b0; stroke-width:2.5; }
+.tc-tide-graph circle { fill:#fff; stroke:#1185b0; stroke-width:2; }
+.tc-tide-graph-labels { display:flex; justify-content:space-between; color:#31728c; font-size:8px; line-height:1.2; text-align:center; }
+.tc-tide-graph-labels b { color:#0f5575; font-size:9px; }
+.tc-tide-point-labels { fill:#31728c; font-size:8px; font-weight:700; }
+.tc-tide-point-labels text:nth-child(2), .tc-tide-point-labels text:nth-child(5) { fill:#0f5575; font-size:9px; font-weight:900; }
+.tc-tide-graph-labels { display:none; }
+#tcTideHighLowRow { display:none !important; }
+.tc-tide-point-labels { font-size:13px; }
+.tc-tide-point-labels text:nth-child(2), .tc-tide-point-labels text:nth-child(5) { font-size:14px; }
+.tc-tide-graph circle:nth-of-type(odd) { stroke:#ef6b67; }
+.tc-tide-graph circle:nth-of-type(even) { stroke:#178db8; }
+.tc-tide-current line { stroke:#f97316; stroke-width:1.5; stroke-dasharray:3 2; }
+.tc-tide-current circle { fill:#fff7ed; stroke:#ea580c; stroke-width:3; }
+.tc-tide-current text { fill:#9a3412; font-size:13px; font-weight:900; paint-order:stroke; stroke:#fff; stroke-width:3px; stroke-linejoin:round; }
+
 
 .tc-hour-badge {
   display: inline-flex;
@@ -740,7 +803,7 @@
 
 .tc-metrics-grid {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 10px;
 }
 
@@ -751,6 +814,7 @@
 }
 
 .tc-metric-card {
+  min-width: 0;
   position: relative;
   background: var(--tc-surface-lowest);
   border: 1px solid rgba(194, 198, 211, 0.35);
@@ -820,10 +884,13 @@
   color: var(--tc-on-surface-variant);
   margin-bottom: 2px;
   line-height: 1.1;
-  white-space: nowrap;
+  white-space: normal;
+  overflow-wrap: anywhere;
 }
 
 .tc-metric-value-wrap {
+  max-width: 100%;
+  overflow-wrap: anywhere;
   font-size: 15px;
   font-weight: 800;
   color: var(--tc-on-surface);
@@ -1066,13 +1133,13 @@
 }
 
 .tc-sheet-close {
-  width: 32px;
-  height: 32px;
+  width: 42px;
+  height: 42px;
   border-radius: 50%;
-  border: 0;
-  background: #f1f5f9;
-  color: var(--tc-on-surface);
-  font-size: 18px;
+  border: 1px solid #d9e1e5;
+  background: #eef2f4;
+  color: #526b76;
+  font-size: 24px;
   cursor: pointer;
   display: flex;
   align-items: center;
