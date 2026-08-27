@@ -1,6 +1,28 @@
-export type SnorkyPoint={id:string|number;name:string;region?:string|null;lat?:number|null;lng?:number|null;latitude?:number|null;longitude?:number|null};
-export type GridPoint={id:string|number;name:string;region:string|null;latitude:number;longitude:number};
-export type GridGroup={gridKey:string;nx:number;ny:number;points:GridPoint[]};
+export type PointEnvironment = {
+  terrain?: "sand" | "rock" | "harbor" | "mixed" | null;
+  exposure?: "low" | "medium" | "high" | null;
+  breakwaterShelter?: "low" | "medium" | "high" | null;
+  swellSensitivity?: "low" | "medium" | "high" | null;
+  eastWindSensitivity?: "low" | "medium" | "high" | null;
+  onshoreWindSensitivity?: "low" | "medium" | "high" | null;
+  exposureDirection?: "N" | "NE" | "E" | "SE" | "S" | "SW" | "W" | "NW" | null;
+};
+
+export type SnorkyPoint = {
+  id: string | number;
+  name: string;
+  region_id?: string | number | null;
+  region?: string | null;
+  lat?: number | null;
+  lng?: number | null;
+  latitude?: number | null;
+  longitude?: number | null;
+  environment?: PointEnvironment | null;
+  warning_area_code?: string | null;
+  updated_at?: string | null;
+};
+export type GridPoint = { id: string | number; name: string; region: string | null; latitude: number; longitude: number; environment?: PointEnvironment | null; warning_area_code?: string | null };
+export type GridGroup = { gridKey: string; nx: number; ny: number; points: GridPoint[] };
 
 const BOUNDS={minLat:32,maxLat:39.8,minLon:124,maxLon:132};
 const finite=(value:unknown)=>value===null||value===undefined||value===""?null:Number.isFinite(Number(value))?Number(value):null;

@@ -1,50 +1,62 @@
 (function(){
 "use strict";
-const shell=document.getElementById("pointSearchShell");
-const homeAnchor=document.getElementById("homeSearchAnchor")||document.getElementById("pointSearchMobileAnchor");
-const input=document.getElementById("pointSearchInput");
-const results=document.getElementById("pointSearchResults");
-
+const shell=document.getElementById("pointSearchShell"),homeAnchor=document.getElementById("homeSearchAnchor")||document.getElementById("pointSearchMobileAnchor"),input=document.getElementById("pointSearchInput"),results=document.getElementById("pointSearchResults"),searchButton=document.getElementById("homeSearchButton");
+const filterSelects=[document.getElementById("homeRegionFilter"),document.getElementById("homeTerrainFilter"),document.getElementById("homeRecommendFilter")].filter(Boolean),filterKinds=["region","terrain","facility"],facilityOptions=[["toilet","화장실"],["shower","샤워장"],["parking","주차장"],["camping","캠핑"],["cooking","취사"]];
+const terrainLabels={harbor:"방파제",mixed:"복합",rock:"암반",sand:"모래",unknown:"미확인"};
+const filterGroupLabels={region:"지역",terrain:"지형",facility:"편의시설"};
 if(!shell||!input||!results)return;
-
-if(homeAnchor&&shell.parentElement!==homeAnchor){
-  homeAnchor.appendChild(shell);
+if(homeAnchor&&shell.parentElement!==homeAnchor)homeAnchor.appendChild(shell);
+input.placeholder="지역명, 포인트명을 검색해보세요";input.setAttribute("aria-label",input.placeholder);
+results.hidden=true;results.innerHTML="";
+if(!document.getElementById("snorkyHomeSearchStyle")){const style=document.createElement("style");style.id="snorkyHomeSearchStyle";style.textContent=".home-search-tabs{display:flex;gap:6px;margin-top:7px}.home-search-tab{flex:1;min-height:34px;border:1px solid #dce3e9;border-radius:9px;background:#fff;color:#355865;font-size:13px;font-weight:800;cursor:pointer}.home-search-tab[aria-expanded=\"true\"]{background:#176b8b;color:#fff}.home-filter-row[data-search-ui-ready=\"true\"]{display:block;overflow:visible;margin-top:4px;padding-bottom:0}.home-filter-row[data-search-ui-ready=\"true\"] .home-filter-chip{display:none;position:relative;box-sizing:border-box;width:100%;height:auto;min-height:0;align-items:stretch;flex-direction:column;margin-top:4px;padding:6px 8px;border-radius:10px}.home-filter-row[data-search-ui-ready=\"true\"] .home-filter-chip.is-open{display:flex}.home-filter-row[data-search-ui-ready=\"true\"] .home-filter-chip>span{display:block;margin:0 24px 5px 0;font-size:11px}.home-filter-row[data-search-ui-ready=\"true\"] .home-filter-chip select{display:none}.home-search-panel-close{position:absolute;top:4px;right:4px;width:24px;height:24px;border:0;background:transparent;color:#6d7f8a;font-size:21px;line-height:1;cursor:pointer}.home-search-options{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:4px;width:100%}.home-search-option{min-height:30px;padding:2px 4px;border:1px solid #e1e9ed;border-radius:8px;background:#f7fafb;color:#334e5b;font-size:12px;font-weight:700;cursor:pointer}.home-search-option.is-selected{border-color:#176fe5;background:#176fe5;color:#fff}.home-search-results{position:relative!important;top:auto!important;right:auto!important;left:auto!important;z-index:20;max-height:230px;margin-top:6px;box-shadow:0 5px 14px rgba(14,66,85,.09)}.home-search-results .point-search-result-head{padding:6px 8px}.home-search-results .point-search-item{min-height:36px;padding:6px 9px}.home-search-results .point-search-name{font-size:12px}.home-search-results-close{display:grid;width:24px;height:24px;place-items:center;margin-left:5px;padding:0;border:0;background:transparent;color:#6d7f8a;font-size:20px;line-height:1;cursor:pointer}.home-search-results .point-search-result-head span{margin-left:auto}@media(max-width:700px){.home-search-tabs{margin-top:6px}.home-search-options{gap:3px}.home-search-results{max-height:220px}}";document.head.appendChild(style)}
+if(!document.getElementById("snorkyHomeSearchOverflowStyle")){const style=document.createElement("style");style.id="snorkyHomeSearchOverflowStyle";style.textContent=".home-discovery,.home-search-anchor,.home-search-anchor .point-search-shell,.home-search-anchor .point-search-box,.home-search-tabs,.home-filter-row[data-search-ui-ready=\"true\"],.home-filter-row[data-search-ui-ready=\"true\"] .home-filter-chip,.home-search-options,.home-search-option,.home-search-submit,.home-search-anchor .point-search-results,.home-search-anchor .point-search-item{box-sizing:border-box;max-width:100%;min-width:0}.home-discovery,.home-search-anchor,.home-search-anchor .point-search-shell,.home-search-tabs,.home-filter-row[data-search-ui-ready=\"true\"],.home-filter-row[data-search-ui-ready=\"true\"] .home-filter-chip,.home-search-options,.home-search-submit,.home-search-anchor .point-search-results{width:100%}.home-search-options{grid-template-columns:repeat(3,minmax(0,1fr));overflow:hidden}.home-search-option,.home-search-anchor .point-search-item{overflow:hidden;overflow-wrap:anywhere;word-break:break-word;white-space:normal}";document.head.appendChild(style)}
+if(!document.getElementById("snorkyHomeSearchSummaryStyle")){const style=document.createElement("style");style.id="snorkyHomeSearchSummaryStyle";style.textContent=".home-search-summary,.home-search-summary-chip,.home-search-results,.home-search-results .point-search-item{box-sizing:border-box;max-width:100%;min-width:0}.home-search-summary{display:flex;width:100%;flex-wrap:wrap;gap:4px;margin:6px 0 0;overflow:hidden}.home-search-summary-chip{display:inline-flex;min-height:25px;align-items:center;gap:4px;padding:3px 7px;border:1px solid #d7e3e8;border-radius:999px;background:#f5f9fb;color:#355865;font-size:11px;font-weight:800;line-height:1.2;overflow:hidden;overflow-wrap:anywhere;word-break:break-word;white-space:normal;cursor:pointer}.home-search-summary-chip b{flex:0 0 auto;font-size:13px;line-height:1}.home-search-results{width:100%;overflow-x:hidden}.home-search-results .point-search-item{width:100%;overflow:hidden}";document.head.appendChild(style)}
+const escapeHtml=value=>String(value??"").replace(/[&<>\"]/g,char=>({"&":"&amp;","<":"&lt;",">":"&gt;",'\"':"&quot;"})[char]);
+function allPoints(){if(Array.isArray(window.SNORKY_ACTIVE_POINTS)&&window.SNORKY_ACTIVE_POINTS.length)return window.SNORKY_ACTIVE_POINTS;if(typeof window.getAllActivePoints==="function")return window.getAllActivePoints();return[]}
+function isRegionKey(value){return /^(?:sb-)?region-/i.test(String(value??"").trim())}
+function regionCatalog(){
+  const catalog=[],seen=new Set(),add=entry=>{
+    const id=String(entry?.id??"").trim(),supabaseId=String(entry?.supabaseId??"").trim(),name=String(entry?.name??"").trim();
+    if(!name||isRegionKey(name)||!isKoreanRegionName(name))return;
+    const key=`${id}\u0000${supabaseId}\u0000${name}`;
+    if(seen.has(key))return;
+    seen.add(key);catalog.push({id,supabaseId,name});
+  };
+  const regions=Array.isArray(window.SNORKY_SUPABASE_REGIONS)?window.SNORKY_SUPABASE_REGIONS:(typeof window.getEffectiveRegions==="function"?window.getEffectiveRegions():[]);
+  regions.forEach(add);
+  allPoints().forEach(point=>{
+    const name=[point?.regionName,point?.region].map(value=>String(value??"").trim()).find(value=>value&&!isRegionKey(value));
+    if(name)add({id:point?.regionId,supabaseId:point?.region_id,name});
+  });
+  return catalog;
 }
-
-const escapeHtml=value=>String(value??"").replace(/[&<>"]/g,char=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"})[char]);
-function allPoints(){return Array.isArray(window.SNORKY_ACTIVE_POINTS)?window.SNORKY_ACTIVE_POINTS:[]}
-
-function render(){
-  const query=input.value.trim();
-  const matches=query?allPoints().filter(point=>`${point.name||point[0]||""} ${point.region||""}`.includes(query)).slice(0,10):[];
-  results.hidden=!query;
-  if(!query){
-    results.innerHTML="";
-    return;
-  }
-  results.innerHTML=matches.length?matches.map(point=>`<button class="point-search-item" type="button" data-search-point-id="${escapeHtml(point.supabaseId||point.id)}"><span class="point-search-copy"><span class="point-search-name">${escapeHtml(point.name||point[0])}</span><span class="nearby-best-region">${escapeHtml(point.region||"")}</span></span><span class="nearby-best-chevron" aria-hidden="true">›</span></button>`).join(""):'<p class="point-search-empty">일치하는 포인트가 없습니다.</p>';
+function regionLabel(value){
+  const raw=String(value??"").trim();
+  if(!raw)return"";
+  const match=regionCatalog().find(region=>[region.id,region.supabaseId,region.name].some(key=>key&&key===raw));
+  return match?.name||(!isRegionKey(raw)&&isKoreanRegionName(raw)?raw:"");
 }
-
-function captureReturnState(){return{view:"pointSearch",query:input.value,resultsScrollTop:results.scrollTop,pageScrollY:window.scrollY}}
-function restoreReturnState(saved){input.value=String(saved?.query||"");render();requestAnimationFrame(()=>{results.scrollTop=Number(saved?.resultsScrollTop)||0;input.focus()})}
-
-function openDetail(button){
-  const pointId=button.dataset.searchPointId;
-  if(typeof window.openPointOnMap==="function"){
-    window.openPointOnMap(pointId,"search");
-  }else{
-    const returnState=captureReturnState();
-    if(!window.SNORKYPointDetail?.openBySupabaseId(pointId,"pointSearch",returnState)){
-      console.warn("[SNORKY Point Search] 상세 진입 실패",{pointId});
-    }
-  }
+function regionLabelForPoint(point){
+  return regionLabel(point?.regionName)||regionLabel(point?.region)||regionLabel(point?.regionId)||regionLabel(point?.region_id);
 }
-
-input.addEventListener("input",render);
-results.addEventListener("click",event=>{
-  const button=event.target.closest("[data-search-point-id]");
-  if(button)openDetail(button);
-});
-
-window.SNORKYPointSearch={render,captureReturnState,restoreReturnState};
+function isKoreanRegionName(value){return /[가-힣]/.test(String(value||""))}
+function regionDisplayName(value){const text=String(value||"").trim();if(isKoreanRegionName(text))return text;const regions=Array.isArray(window.SNORKY_SUPABASE_REGIONS)?window.SNORKY_SUPABASE_REGIONS:[];const matched=regions.find(item=>[item?.id,item?.supabaseId,item?.legacyId].some(id=>String(id||"")===text));return isKoreanRegionName(matched?.name)?String(matched.name).trim():""}
+function hasFacility(point,key,label){const raw=key==="parking"?(point?.parkingAvailable??point?.parking):point?.[key];if(typeof raw==="boolean")return raw;if(Array.isArray(raw))return raw.length>0;if(raw!=null&&String(raw).trim()&&!/^(없음|없다|확인 필요|false|no|n)$/i.test(String(raw).trim()))return true;return(Array.isArray(point?.facilities)?point.facilities.map(String):[]).some(value=>value.includes(label)||value.toLowerCase().includes(key))}
+function pointValues(point,kind){if(kind==="region")return[regionLabelForPoint(point)].filter(Boolean);if(kind==="terrain")return[point?.terrain,point?.pointType,point?.environment?.terrain,point?.point_type].filter(Boolean).flatMap(value=>Array.isArray(value)?value:[value]).map(String);return facilityOptions.filter(([key,label])=>hasFacility(point,key,label)).map(([key])=>key)}
+function individualOptions(select){return[...(select?.options||[])].filter(option=>String(option.value||"").trim())}
+function selectedValues(select){return individualOptions(select).filter(option=>option.selected).map(option=>String(option.value).trim())}
+function isExplicitAllSelected(select){return select?.dataset.searchAllSelected==="true"}
+function replaceFilterOptions(select,entries,normalizeSelected=value=>value){const explicitAll=isExplicitAllSelected(select),previousSelected=new Set(selectedValues(select).map(normalizeSelected).filter(Boolean));select.innerHTML=entries.map(entry=>`<option value="${escapeHtml(entry.value)}">${escapeHtml(entry.label)}</option>`).join("");individualOptions(select).forEach(option=>{option.selected=explicitAll||previousSelected.has(option.value)})}
+function displayFilterValue(kind,value){if(kind==="terrain")return terrainLabels[String(value).toLowerCase()]||String(value);if(kind==="facility")return facilityOptions.find(([key])=>key===value)?.[1]||String(value);return regionLabel(value)||String(value)}
+function renderFilterSummary(){const host=document.getElementById("homeSearchSummary");if(!host)return;const chips=filterSelects.flatMap((select,index)=>{const kind=filterKinds[index],values=selectedValues(select);if(isExplicitAllSelected(select))return[{kind,value:"",label:`${filterGroupLabels[kind]} 전체`}];return values.map(value=>({kind,value,label:displayFilterValue(kind,value)}))});host.innerHTML=chips.map(chip=>`<button class="home-search-summary-chip" type="button" data-summary-kind="${chip.kind}" data-summary-value="${escapeHtml(chip.value)}" aria-label="${escapeHtml(chip.label)} 선택 해제"><span>${escapeHtml(chip.label)}</span><b aria-hidden="true">×</b></button>`).join("");host.onclick=event=>{const chip=event.target.closest("[data-summary-kind]");if(!chip)return;const index=filterKinds.indexOf(chip.dataset.summaryKind),select=filterSelects[index];if(!select)return;select.dataset.searchAllSelected="false";const value=chip.dataset.summaryValue;if(value){const option=individualOptions(select).find(item=>String(item.value)===value);if(option)option.selected=false}else individualOptions(select).forEach(option=>{option.selected=false});renderPanelOptions()}}
+function setupFilterUi(){const row=document.querySelector(".home-filter-row");if(!row||row.dataset.searchUiReady)return;row.dataset.searchUiReady="true";const labels=[...row.querySelectorAll(".home-filter-chip")],names=["지역","지형","편의시설"],tabs=document.createElement("div");tabs.className="home-search-tabs";names.forEach((name,index)=>{const tab=document.createElement("button");tab.type="button";tab.className="home-search-tab";tab.textContent=name;tab.dataset.searchTab=String(index);tab.setAttribute("aria-expanded","false");tabs.appendChild(tab);const panel=labels[index];if(!panel)return;panel.dataset.searchPanel=String(index);panel.classList.remove("is-open");const title=panel.querySelector("span");if(title)title.textContent=`${name} 선택`;const select=panel.querySelector("select");if(!select)return;select.multiple=true;select.hidden=true;const close=document.createElement("button");close.type="button";close.className="home-search-panel-close";close.textContent="×";close.setAttribute("aria-label",`${name} 패널 닫기`);panel.appendChild(close);const options=document.createElement("div");options.className="home-search-options";panel.appendChild(options);close.addEventListener("click",()=>{panel.classList.remove("is-open");tab.setAttribute("aria-expanded","false")})});row.parentElement?.insertBefore(tabs,row);if(searchButton){const summary=document.createElement("div");summary.id="homeSearchSummary";summary.className="home-search-summary";summary.setAttribute("aria-label","현재 선택조건");searchButton.parentElement?.insertBefore(summary,searchButton);searchButton.insertAdjacentElement("afterend",results);results.classList.add("home-search-results")}results.hidden=true;results.innerHTML="";tabs.addEventListener("click",event=>{const tab=event.target.closest("[data-search-tab]");if(!tab)return;const index=Number(tab.dataset.searchTab);labels.forEach((panel,i)=>panel.classList.toggle("is-open",i===index));tabs.querySelectorAll("[data-search-tab]").forEach(item=>item.setAttribute("aria-expanded",item===tab?"true":"false"))});const regionSelect=document.getElementById("homeRegionFilter");if(regionSelect)regionSelect.onchange=null}
+function renderPanelOptions(){setupFilterUi();document.querySelectorAll("[data-search-panel]").forEach((panel,index)=>{const select=panel.querySelector("select"),host=panel.querySelector(".home-search-options");if(!select||!host)return;const options=index===2?facilityOptions.map(([value,label])=>({value,label})):individualOptions(select).map(option=>{const value=option.value,label=option.textContent.trim();return{value,label:index===1?(terrainLabels[String(value).toLowerCase()]||label):label}});const selected=selectedValues(select),isAllSelected=isExplicitAllSelected(select);host.innerHTML=[{value:"",label:"전체"},...options].map(option=>{const isSelected=option.value?selected.includes(String(option.value)):isAllSelected;return`<button type="button" class="home-search-option${isSelected?" is-selected":""}" data-search-option="${escapeHtml(option.value)}" aria-pressed="${isSelected?"true":"false"}">${escapeHtml(option.label)}</button>`}).join("");host.onclick=event=>{const button=event.target.closest("[data-search-option]");if(!button)return;const value=button.dataset.searchOption;if(!value){const nextSelected=!isExplicitAllSelected(select);select.dataset.searchAllSelected=String(nextSelected);individualOptions(select).forEach(option=>{option.selected=nextSelected})}else{select.dataset.searchAllSelected="false";const option=individualOptions(select).find(item=>String(item.value)===value);if(option)option.selected=!option.selected}renderPanelOptions()}});renderFilterSummary()}
+function populateFilterOptions(){filterSelects.forEach((select,index)=>{const kind=filterKinds[index];if(kind==="facility"){replaceFilterOptions(select,facilityOptions.map(([value,label])=>({value,label})));return}const sourceValues=kind==="region"?[...allPoints().map(regionLabelForPoint),...regionCatalog().map(item=>item.name)]:allPoints().flatMap(point=>pointValues(point,kind));const values=[...new Set(sourceValues.map(value=>String(value).trim()).filter(Boolean))].sort((a,b)=>a.localeCompare(b,"ko"));replaceFilterOptions(select,values.map(value=>({value,label:value})),kind==="region"?regionLabel:undefined)});renderPanelOptions()}
+function collectFilters(){return filterSelects.map((select,index)=>({kind:filterKinds[index],values:selectedValues(select)}))}
+function matchesFilters(point,filters){const query=input.value.trim().toLocaleLowerCase();if(query&&!`${point?.name||point?.[0]||""} ${regionLabelForPoint(point)}`.toLocaleLowerCase().includes(query))return false;for(const filter of filters){const select=filterSelects[filterKinds.indexOf(filter.kind)];if(isExplicitAllSelected(select)||!filter.values.length)continue;const values=pointValues(point,filter.kind),matches=filter.kind==="facility"?filter.values.every(value=>values.includes(value)):filter.values.some(value=>values.includes(value));if(!matches)return false}return true}
+function render(filters=collectFilters(),activate=false){if(!activate&&!input.value.trim()&&!filters.some(filter=>filter.values.length)){results.hidden=true;results.innerHTML="";return}const matches=allPoints().filter(point=>matchesFilters(point,filters));results.hidden=false;results.innerHTML=`<div class="point-search-result-head"><strong>검색 결과</strong><span>${matches.length}개</span><button class="home-search-results-close" type="button" data-close-search-results aria-label="검색결과 닫기">×</button></div>`+(matches.length?matches.map(point=>`<button class="point-search-item" type="button" data-search-point-id="${escapeHtml(point.supabaseId||point.id)}"><span class="point-search-copy"><span class="point-search-name">${escapeHtml(point.name||point[0])}</span><span class="nearby-best-region">${escapeHtml(regionLabelForPoint(point))}</span></span><span class="nearby-best-chevron" aria-hidden="true">›</span></button>`).join(""):"<p class=\"point-search-empty\">일치하는 포인트가 없습니다.</p>")}
+function captureReturnState(){return{view:"pointSearch",query:input.value,filters:collectFilters().map(filter=>filter.values),filterAll:filterSelects.map(isExplicitAllSelected),resultsScrollTop:results.scrollTop,pageScrollY:window.scrollY}}
+function restoreReturnState(saved){input.value=String(saved?.query||"");populateFilterOptions();filterSelects.forEach((select,index)=>{const values=new Set(saved?.filters?.[index]||[]),explicitAll=Boolean(saved?.filterAll?.[index]);select.dataset.searchAllSelected=String(explicitAll);individualOptions(select).forEach(option=>{option.selected=explicitAll||values.has(option.value)})});renderPanelOptions();render(collectFilters(),true);requestAnimationFrame(()=>{results.scrollTop=Number(saved?.resultsScrollTop)||0;input.focus()})}
+function openDetail(button){const pointId=button.dataset.searchPointId;if(typeof window.openPointOnMap==="function")window.openPointOnMap(pointId,"search");else{const returnState=captureReturnState();if(!window.SNORKYPointDetail?.openBySupabaseId(pointId,"pointSearch",returnState))console.warn("[SNORKY Point Search] 상세 진입 실패",{pointId})}}
+setupFilterUi();searchButton?.addEventListener("click",()=>render(collectFilters(),true));input.addEventListener("input",()=>{if(!results.hidden)render(collectFilters(),true)});filterSelects.forEach(select=>select.addEventListener("change",()=>{renderPanelOptions();if(!results.hidden)render(collectFilters(),true)}));results.addEventListener("click",event=>{if(event.target.closest("[data-close-search-results]")){results.hidden=true;return}const button=event.target.closest("[data-search-point-id]");if(button)openDetail(button)});populateFilterOptions();document.addEventListener("snorky:points-ready",populateFilterOptions);window.SNORKYPointSearch={render,captureReturnState,restoreReturnState,populateFilterOptions};
 })();

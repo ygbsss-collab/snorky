@@ -106,14 +106,43 @@ async function saveNew(){
         window.SNORKYOpenMeteoMarineCache?.fetch?.(newPointId,point.name,point.lat,point.lng)
       ]);
     }catch(_warmErr){}
+    await triggerPointEvaluation(newPointId);
     const files=[...el("newPointPhotos").files];if(files.length)await uploadPhotos(newPointId,files);
-    closeNewPointModal();closePointManager();await reload(newPointId,regionItem.supabaseId);openPointModal();
+    closeNewPointModal();closePointManager();await reload(newPointId,regionItem.supabaseId);
+    try{
+      await window.SNORKYEvaluationResults?.loadTodayResults?.(true);
+      await window.SNORKYTodayBest?.refresh?.();
+    }catch(refreshError){
+      console.warn("[SNORKY Admin] New point Result refresh failed:",refreshError);
+    }
+    openPointModal();
   }catch(error){console.error("[SNORKY Admin] 포인트 추가 실패",error);message("newPointError",error,"포인트를 저장하지 못했습니다.")}
+}
+
+async function triggerPointEvaluation(pointId){
+  if(!pointId)return;
+  try{
+    const result=await sb().functions.invoke("point-evaluation-refresh", { body: { point_ids: [pointId] } });
+    if(result.error)throw result.error;
+  }catch(e){
+    console.warn("[SNORKY Admin] Point re-evaluation trigger failed:", e);
+  }
 }
 
 async function saveDetail(){
   if(!adminMode||!spot)return;el("pointEditError").textContent="";
-  try{await requireAdmin();const target=getRegionById(el("editPointRegion").value),point={...spot,name:el("editPointName").value.trim(),pointFeature:el("editPointFeature").value.trim(),snorkelingInfo:el("editSnorkelingInfo").value.trim(),parking:el("editParking").value.trim(),toilet:el("editToilet").value.trim(),shower:el("editShower").value.trim(),camping:el("editCamping")?.value.trim()||"",cooking:el("editCooking")?.value.trim()||"",accessGuide:el("editAccessGuide").value.trim(),facilities:[...adminEditFacilities],notes:[...adminEditNotes],environment:readEnvironmentEditor()};if(!target)throw new Error("지역을 찾을 수 없습니다.");const result=await sb().from("points").update(pointPayload(point,target.supabaseId)).eq("id",spot.supabaseId);if(result.error)throw result.error;const id=spot.supabaseId;closePointEditModal();await reload(id,target.supabaseId);renderPointModal();}
+  try{
+    await requireAdmin();
+    const target=getRegionById(el("editPointRegion").value),point={...spot,name:el("editPointName").value.trim(),pointFeature:el("editPointFeature").value.trim(),snorkelingInfo:el("editSnorkelingInfo").value.trim(),parking:el("editParking").value.trim(),toilet:el("editToilet").value.trim(),shower:el("editShower").value.trim(),camping:el("editCamping")?.value.trim()||"",cooking:el("editCooking")?.value.trim()||"",accessGuide:el("editAccessGuide").value.trim(),facilities:[...adminEditFacilities],notes:[...adminEditNotes],environment:readEnvironmentEditor()};
+    if(!target)throw new Error("지역을 찾을 수 없습니다.");
+    const result=await sb().from("points").update(pointPayload(point,target.supabaseId)).eq("id",spot.supabaseId);
+    if(result.error)throw result.error;
+    const id=spot.supabaseId;
+    closePointEditModal();
+    await reload(id,target.supabaseId);
+    renderPointModal();
+    triggerPointEvaluation(id); // Re-evaluates point after profile change
+  }
   catch(error){console.error("[SNORKY Admin] 포인트 수정 실패",error);message("pointEditError",error,"저장하지 못했습니다.")}
 }
 
@@ -129,6 +158,7 @@ async function persistCoordinates(regionName,point){
       window.SNORKYKmaWeatherCache?.fetch?.(point.lat,point.lng),
       window.SNORKYOpenMeteoMarineCache?.fetch?.(point.supabaseId||point.id,point.name,point.lat,point.lng)
     ]);
+    triggerPointEvaluation(point.supabaseId||point.id);
   }catch(_warmErr){}
 }
 

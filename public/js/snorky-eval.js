@@ -1,27 +1,17 @@
 /**
- * SNORKY 2.0 — V1.4 공통 평가 엔진
- * 기준: SNORKY_2.0_컨디션_및_예상수중시야_알고리즘_최종명세서_V1.4_최종통합확정본
- * 확정일: 2026-08-21
- *
- * [중요] V1.3 구조와 Final Visual Visibility를 유지하고 Wind/Period/Temperature 정책만 확장한다.
- * 기존 today-best.js / nearby-best.js / 화면 출력에는 아직 연결하지 않는다.
- * 기존 calculateSnorkelingScore / estimateUnderwaterVisibility 는 삭제하지 않는다.
+ * SNORKY 2.0 — V1.5 공통 평가 엔진
+ * 기준: SNORKY_알고리즘_V1.5_정합성수정본_2026-08-24
+ * 확정일: 2026-08-24
  *
  * 공개 API:
- *   window.SNORKYEval.evaluate(row, point, options) → CommonResult
- *   window.SNORKYEval.waveScore(waveHeight)           → number|null
- *   window.SNORKYEval.currentScore(currentSpeed)      → number|null
- *   window.SNORKYEval.windScore(windSpeed, windDeg, env) → number|null
- *   window.SNORKYEval.entryA(waveS, currentS, windS)  → {a0, g, a}
- *   window.SNORKYEval.visibilityB(row, env, history)  → {score, grade, explanation}
- *   window.SNORKYEval.comfortC(row)                   → number
- *   window.SNORKYEval.finalScore(entryA, visB, comfortC) → number
- *   window.SNORKYEval.VERSION                         → "1.4"
+ *   window.SNORKYEval.evaluate(row, point, options)           → CommonResult
+ *   window.SNORKYEval.evaluateMidMarine(hourlyRows, point, options) → CommonResult (MID_MARINE_ONLY)
+ *   window.SNORKYEval.VERSION                                 → "1.5"
  */
 (function () {
   "use strict";
 
-  const VERSION = "1.4";
+  const VERSION = "1.5";
 
   // ─────────────────────────────────────────────────────────────
   // §4  Data Quality Gate
@@ -84,12 +74,15 @@
       return { periodFactor: 1, effectivePeriodFactor: 1, baseWaveScore: rawWaveScore, finalWaveScore: rawWaveScore, periodImpact: "UNKNOWN" };
     }
     const periodFactor = Number.isFinite(wavePeriod) ? linearInterpolate(PERIOD_FACTOR_BREAKPOINTS, wavePeriod) : 1;
-    const sensitivity = environment?.swellSensitivity ?? "medium";
-    const sensitivityFactor = SENSITIVITY_FACTORS[sensitivity] ?? SENSITIVITY_FACTORS.medium;
+    const sensitivity = environment?.swellSensitivity;
+    if (!sensitivity || !SENSITIVITY_FACTORS[sensitivity] || !Number.isFinite(wavePeriod)) {
+      return { periodFactor, effectivePeriodFactor: 1, baseWaveScore: rawWaveScore, finalWaveScore: rawWaveScore, periodImpact: "NONE" };
+    }
+    const sensitivityFactor = SENSITIVITY_FACTORS[sensitivity];
     const effectivePeriodFactor = 1 + (periodFactor - 1) * sensitivityFactor;
     const waveLoss = 100 - rawWaveScore;
     const finalWaveScore = Math.max(0, Math.min(100, Math.round((100 - waveLoss * effectivePeriodFactor) * 10) / 10));
-    const periodImpact = !Number.isFinite(wavePeriod) || finalWaveScore === rawWaveScore
+    const periodImpact = finalWaveScore === rawWaveScore
       ? "NONE"
       : periodFactor === PERIOD_FACTOR_BREAKPOINTS.at(-1)[1] ? "MAXIMUM" : "APPLIED";
     return { periodFactor, effectivePeriodFactor, baseWaveScore: rawWaveScore, finalWaveScore, periodImpact };
@@ -190,25 +183,21 @@
   // §8  Entry Condition A — 기하결합 + weakest-link Gate
   // ─────────────────────────────────────────────────────────────
   /**
-   * A₀ = 100 × (Wave/100)^0.60 × (Current/100)^0.30 × (Wind/100)^0.10
-   * M  = min(Wave, Current)
+   * V1.5 개정: 조류(Current)는 알고리즘/점수 계산에서 완전 제외.
+   * 기존 파고(0.60) 대 풍속(0.10)의 6:1 비율 보존 비례 정규화 (6/7, 1/7)
+   * A₀ = 100 × (Wave/100)^(6/7) × (Wind/100)^(1/7)
+   * M  = Wave
    * G  = 0.70 + 0.30 × (M / 100)
    * A  = A₀ × G
-   *
-   * Wave 또는 Current가 null이면 결과를 산출할 수 없다.
-   * Wind가 null이면 Wind 항을 100으로 대체하지 않고 (가중치 조정 없음) null 반환.
    */
   function entryA(wS, cS, wndS) {
-    // Wave, Current는 필수
-    if (!Number.isFinite(wS) || !Number.isFinite(cS)) {
-      return { a0: null, g: null, a: null, nullReason: "Wave 또는 Current 데이터 없음" };
+    if (!Number.isFinite(wS)) {
+      return { a0: null, g: null, a: null, nullReason: "Wave 데이터 없음" };
     }
-    // Wind 없으면 보조 비중 제외하고 Wave/Current 기하결합만으로 계산
-    const windFactor = Number.isFinite(wndS) ? Math.pow(wndS / 100, 0.10) : 1.0;
-    const waveFactor = Math.pow(Math.max(0, wS) / 100, 0.60);
-    const currentFactor = Math.pow(Math.max(0, cS) / 100, 0.30);
-    const a0 = 100 * waveFactor * currentFactor * windFactor;
-    const m = Math.min(wS, cS);
+    const windFactor = Number.isFinite(wndS) ? Math.pow(Math.max(0, wndS) / 100, 1 / 7) : 1.0;
+    const waveFactor = Math.pow(Math.max(0, wS) / 100, 6 / 7);
+    const a0 = 100 * waveFactor * windFactor;
+    const m = wS;
     const g = 0.70 + 0.30 * (m / 100);
     const a = Math.max(0, Math.min(100, a0 * g));
     return { a0: Math.round(a0 * 10) / 10, g: Math.round(g * 1000) / 1000, a: Math.round(a * 10) / 10 };
@@ -262,13 +251,16 @@
    * 보정 범위는 ±15% 이내로 clamp (§5)
    */
   function visibilityEnvFactor(environment) {
-    const exposure = environment?.exposure ?? "medium";
-    const shelter = environment?.breakwaterShelter ?? "medium";
-    const swell = environment?.swellSensitivity ?? "medium";
+    const exposure = environment?.exposure;
+    const shelter = environment?.breakwaterShelter;
+    const swell = environment?.swellSensitivity;
     const expMap    = { low: 0.85, medium: 1.00, high: 1.15 };
     const shelterMap = { low: 1.15, medium: 1.00, high: 0.85 };
     const swellMap  = { low: 0.95, medium: 1.00, high: 1.05 };
-    const factor = (expMap[exposure] ?? 1.0) * (shelterMap[shelter] ?? 1.0) * (swellMap[swell] ?? 1.0);
+    const expFactor = exposure && expMap[exposure] ? expMap[exposure] : 1.0;
+    const shelterFactor = shelter && shelterMap[shelter] ? shelterMap[shelter] : 1.0;
+    const swellFactor = swell && swellMap[swell] ? swellMap[swell] : 1.0;
+    const factor = expFactor * shelterFactor * swellFactor;
     return Math.max(0.85, Math.min(1.15, factor));
   }
 
@@ -501,8 +493,8 @@
   // ─────────────────────────────────────────────────────────────
   /**
    * Comfort C 점수 (0~100)
-   * 입력: row.precipitation (현재 강수량 mm/h), row.temperature, row.sea_temperature, row.cloud_cover
-   * 바다 자체가 좋은데 흐리다고 크게 낮아지지 않도록 — 각 요소 균등 기여
+   * 입력: row.precipitation (현재 강수량 mm/h), row.temperature, row.cloud_cover
+   * V1.4/V1.5 확정: 수온은 Comfort C에서 제거되고 수온 활동 적합도/Recommendation Cap 계층으로 단일화됨.
    */
   function comfortC(row) {
     const scores = [];
@@ -524,18 +516,6 @@
       else if (t >= 5) ts = 30 + (t - 5) * 6;
       else ts = Math.max(0, 30 + t * 6);
       scores.push(Math.max(0, Math.min(100, ts)));
-    }
-
-    // 수온: ≥24→100, 21→80, 18→60, 15→40, <15→20
-    if (Number.isFinite(row?.sea_temperature)) {
-      const st = row.sea_temperature;
-      let sts;
-      if (st >= 24) sts = 100;
-      else if (st >= 21) sts = 80 + (st - 21) * (20 / 3);
-      else if (st >= 18) sts = 60 + (st - 18) * (20 / 3);
-      else if (st >= 15) sts = 40 + (st - 15) * (20 / 3);
-      else sts = Math.max(0, 20 + (st - 15) * 4);
-      scores.push(Math.max(0, Math.min(100, sts)));
     }
 
     // 구름: 0~30%→100, 30~70%→80, >70%→60 (흐림이 크게 감점하지 않도록)
@@ -663,19 +643,25 @@
    * @param {object} row           buildCurrentRow 결과물 (wave_height, current_speed, wind_speed, wave_period 등)
    * @param {object} point         포인트 객체 { environment: { terrain, exposure, breakwaterShelter, swellSensitivity, eastWindSensitivity } }
    * @param {object} [options]
-   *   @param {object}   options.safety      SNORKYMarineSafety.statusForPoint(point) 결과
-   *   @param {object}   options.sunTimes    { sunrise: ISO8601, sunset: ISO8601 }
-   *   @param {Array}    options.waveHistory [ { hoursAgo, wave_height, wave_period, precipitation } ]
-   *   @param {string}   options.evaluatedAt ISO8601 — 없으면 new Date()
+   *   @param {object}   options.safety        SNORKYMarineSafety.statusForPoint(point) 결과
+   *   @param {object}   options.sunTimes      { sunrise: ISO8601, sunset: ISO8601 }
+   *   @param {Array}    options.waveHistory   [ { hoursAgo, wave_height, wave_period, precipitation } ]
+   *   @param {string}   options.evaluatedAt   ISO8601 — 계산 완료시각 (없으면 new Date())
+   *   @param {string}   options.forecastTime  ISO8601 — 실제 예보 슬롯 시각 (자연광/시점 판정용)
    *
    * @returns {CommonResult}  §17.4 공통 결과 객체
    */
   function evaluate(row, point, options = {}) {
     const evaluatedAt = options.evaluatedAt ?? new Date().toISOString();
+    const forecastTime = options.forecastTime ?? row?.timestamp ?? evaluatedAt;
     const env = (typeof window !== "undefined" && typeof window.normalizePointEnvironment === "function")
       ? window.normalizePointEnvironment(point?.environment)
       : (point?.environment ?? {});
     const temperatureActivity = temperatureActivitySuitability(row?.sea_temperature);
+
+    const hasRequired = Number.isFinite(row?.wave_height);
+    const hasOptional = Number.isFinite(row?.wind_speed) && Number.isFinite(row?.sea_temperature);
+    const qualityStatus = !hasRequired ? "UNKNOWN" : (hasOptional ? "READY" : "PARTIAL");
 
     // ── §4 Data Quality Gate ──
     const dq = dataQualityGate(row);
@@ -688,6 +674,7 @@
         visibilityScore: null, visibilityGrade: "UNKNOWN",
         visibilityExplanation: "필수 안전 데이터가 없어 수중시야를 예측할 수 없습니다.",
         comfortScore: null, finalRaw: null,
+        qualityStatus: "UNKNOWN",
         evaluatedAt, row, env, temperatureActivity,
       });
     }
@@ -713,16 +700,17 @@
       : kmaStatus === "PASS" ? "PASS"
       : "UNKNOWN";
 
-    // BLOCK 또는 UNKNOWN이면 점수 숨김
-    if (safety === "BLOCK" || safety === "UNKNOWN") {
+    // BLOCK이면 점수 및 지표 마스킹
+    if (safety === "BLOCK") {
       return makeResult({
-        safety, safetyReasons: hardBlockReasons.length ? hardBlockReasons : [kmaStatus === "UNKNOWN" ? "해상특보 정보 확인 불가" : "입수 금지"],
+        safety, safetyReasons: hardBlockReasons.length ? hardBlockReasons : ["입수 금지"],
         recommendation: "비추천",
         conditionScore: null,   // 점수 숨김
         waveScore: null, currentScore: null, windScore: null, entryA: null,
         visibilityScore: null, visibilityGrade: "UNKNOWN",
-        visibilityExplanation: safety === "BLOCK" ? "입수 금지 상태로 예상 수중시야를 제공하지 않습니다." : "안전정보를 확인할 수 없습니다.",
+        visibilityExplanation: "입수 금지 상태로 예상 수중시야를 제공하지 않습니다.",
         comfortScore: null, finalRaw: null,
+        qualityStatus,
         evaluatedAt, row, env, temperatureActivity,
       });
     }
@@ -739,6 +727,24 @@
     const windAdjustmentResult = windAdjustment(row.wind_speed, row.wind_direction_degree, env);
     const wndS = windAdjustmentResult.finalWindScore;
 
+    // Safety UNKNOWN: 개별 해양/기상 메트릭은 유지하되, 최종 종합점수 및 수중시야만 마스킹
+    if (safety === "UNKNOWN") {
+      return makeResult({
+        safety, safetyReasons: [kmaStatus === "UNKNOWN" ? "해상특보 정보 확인 불가" : "안전정보를 확인할 수 없습니다."],
+        recommendation: "비추천",
+        conditionScore: null,   // 종합 점수 숨김
+        waveScore: correctedWave, currentScore: curS, windScore: wndS, entryA: null,
+        visibilityScore: null, visibilityGrade: "UNKNOWN",
+        visibilityExplanation: "안전정보를 확인할 수 없습니다.",
+        wavePeriodAdjustment: periodAdjustment,
+        windAdjustment: windAdjustmentResult,
+        temperatureActivity,
+        comfortScore: comfortC(row), finalRaw: null,
+        qualityStatus,
+        evaluatedAt, row, env,
+      });
+    }
+
     // ── §8 Entry A ──
     const entryResult = entryA(correctedWave, curS, wndS);
     const entryAScore = entryResult.a;
@@ -752,8 +758,8 @@
     // ── §10 Final Score ──
     const final = finalScore(entryAScore, visResult.score, comfortScore);
 
-    // ── V1.3 Final Visual Visibility (종합점수와 독립) ──
-    const lightResult = resolveVisualLightState(evaluatedAt, options.sunTimes, options.forecastSlots ?? []);
+    // ── V1.3 Final Visual Visibility (종합점수와 독립, forecastTime 기준) ──
+    const lightResult = resolveVisualLightState(forecastTime, options.sunTimes, options.forecastSlots ?? []);
     const weatherState = classifyVisualWeather(row);
     const finalVisual = finalVisualVisibility(visResult.score, lightResult.lightState, weatherState);
     const visualCondition = Object.freeze({
@@ -767,8 +773,8 @@
     // ── §11 Recommendation ──
     const baseRec = recommendation(entryAScore, visResult.score);
 
-    // ── §12 Activity Time Gate ──
-    const activityTimeRecommendation = applyActivityTimeGate(baseRec, options.sunTimes, evaluatedAt);
+    // ── §12 Activity Time Gate (forecastTime 기준) ──
+    const activityTimeRecommendation = applyActivityTimeGate(baseRec, options.sunTimes, forecastTime);
 
     // ── V1.4 Temperature Recommendation Cap ──
     const finalRec = applyTemperatureRecommendationCap(activityTimeRecommendation, temperatureActivity.recommendationCap);
@@ -791,6 +797,7 @@
       windAdjustment: windAdjustmentResult,
       temperatureActivity,
       comfortScore, finalRaw: final,
+      qualityStatus,
       evaluatedAt, row, env,
       _detail: {
         rawWaveScore: rawWave,
@@ -807,6 +814,144 @@
     });
   }
 
+  /**
+   * V1.5 +4~+6일 MID_MARINE_ONLY 평가 함수
+   * 6시간 활동구간(오전 06:00~12:00, 오후 12:00~18:00)의 시간별 해양 원천값을 집계하여 평가.
+   *
+   * @param {Array<object>} hourlyRows  6시간 구간 내 시간별 marine rows
+   * @param {object} point              포인트 객체
+   * @param {object} [options]          { safety, waveHistory, evaluatedAt, periodStart, periodEnd, kmaWeather }
+   */
+  function evaluateMidMarine(hourlyRows, point, options = {}) {
+    const evaluatedAt = options.evaluatedAt ?? new Date().toISOString();
+    const env = (typeof window !== "undefined" && typeof window.normalizePointEnvironment === "function")
+      ? window.normalizePointEnvironment(point?.environment)
+      : (point?.environment ?? {});
+
+    const rows = Array.isArray(hourlyRows) ? hourlyRows.filter(r => r && typeof r === "object") : [];
+    if (!rows.length) {
+      return makeResult({
+        safety: "UNKNOWN", safetyReasons: ["중기 해양 데이터 없음"],
+        recommendation: "비추천",
+        conditionScore: null,
+        waveScore: null, currentScore: null, windScore: null, entryA: null,
+        visibilityScore: null, visibilityGrade: "UNKNOWN",
+        visibilityExplanation: "중기 해양 데이터가 없어 평가할 수 없습니다.",
+        comfortScore: null, finalRaw: null,
+        qualityStatus: "UNKNOWN",
+        evaluatedAt, row: {}, env
+      });
+    }
+
+    const waveHeights = rows.map(r => r.wave_height).filter(Number.isFinite);
+    const wavePeriods = rows.map(r => r.wave_period).filter(Number.isFinite);
+    const currentSpeeds = rows.map(r => r.ocean_current_velocity ?? r.current_speed).filter(Number.isFinite);
+    const seaTemps = rows.map(r => r.sea_surface_temperature ?? r.sea_temperature).filter(Number.isFinite);
+
+    if (!waveHeights.length) {
+      return makeResult({
+        safety: "UNKNOWN", safetyReasons: ["필수 해양 데이터(파고) 누락"],
+        recommendation: "비추천",
+        conditionScore: null,
+        waveScore: null, currentScore: null, windScore: null, entryA: null,
+        visibilityScore: null, visibilityGrade: "UNKNOWN",
+        visibilityExplanation: "필수 해양 데이터가 누락되어 평가할 수 없습니다.",
+        comfortScore: null, finalRaw: null,
+        qualityStatus: "UNKNOWN",
+        evaluatedAt, row: {}, env
+      });
+    }
+
+    // 1. Worst Gate (Safety): 원본 시간별 파고 검사 (>= 0.80m BLOCK)
+    const maxWaveHs = Math.max(...waveHeights);
+    const hardBlock = maxWaveHs >= 0.80;
+    const safetyReasons = [];
+    if (hardBlock) {
+      safetyReasons.push(`활동구간 내 최대 유의파고 ${maxWaveHs.toFixed(2)}m (Worst Gate 초과)`);
+    }
+
+    const safetyStatus = options.safety ?? null;
+    const kmaStatus = safetyStatus?.status ?? "PASS"; // 중기는 기상특보 직접 연동 없거나 PASS
+    const safety = hardBlock ? "BLOCK" : (kmaStatus === "BLOCK" ? "BLOCK" : "PASS");
+
+    // 2. Condition 대표값: 활동구간 평균값
+    const meanWaveHs = waveHeights.reduce((sum, v) => sum + v, 0) / waveHeights.length;
+    const meanWavePeriod = wavePeriods.length ? wavePeriods.reduce((sum, v) => sum + v, 0) / wavePeriods.length : null;
+    const meanCurrentSpeed = currentSpeeds.length ? currentSpeeds.reduce((sum, v) => sum + v, 0) / currentSpeeds.length : null;
+    const meanSeaTemp = seaTemps.length ? seaTemps.reduce((sum, v) => sum + v, 0) / seaTemps.length : null;
+
+    const rawWave = waveScore(meanWaveHs);
+    const periodAdjustment = wavePeriodAdjustment(rawWave, meanWavePeriod, env);
+    const correctedWave = periodAdjustment.finalWaveScore;
+    const curS = Number.isFinite(meanCurrentSpeed) ? currentScore(meanCurrentSpeed) : null;
+
+    // MidMarine은 Wind 항 없음 (null 처리)
+    const entryResult = entryA(correctedWave, curS, null);
+    const entryAScore = entryResult.a;
+
+    // 3. Visibility: MID_MARINE_ONLY (최대 48시간 marine history decay, 강수량 배제, 자연광 감점 미적용)
+    const repRow = {
+      wave_height: meanWaveHs,
+      wave_period: meanWavePeriod,
+      precipitation: 0 // 강수 미사용
+    };
+    const visResult = visibilityB(repRow, env, options.waveHistory ?? []);
+
+    // Comfort C: 중기 기본값 (기상 없을 시 중립)
+    const comfortScore = 70;
+    const final = (safety === "BLOCK" || safety === "UNKNOWN") ? null : finalScore(entryAScore, visResult.score, comfortScore);
+
+    const baseRec = recommendation(entryAScore, visResult.score);
+    const temperatureActivity = temperatureActivitySuitability(meanSeaTemp);
+    const finalRec = safety === "BLOCK" ? "비추천" : applyTemperatureRecommendationCap(baseRec, temperatureActivity.recommendationCap);
+
+    // UI min~max 3종 범위 산출
+    const minMaxMetrics = {
+      waveHeight: { min: Math.min(...waveHeights), max: Math.max(...waveHeights), mean: Math.round(meanWaveHs * 100) / 100 },
+      currentSpeed: { min: Math.min(...currentSpeeds), max: Math.max(...currentSpeeds), mean: Math.round(meanCurrentSpeed * 100) / 100 },
+      seaTemperature: seaTemps.length ? { min: Math.min(...seaTemps), max: Math.max(...seaTemps), mean: Math.round(meanSeaTemp * 10) / 10 } : null,
+      wavePeriod: meanWavePeriod ? Math.round(meanWavePeriod * 10) / 10 : null
+    };
+
+    return makeResult({
+      safety,
+      safetyReasons,
+      recommendation: finalRec,
+      conditionScore: final,
+      waveScore: correctedWave,
+      currentScore: curS,
+      windScore: null,
+      entryA: entryResult,
+      visibilityScore: visResult.score,
+      visibilityGrade: visResult.grade,
+      visibilityExplanation: visResult.explanation,
+      baseVisibilityScore: visResult.score,
+      baseVisibilityGrade: visResult.grade,
+      baseVisibilityExplanation: visResult.explanation,
+      finalVisualVisibilityScore: visResult.score,
+      finalVisualVisibilityGrade: visResult.grade,
+      finalVisualVisibilityExplanation: "MID_MARINE_ONLY 모드로 산출된 수중시야입니다.",
+      wavePeriodAdjustment: periodAdjustment,
+      temperatureActivity,
+      comfortScore,
+      finalRaw: final,
+      qualityStatus: "READY",
+      evaluatedAt,
+      row: {
+        wave_height: meanWaveHs,
+        current_speed: meanCurrentSpeed,
+        wave_period: meanWavePeriod,
+        sea_temperature: meanSeaTemp
+      },
+      env,
+      _detail: {
+        mode: "MID_MARINE_ONLY",
+        minMaxMetrics,
+        hourlyCount: rows.length
+      }
+    });
+  }
+
   function makeResult({
     safety, safetyReasons, recommendation: rec,
     conditionScore, waveScore: wS, currentScore: cS, windScore: wndS,
@@ -815,7 +960,7 @@
     visualCondition = null,
     finalVisualVisibilityScore = null, finalVisualVisibilityGrade = "UNKNOWN", finalVisualVisibilityExplanation = null,
     wavePeriodAdjustment = null, windAdjustment = null, temperatureActivity = null,
-    comfortScore, finalRaw, evaluatedAt, row, env, _detail,
+    comfortScore, finalRaw, qualityStatus = "READY", evaluatedAt, row, env, _detail,
   }) {
     return Object.freeze({
       // §17.4 최소 필드
@@ -836,7 +981,8 @@
       wavePeriodAdjustment,
       windAdjustment,
       temperatureActivity,
-      evaluatedAt,               // ISO8601
+      qualityStatus,             // "READY" | "PARTIAL" | "UNKNOWN"
+      evaluatedAt,               // ISO8601 계산완료시각
       // 대표 지표 요약
       metrics: Object.freeze({
         waveHeight: row?.wave_height ?? null,
@@ -1044,6 +1190,7 @@
   const SNORKYEval = Object.freeze({
     VERSION,
     evaluate,
+    evaluateMidMarine,
     // 통합 진입점 (V1.2 연결 단계)
     evaluateWithMarineKma,
     waveHistoryFromMarineData,

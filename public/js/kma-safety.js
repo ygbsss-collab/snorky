@@ -43,7 +43,7 @@ function renderBanner(){
   const banner=ensureBanner();if(!banner)return;
   const active=state.warnings.filter(item=>item.active&&(registeredAreaCodes.has(item.regId)||registeredAreaCodes.has(item.regUp)));
   banner.classList.remove("visible","unknown");banner.textContent="";
-  if(state.status!=="READY"){banner.textContent="해상특보 정보를 확인할 수 없어요.";banner.classList.add("visible","unknown");return}
+  if(state.status!=="READY")return;
   if(!active.length)return;
   banner.textContent=active.map(item=>`⚠️ ${item.areaName||item.regKo||item.regId} ${item.warningName}${item.levelName} 발효 중`).join(" · ");banner.classList.add("visible");
 }
@@ -54,7 +54,7 @@ async function refresh(){
     if(!window.supabase?.createClient||!window.getSnorkySupabase)throw new Error("Supabase client unavailable");
     const {data:payload,error}=await window.getSnorkySupabase().functions.invoke(EDGE_FUNCTION_NAME,{method:"GET"});
     if(error)throw error;
-    if(payload?.status!=="READY"||payload?.upstreamStatus!==200||!Array.isArray(payload?.warnings))throw new Error(payload?.message||"KMA Edge Function unavailable");
+    if(payload?.status!=="READY"||!Array.isArray(payload?.warnings))throw new Error(payload?.message||"KMA Edge Function unavailable");
     state.status="READY";state.warnings=payload.warnings;state.updatedAt=payload.updatedAt||new Date().toISOString();
   }catch(error){state.status="UNKNOWN";state.warnings=[];state.updatedAt=new Date().toISOString();state.error=error?.message||String(error)}
   renderBanner();document.dispatchEvent(new CustomEvent("snorky:kma-safety-updated",{detail:snapshot()}));return snapshot();

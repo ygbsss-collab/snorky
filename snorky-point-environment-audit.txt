@@ -1,0 +1,984 @@
+﻿SNORKY Point Environment Audit
+Source: Supabase READ (regions, points)
+Generated: 2026-08-14 08:42:15 +09:00
+Normalize source: index.html normalizePointEnvironment / POINT_ENVIRONMENT_DEFAULTS
+
+[Statistics]
+Total points: 53
+Environment complete: 1
+Environment partial: 3
+Environment NULL: 49
+Normalized exposureDirection = unknown: 53
+Normalized terrain = unknown: 50
+
+[Points by region]
+강릉: 10
+고성: 2
+삼척: 13
+영덕: 16
+울진: 12
+
+[All points: DB and Normalized Environment, reference fields]
+
+Region: 강릉
+Point ID: base_8_강릉 (Supabase ID: 8)
+Point Name: 강문해변
+Latitude: 37.7954069393979
+Longitude: 128.919356186753
+DB Environment Status: NULL
+DB Environment: null
+Normalized Environment: {"terrain":"unknown","exposure":"medium","breakwaterShelter":"medium","onshoreWindSensitivity":"medium","eastWindSensitivity":"medium","swellSensitivity":"medium","exposureDirection":"unknown"}
+pointType: 
+parking: 공영주차장
+toilet: 공영화장실
+shower: 있음 ( 346커피스토리 검색)
+pointFeature: 강릉 도심에서 접근하기 쉬운 넓은 백사장 해변. 맑고 파도가 잔잔한 날에는 가볍게 스노클링과 물놀이를 즐기기 좋으며, 주변에 주차장·화장실·샤워시설과 상업시설이 잘 갖춰져 있어 초보자나 가족 단위 방문에 편리하다. 모래 해변 중심으로 수중 볼거리는 비교적 단순한 편
+snorkelingInfo: 
+warnings: 
+notes: 
+
+Region: 강릉
+Point ID: base_10_강릉 (Supabase ID: 10)
+Point Name: 금진 옥계 해변
+Latitude: 37.6289009310514
+Longitude: 129.050662425201
+DB Environment Status: NULL
+DB Environment: null
+Normalized Environment: {"terrain":"unknown","exposure":"medium","breakwaterShelter":"medium","onshoreWindSensitivity":"medium","eastWindSensitivity":"medium","swellSensitivity":"medium","exposureDirection":"unknown"}
+pointType: 
+parking: 공영주차장
+toilet: 공영화장실
+shower: 없음
+pointFeature: 한적한 백사장과 양쪽 암반 지형이 어우러진 강릉 남부 해변. 파도가 낮고 물이 맑은 날 암반 주변을 중심으로 스노클링을 즐기기 좋다
+snorkelingInfo: 
+warnings: 
+notes: 
+
+Region: 강릉
+Point ID: base_7_강릉 (Supabase ID: 7)
+Point Name: 사근진해변주차장
+Latitude: 37.808
+Longitude: 128.909
+DB Environment Status: NULL
+DB Environment: null
+Normalized Environment: {"terrain":"unknown","exposure":"medium","breakwaterShelter":"medium","onshoreWindSensitivity":"medium","eastWindSensitivity":"medium","swellSensitivity":"medium","exposureDirection":"unknown"}
+pointType: 
+parking: 공영주차장
+toilet: 공영화장실
+shower: 온수샤워
+pointFeature: 경포해변 북쪽에 이어지는 비교적 한적한 해변. 넓은 백사장과 해안 송림이 어우러져 있으며, 맑고 파도가 잔잔한 날에는 가벼운 물놀이와 스노클링을 즐기기 좋다. 모래 해변 중심이라 암반 지형을 탐색하는 스노클링보다는 편안하게 입수해 바다를 즐기는 타입의 포인
+snorkelingInfo: 
+warnings: 
+notes: 
+
+Region: 강릉
+Point ID: base_6_강릉 (Supabase ID: 6)
+Point Name: 사천진 바위섬
+Latitude: 37.8408585535528
+Longitude: 128.877587380548
+DB Environment Status: partial
+DB Environment: {"terrain":"mixed","exposure":"high","swellSensitivity":"high","breakwaterShelter":"low","eastWindSensitivity":"high"}
+Normalized Environment: {"terrain":"mixed","exposure":"high","breakwaterShelter":"low","onshoreWindSensitivity":"high","eastWindSensitivity":"high","swellSensitivity":"high","exposureDirection":"unknown"}
+pointType: 
+parking: 공영주차장 & 갓길
+toilet: 공영화장실
+shower: 편의점 유료 샤워가능
+pointFeature: 사천진해변의 상징인 바위섬 주변 암반 포인트. 맑고 잔잔한 날 다양한 수중 지형과 작은 물고기를 관찰하며 스노클링하기 좋다
+snorkelingInfo: 
+warnings: 
+notes: 
+
+Region: 강릉
+Point ID: base_2_강릉 (Supabase ID: 2)
+Point Name: 소돌방파제
+Latitude: 37.9027557731503
+Longitude: 128.830918630599
+DB Environment Status: NULL
+DB Environment: null
+Normalized Environment: {"terrain":"unknown","exposure":"medium","breakwaterShelter":"medium","onshoreWindSensitivity":"medium","eastWindSensitivity":"medium","swellSensitivity":"medium","exposureDirection":"unknown"}
+pointType: 
+parking: 공영주차장
+toilet: 공영화장실
+shower: 확인 필요
+pointFeature: 항구 우측 갯바위 포인트
+snorkelingInfo: 
+warnings: 
+notes: 
+
+Region: 강릉
+Point ID: base_1_강릉 (Supabase ID: 1)
+Point Name: 소돌아들바위공원
+Latitude: 37.892
+Longitude: 128.829
+DB Environment Status: partial
+DB Environment: {"terrain":"rock","exposure":"low","swellSensitivity":"low","breakwaterShelter":"high","eastWindSensitivity":"low"}
+Normalized Environment: {"terrain":"rock","exposure":"low","breakwaterShelter":"high","onshoreWindSensitivity":"low","eastWindSensitivity":"low","swellSensitivity":"low","exposureDirection":"unknown"}
+pointType: 
+parking: 있음
+toilet: 공영화장실
+shower: 확인 필요
+pointFeature: 
+snorkelingInfo: 
+warnings: 
+notes: 
+
+Region: 강릉
+Point ID: base_5_강릉 (Supabase ID: 5)
+Point Name: 순포해변
+Latitude: 37.8216967200687
+Longitude: 128.889340970768
+DB Environment Status: NULL
+DB Environment: null
+Normalized Environment: {"terrain":"unknown","exposure":"medium","breakwaterShelter":"medium","onshoreWindSensitivity":"medium","eastWindSensitivity":"medium","swellSensitivity":"medium","exposureDirection":"unknown"}
+pointType: 
+parking: 순포습지 주차장& 해안도로 갓길
+toilet: 공영화장실
+shower: 확인 필요
+pointFeature: 경포와 사천 사이에 자리한 비교적 한적한 해변. 고운 모래와 완만하고 얕은 수심이 특징이며, 해변 뒤편의 울창한 송림과 자연스러운 분위기가 매력적이다. 관광객이 많은 유명 해변에 비해 조용하게 물놀이와 스노클링을 즐기기 좋다.
+snorkelingInfo: 
+warnings: 
+notes: 
+
+Region: 강릉
+Point ID: base_11_강릉 (Supabase ID: 11)
+Point Name: 심곡항
+Latitude: 37.6645985087728
+Longitude: 129.054947803353
+DB Environment Status: partial
+DB Environment: {"terrain":"rock","exposure":"high","swellSensitivity":"high","breakwaterShelter":"low","eastWindSensitivity":"high"}
+Normalized Environment: {"terrain":"rock","exposure":"high","breakwaterShelter":"low","onshoreWindSensitivity":"high","eastWindSensitivity":"high","swellSensitivity":"high","exposureDirection":"unknown"}
+pointType: 
+parking: 공영주차장
+toilet: 공영화장실
+shower: 없음
+pointFeature: 헌화로 아래 자리한 작은 항구로, 방파제와 자연 암반이 어우러진 포인트. 바다가 잔잔하고 시야가 좋은 날에는 암초 주변의 다양한 수중지형과 어종을 관찰하며 스노클링하기 좋다. 외해와 가까워 너울과 파도의 영향을 받기 쉬우므로 입수 전 해상 컨디션 확인이 중요
+snorkelingInfo: 
+warnings: 
+notes: 
+
+Region: 강릉
+Point ID: base_9_강릉 (Supabase ID: 9)
+Point Name: 안목해변
+Latitude: 37.7729853522053
+Longitude: 128.94924202064
+DB Environment Status: NULL
+DB Environment: null
+Normalized Environment: {"terrain":"unknown","exposure":"medium","breakwaterShelter":"medium","onshoreWindSensitivity":"medium","eastWindSensitivity":"medium","swellSensitivity":"medium","exposureDirection":"unknown"}
+pointType: 
+parking: 공영주차장
+toilet: 안목여행자센터 화장실
+shower: 시즌 유료
+pointFeature: 강릉항과 커피거리 바로 앞에 위치한 접근성 좋은 해변. 넓은 백사장을 중심으로 맑고 잔잔한 날에는 가벼운 물놀이와 스노클링을 즐기기 좋다. 주변에 주차장·화장실·카페·식당 등 편의시설이 풍부해 초보자와 가족 단위 방문이 편리하다. 다만 모래 지형 비중이 높아 암반을 탐색하는 스노클링 포인트에 비해 수중 볼거리는 단순한 편
+snorkelingInfo: 
+warnings: 
+notes: 
+
+Region: 강릉
+Point ID: base_4_강릉 (Supabase ID: 4)
+Point Name: 영진해변
+Latitude: 37.8693536507163
+Longitude: 128.846296158485
+DB Environment Status: NULL
+DB Environment: null
+Normalized Environment: {"terrain":"unknown","exposure":"medium","breakwaterShelter":"medium","onshoreWindSensitivity":"medium","eastWindSensitivity":"medium","swellSensitivity":"medium","exposureDirection":"unknown"}
+pointType: 
+parking: 공영주차장
+toilet: 공영화장실
+shower: 확인 필요
+pointFeature: 한적한 백사장과 암반이 어우러진 해변. 잔잔하고 맑은 날 암반 주변에서 가볍게 스노클링하기 좋은 포인트
+snorkelingInfo: 
+warnings: 
+notes: 
+
+Region: 고성
+Point ID: e5419e28-6dfe-426b-a323-34f3b90fa738 (Supabase ID: 14)
+Point Name: 가진해변
+Latitude: 38.373191067146
+Longitude: 128.509633744093
+DB Environment Status: NULL
+DB Environment: null
+Normalized Environment: {"terrain":"unknown","exposure":"medium","breakwaterShelter":"medium","onshoreWindSensitivity":"medium","eastWindSensitivity":"medium","swellSensitivity":"medium","exposureDirection":"unknown"}
+pointType: 
+parking: 갓길주차
+toilet: 공영화장실
+shower: 확인 필요
+pointFeature: 캠핑 취사 가능
+snorkelingInfo: 
+warnings: 
+notes: 
+
+Region: 고성
+Point ID: 2771c411-8f60-414c-b92e-2a5f52f74151 (Supabase ID: 52)
+Point Name: 백섬해상전망대
+Latitude: 38.4507935625771
+Longitude: 128.467708061273
+DB Environment Status: NULL
+DB Environment: null
+Normalized Environment: {"terrain":"unknown","exposure":"medium","breakwaterShelter":"medium","onshoreWindSensitivity":"medium","eastWindSensitivity":"medium","swellSensitivity":"medium","exposureDirection":"unknown"}
+pointType: 
+parking: 확인 필요
+toilet: 확인 필요
+shower: 확인 필요
+pointFeature: 
+snorkelingInfo: 
+warnings: 
+notes: 
+
+Region: 삼척
+Point ID: base_6_삼척 (Supabase ID: 20)
+Point Name: 갈남항
+Latitude: 37.2813158668178
+Longitude: 129.324496343151
+DB Environment Status: NULL
+DB Environment: null
+Normalized Environment: {"terrain":"unknown","exposure":"medium","breakwaterShelter":"medium","onshoreWindSensitivity":"medium","eastWindSensitivity":"medium","swellSensitivity":"medium","exposureDirection":"unknown"}
+pointType: 
+parking: 있음
+toilet: 있음
+shower: 유료
+pointFeature: 기암괴석과 맑은 바다가 어우러진 삼척의 대표 스노클링 포인트. 암반 사이로 형성된 물길과 다양한 수중지형을 둘러보는 재미가 있으며, 물고기를 관찰하기에도 좋다. 장호항보다 비교적 한적한 분위기가 장점이며, 얕은 구간부터 수심이 있는 구간까지 있어 스노클링을 즐기기 좋다. 바위와 수심 변화가 있으므로 아쿠아슈즈 등 안전장비를 권장하며, 항내 뱃길에는 진입하지 않도록 주의하자.
+snorkelingInfo: 평상 앞·암반 주변
+warnings: 
+notes: 
+
+Region: 삼척
+Point ID: base_9_삼척 (Supabase ID: 23)
+Point Name: 궁촌항
+Latitude: 37.3282260356847
+Longitude: 129.269997471375
+DB Environment Status: NULL
+DB Environment: null
+Normalized Environment: {"terrain":"unknown","exposure":"medium","breakwaterShelter":"medium","onshoreWindSensitivity":"medium","eastWindSensitivity":"medium","swellSensitivity":"medium","exposureDirection":"unknown"}
+pointType: 
+parking: 있음
+toilet: 있음
+shower: 없음
+pointFeature: 작은 어항을 중심으로 해안과 방파제가 이어지는 포인트. 관광형 스노클링 명소보다는 한적한 동해 어촌의 분위기가 강하며, 바다가 잔잔한 날 주변 해안을 가볍게 탐색하기 좋다
+snorkelingInfo: 항 주변 접근
+warnings: 
+notes: 
+
+Region: 삼척
+Point ID: 0e4da948-1248-4c21-a948-528d1144f8e0 (Supabase ID: 55)
+Point Name: 대진항
+Latitude: 37.3494717062655
+Longitude: 129.260394257417
+DB Environment Status: NULL
+DB Environment: null
+Normalized Environment: {"terrain":"unknown","exposure":"medium","breakwaterShelter":"medium","onshoreWindSensitivity":"medium","eastWindSensitivity":"medium","swellSensitivity":"medium","exposureDirection":"unknown"}
+pointType: 
+parking: 폐쇠
+toilet: 폐쇠
+shower: 폐쇠
+pointFeature: 폐쇠
+snorkelingInfo: 폐쇠
+warnings: 
+notes: 
+
+Region: 삼척
+Point ID: base_1_삼척 (Supabase ID: 15)
+Point Name: 맹방해수욕장
+Latitude: 37.3892440778943
+Longitude: 129.236583909239
+DB Environment Status: NULL
+DB Environment: null
+Normalized Environment: {"terrain":"unknown","exposure":"medium","breakwaterShelter":"medium","onshoreWindSensitivity":"medium","eastWindSensitivity":"medium","swellSensitivity":"medium","exposureDirection":"unknown"}
+pointType: 
+parking: 공영주차장
+toilet: 공영화장실
+shower: 있음
+pointFeature: 넓고 긴 백사장이 펼쳐진 삼척의 대표 해변. 모래사장에서 바로 입수할 수 있어 접근이 편하고, 바다가 잔잔한 날에는 가볍게 스노클링을 즐기기 좋다. 덕봉산 방향으로 이동하면 모래 위주의 중앙 해변과 달리 바위가 나타나는 구간도 있다. 탁 트인 동해에 직접 노출된 해변이라 파도와 동풍의 영향을 받기 쉬우므로 입수 전 파고와 풍향 확인을 권장한다.
+snorkelingInfo: 해변 입수형
+warnings: 
+notes: 
+
+Region: 삼척
+Point ID: base_5_삼척 (Supabase ID: 19)
+Point Name: 비화항
+Latitude: 37.2152817364663
+Longitude: 129.345902046906
+DB Environment Status: NULL
+DB Environment: null
+Normalized Environment: {"terrain":"unknown","exposure":"medium","breakwaterShelter":"medium","onshoreWindSensitivity":"medium","eastWindSensitivity":"medium","swellSensitivity":"medium","exposureDirection":"unknown"}
+pointType: 
+parking: 폐쇄(2026.08.10)
+toilet: 폐쇄(2026.08.10)
+shower: 폐쇄(2026.08.10)
+pointFeature: 작은 어항과 동해의 암반 해안이 어우러진 한적한 포인트. 유명 관광지에 비해 비교적 조용한 분위기가 특징이며, 항 주변의 암반지형을 따라 바다를 살펴보기 좋다. 방파제와 암반 주변은 수심 변화가 있을 수 있고 어선이 드나드는 항내에서는 수영이나 스노클링을 피해야 한다. 외해와 연결된 구간은 파도와 너울의 영향을 받을 수 있으므로 입수 전 현장 상황과 바다 컨디션을 반드시 확인하자.
+snorkelingInfo: 계단 입수·수심 주의
+warnings: 
+notes: 
+
+Region: 삼척
+Point ID: base_11_삼척 (Supabase ID: 25)
+Point Name: 선창해변
+Latitude: 37.4263456561431
+Longitude: 129.19233564155
+DB Environment Status: NULL
+DB Environment: null
+Normalized Environment: {"terrain":"unknown","exposure":"medium","breakwaterShelter":"medium","onshoreWindSensitivity":"medium","eastWindSensitivity":"medium","swellSensitivity":"medium","exposureDirection":"unknown"}
+pointType: 
+parking: 진입전 공터
+toilet: 없음
+shower: 없음
+pointFeature: 규모가 크지 않은 조용한 해변형 포인트. 유명 관광지보다 한적한 분위기가 장점이며, 파도가 잔잔하고 시야가 확보되는 날 가볍게 스노클링하기 좋다.
+snorkelingInfo: 해변 입수형
+warnings: 
+notes: 
+
+Region: 삼척
+Point ID: base_7_삼척 (Supabase ID: 21)
+Point Name: 신남해변
+Latitude: 37.2641682683252
+Longitude: 129.327879990431
+DB Environment Status: NULL
+DB Environment: null
+Normalized Environment: {"terrain":"unknown","exposure":"medium","breakwaterShelter":"medium","onshoreWindSensitivity":"medium","eastWindSensitivity":"medium","swellSensitivity":"medium","exposureDirection":"unknown"}
+pointType: 
+parking: 신남항 주차장
+toilet: 공공 화장실
+shower: 인근 민박 유료
+pointFeature: 신남항과 해안 암반이 이어지는 작은 해변. 관광객이 집중되는 대형 해수욕장과 달리 어촌 풍경을 함께 즐길 수 있는 포인트로, 잔잔한 날 해안 가까운 구간을 탐색하기 좋다.
+snorkelingInfo: 모래 해변 + 갯바위 / 우측 철조망 이후 출입금지
+warnings: 
+notes: "안전요원 없음"
+
+Region: 삼척
+Point ID: base_10_삼척 (Supabase ID: 24)
+Point Name: 오분해변
+Latitude: 37.4247633549319
+Longitude: 129.192710238674
+DB Environment Status: NULL
+DB Environment: null
+Normalized Environment: {"terrain":"unknown","exposure":"medium","breakwaterShelter":"medium","onshoreWindSensitivity":"medium","eastWindSensitivity":"medium","swellSensitivity":"medium","exposureDirection":"unknown"}
+pointType: 
+parking: 갓길 협소
+toilet: 없음
+shower: 없음
+pointFeature: 작은 만과 암반지형이 어우러진 아담한 스노클링 포인트. 양쪽 암반이 감싸는 포켓비치 형태로, 모래와 자갈이 섞인 해변에서 비교적 편하게 입수할 수 있다. 해안 주변의 바위와 암반 사이를 둘러보는 재미가 있으며, 바다가 잔잔한 날에는 맑은 동해의 물빛을 즐기기 좋다. 정식 해수욕장으로 운영되는 곳이 아니므로 안전요원이 없을 수 있으며, 파도와 너울이 있는 날에는 입수를 피하는 것이 좋다.
+snorkelingInfo: 해변 입수·양쪽 암반
+warnings: 
+notes: 
+
+Region: 삼척
+Point ID: base_4_삼척 (Supabase ID: 18)
+Point Name: 용화해변
+Latitude: 37.2899788964184
+Longitude: 129.306761053814
+DB Environment Status: NULL
+DB Environment: null
+Normalized Environment: {"terrain":"unknown","exposure":"medium","breakwaterShelter":"medium","onshoreWindSensitivity":"medium","eastWindSensitivity":"medium","swellSensitivity":"medium","exposureDirection":"unknown"}
+pointType: 
+parking: 공영주차장
+toilet: 공영화장실
+shower: 있음
+pointFeature: 에메랄드빛 바다와 암반지형이 어우러진 삼척의 스노클링 명소. 모래해변에서 편하게 입수할 수 있으며, 해변 가장자리 암반 주변에서는 수중 바위와 해초 등을 관찰하며 스노클링을 즐기기 좋다. 장호항보다 비교적 여유로운 분위기가 매력이며, 바다가 잔잔한 날에는 투명한 동해의 물빛을 제대로 즐길 수 있다. 외해의 파도와 바람 영향을 받을 수 있어 입수 전 파고와 풍향 확인을 권장한다.
+snorkelingInfo: 해변 또는 방파제 방향
+warnings: 
+notes: 
+
+Region: 삼척
+Point ID: base_2_삼척 (Supabase ID: 16)
+Point Name: 원평해수욕장
+Latitude: 37.3171931739094
+Longitude: 129.276664180598
+DB Environment Status: NULL
+DB Environment: null
+Normalized Environment: {"terrain":"unknown","exposure":"medium","breakwaterShelter":"medium","onshoreWindSensitivity":"medium","eastWindSensitivity":"medium","swellSensitivity":"medium","exposureDirection":"unknown"}
+pointType: 
+parking: 있음
+toilet: 있음
+shower: 있음
+pointFeature: 한적한 분위기와 길게 펼쳐진 백사장이 매력적인 해변. 고운 모래사장에서 바로 바다로 진입할 수 있어 입수가 편하며, 해변 뒤편의 울창한 소나무 숲과 함께 여유롭게 바다를 즐기기 좋다. 외해에 바로 노출된 모래해변 특성상 파도와 동풍이 강한 날에는 시야가 떨어질 수 있어 입수 전 바다 컨디션 확인이 중요하다.
+snorkelingInfo: 해변 입수형
+warnings: 
+notes: 
+
+Region: 삼척
+Point ID: base_3_삼척 (Supabase ID: 17)
+Point Name: 장호항
+Latitude: 37.2890001092673
+Longitude: 129.317490175579
+DB Environment Status: NULL
+DB Environment: null
+Normalized Environment: {"terrain":"unknown","exposure":"medium","breakwaterShelter":"medium","onshoreWindSensitivity":"medium","eastWindSensitivity":"medium","swellSensitivity":"medium","exposureDirection":"unknown"}
+pointType: 
+parking: 있음
+toilet: 있음
+shower: 유료
+pointFeature: 기암괴석 사이로 맑은 바다가 펼쳐지는 삼척의 대표 스노클링 명소. 암반이 둘러싼 구간은 외해보다 비교적 잔잔하고, 수중의 돌과 해초, 작은 물고기를 관찰하기 좋다. 특히 둔대암 주변과 맨발체험장 앞쪽이 잘 알려진 스노클링 포인트다. 여름철에는 이용객이 많은 편이므로 한적하게 즐기려면 이른 시간 방문을 추천한다. 당일 파도와 바람에 따라 수중 시야와 입수 여건이 달라질 수 있으니 컨디션 확인은 필수.
+snorkelingInfo: 암반 사이 및 항내 입수
+warnings: 
+notes: 
+
+Region: 삼척
+Point ID: base_8_삼척 (Supabase ID: 22)
+Point Name: 초곡항·문암해변
+Latitude: 37.3098619433545
+Longitude: 129.290867582479
+DB Environment Status: NULL
+DB Environment: null
+Normalized Environment: {"terrain":"unknown","exposure":"medium","breakwaterShelter":"medium","onshoreWindSensitivity":"medium","eastWindSensitivity":"medium","swellSensitivity":"medium","exposureDirection":"unknown"}
+pointType: 
+parking: 있음
+toilet: 있음
+shower: 있음
+pointFeature: 암반지형 + 맑은 물 + 비교적 얕은 수심이 특징인 스노클링 포인트. 특히 초곡항을 바라봤을 때 좌측 구역이 스노클링 포인트로 알려져 있고, 반대편에는 초곡용굴촛대바위길이 있어 경관도 좋은 편
+snorkelingInfo: 해변 입수 후 암반 방향
+warnings: 
+notes: 
+
+Region: 삼척
+Point ID: 89c0011b-f49f-48c8-b09d-f2dc326dfe3e (Supabase ID: 53)
+Point Name: 패밀리아팬션 앞
+Latitude: 37.2819709213581
+Longitude: 129.321242879537
+DB Environment Status: NULL
+DB Environment: null
+Normalized Environment: {"terrain":"unknown","exposure":"medium","breakwaterShelter":"medium","onshoreWindSensitivity":"medium","eastWindSensitivity":"medium","swellSensitivity":"medium","exposureDirection":"unknown"}
+pointType: 
+parking: 정자 쪽 공간 주차
+toilet: 없음
+shower: 없음
+pointFeature: 패밀리아 패션앞 게단 사용 이동
+snorkelingInfo: 
+warnings: 
+notes: 
+
+Region: 영덕
+Point ID: base_12_영덕 (Supabase ID: 37)
+Point Name: BTS 밥대술 민박
+Latitude: 36.4889677532808
+Longitude: 129.444682558071
+DB Environment Status: NULL
+DB Environment: null
+Normalized Environment: {"terrain":"unknown","exposure":"medium","breakwaterShelter":"medium","onshoreWindSensitivity":"medium","eastWindSensitivity":"medium","swellSensitivity":"medium","exposureDirection":"unknown"}
+pointType: 
+parking: 있음, 협소
+toilet: 진입로 초입
+shower: 민박 유료
+pointFeature: 민박집 아래 작은 항구·방파제. 아는 사람만 찾는 포인트
+snorkelingInfo: 
+warnings: 
+notes: 
+
+Region: 영덕
+Point ID: base_11_영덕 (Supabase ID: 36)
+Point Name: 경정해수욕장
+Latitude: 36.4792480987331
+Longitude: 129.433718996956
+DB Environment Status: NULL
+DB Environment: null
+Normalized Environment: {"terrain":"unknown","exposure":"medium","breakwaterShelter":"medium","onshoreWindSensitivity":"medium","eastWindSensitivity":"medium","swellSensitivity":"medium","exposureDirection":"unknown"}
+pointType: 
+parking: 갓길
+toilet: 경정해수욕장
+shower: 시즌 유료
+pointFeature: 경정해수욕장 옆 포인트
+snorkelingInfo: 
+warnings: 
+notes: 
+
+Region: 영덕
+Point ID: base_1_영덕 (Supabase ID: 26)
+Point Name: 구계항 방파제
+Latitude: 36.3172112701148
+Longitude: 129.379594590941
+DB Environment Status: NULL
+DB Environment: null
+Normalized Environment: {"terrain":"unknown","exposure":"medium","breakwaterShelter":"medium","onshoreWindSensitivity":"medium","eastWindSensitivity":"medium","swellSensitivity":"medium","exposureDirection":"unknown"}
+pointType: 
+parking: 방파제 인근 공터 이용
+toilet: 공공 화장실
+shower: 없음
+pointFeature: 현지인이 오래전부터 찾던 포인트. 방파제 안쪽 물이 잔잔하고 맑은 편
+snorkelingInfo: 
+warnings: 
+notes: 
+
+Region: 영덕
+Point ID: base_6_영덕 (Supabase ID: 31)
+Point Name: 대부방파제
+Latitude: 36.3997932796626
+Longitude: 129.420643515254
+DB Environment Status: NULL
+DB Environment: null
+Normalized Environment: {"terrain":"unknown","exposure":"medium","breakwaterShelter":"medium","onshoreWindSensitivity":"medium","eastWindSensitivity":"medium","swellSensitivity":"medium","exposureDirection":"unknown"}
+pointType: 
+parking: 공영주차장
+toilet: 공영화장실
+shower: 인근 하저해수욕장  사용
+pointFeature: 계단식 / 그늘막 필수
+snorkelingInfo: 
+warnings: 
+notes: 
+
+Region: 영덕
+Point ID: base_14_영덕 (Supabase ID: 39)
+Point Name: 대진스쿠버 앞
+Latitude: 36.5636235083139
+Longitude: 129.430291997022
+DB Environment Status: NULL
+DB Environment: null
+Normalized Environment: {"terrain":"unknown","exposure":"medium","breakwaterShelter":"medium","onshoreWindSensitivity":"medium","eastWindSensitivity":"medium","swellSensitivity":"medium","exposureDirection":"unknown"}
+pointType: 
+parking: 공영주차장
+toilet: 공영화장실
+shower: 확인 필요
+pointFeature: 포인트 1·2 두 구역. 물이 맑고 다양한 해양생물 관찰 가능 내려가는 길 경사 주의
+snorkelingInfo: 
+warnings: 
+notes: 
+
+Region: 영덕
+Point ID: base_5_영덕 (Supabase ID: 30)
+Point Name: 대탄방파제
+Latitude: 36.4321323663723
+Longitude: 129.435026781348
+DB Environment Status: NULL
+DB Environment: null
+Normalized Environment: {"terrain":"unknown","exposure":"medium","breakwaterShelter":"medium","onshoreWindSensitivity":"medium","eastWindSensitivity":"medium","swellSensitivity":"medium","exposureDirection":"unknown"}
+pointType: 
+parking: 공영주차장
+toilet: 공영화장실
+shower: 메롱골 민박 ( 유료)
+pointFeature: 성수기 매우혼잡 / 일찍 도착 권장
+snorkelingInfo: 
+warnings: 
+notes: 
+
+Region: 영덕
+Point ID: base_4_영덕 (Supabase ID: 29)
+Point Name: 대탄해변
+Latitude: 36.4371709632081
+Longitude: 129.433362666985
+DB Environment Status: NULL
+DB Environment: null
+Normalized Environment: {"terrain":"unknown","exposure":"medium","breakwaterShelter":"medium","onshoreWindSensitivity":"medium","eastWindSensitivity":"medium","swellSensitivity":"medium","exposureDirection":"unknown"}
+pointType: 
+parking: 공영주차장
+toilet: 공영화장실
+shower: 인근민박 (유료)
+pointFeature: 
+snorkelingInfo: 
+warnings: 
+notes: 
+
+Region: 영덕
+Point ID: base_10_영덕 (Supabase ID: 35)
+Point Name: 덕신민박 앞
+Latitude: 36.5385886460894
+Longitude: 129.439479043291
+DB Environment Status: NULL
+DB Environment: null
+Normalized Environment: {"terrain":"unknown","exposure":"medium","breakwaterShelter":"medium","onshoreWindSensitivity":"medium","eastWindSensitivity":"medium","swellSensitivity":"medium","exposureDirection":"unknown"}
+pointType: 
+parking: 민박 앞 공터
+toilet: 없음
+shower: 없음
+pointFeature: 숨은 포인트. 시야가 맑고 다양한 해양생물 관찰
+snorkelingInfo: 
+warnings: 
+notes: 
+
+Region: 영덕
+Point ID: base_13_영덕 (Supabase ID: 38)
+Point Name: 바다마루민박 ( 오메 방파제)
+Latitude: 36.4734609469429
+Longitude: 129.434208640744
+DB Environment Status: NULL
+DB Environment: null
+Normalized Environment: {"terrain":"unknown","exposure":"medium","breakwaterShelter":"medium","onshoreWindSensitivity":"medium","eastWindSensitivity":"medium","swellSensitivity":"medium","exposureDirection":"unknown"}
+pointType: 
+parking: 방파제 주자창
+toilet: 공영화장실
+shower: 없음
+pointFeature: 바위 사이 구간이 포인트. 바위로 둘러싸여 파도가 잔잔한 편
+snorkelingInfo: 
+warnings: 
+notes: 
+
+Region: 영덕
+Point ID: base_15_영덕 (Supabase ID: 40)
+Point Name: 사진리 151
+Latitude: 36.5453167687301
+Longitude: 129.439341640324
+DB Environment Status: NULL
+DB Environment: null
+Normalized Environment: {"terrain":"unknown","exposure":"medium","breakwaterShelter":"medium","onshoreWindSensitivity":"medium","eastWindSensitivity":"medium","swellSensitivity":"medium","exposureDirection":"unknown"}
+pointType: 
+parking: 갓길주차
+toilet: 없음
+shower: 없음
+pointFeature: 많이 알려지지 않아 조용하게 이용 가능
+snorkelingInfo: 
+warnings: 
+notes: 
+
+Region: 영덕
+Point ID: base_7_영덕 (Supabase ID: 32)
+Point Name: 석동방파제
+Latitude: 36.466398866893
+Longitude: 129.437130355974
+DB Environment Status: NULL
+DB Environment: null
+Normalized Environment: {"terrain":"unknown","exposure":"medium","breakwaterShelter":"medium","onshoreWindSensitivity":"medium","eastWindSensitivity":"medium","swellSensitivity":"medium","exposureDirection":"unknown"}
+pointType: 
+parking: 화재복구 지역 출입 자제
+toilet: 화재복구 지역 출입 자제
+shower: 화재복구 지역 출입 자제
+pointFeature: 화재복구 지역 출입 자제
+snorkelingInfo: 화재복구 지역 출입 자제
+warnings: 
+notes: 
+
+Region: 영덕
+Point ID: a6dd31a4-3f8a-4759-b518-24729722c1e8 (Supabase ID: 41)
+Point Name: 씨포트리조트 비밀해변
+Latitude: 36.5006777677263
+Longitude: 129.445873823156
+DB Environment Status: NULL
+DB Environment: null
+Normalized Environment: {"terrain":"unknown","exposure":"medium","breakwaterShelter":"medium","onshoreWindSensitivity":"medium","eastWindSensitivity":"medium","swellSensitivity":"medium","exposureDirection":"unknown"}
+pointType: 
+parking: 씨포트리조트인근
+toilet: 없음
+shower: 없음
+pointFeature: 
+snorkelingInfo: 
+warnings: 
+notes: 
+
+Region: 영덕
+Point ID: base_2_영덕 (Supabase ID: 27)
+Point Name: 오보해수욕장
+Latitude: 36.4407873360234
+Longitude: 129.433072835439
+DB Environment Status: NULL
+DB Environment: null
+Normalized Environment: {"terrain":"unknown","exposure":"medium","breakwaterShelter":"medium","onshoreWindSensitivity":"medium","eastWindSensitivity":"medium","swellSensitivity":"medium","exposureDirection":"unknown"}
+pointType: 
+parking: 공영주차장
+toilet: 공영화장실
+shower: 샤워실( 유료)
+pointFeature: 사람이 많지 않은 간이해수욕장. 조용하게 물놀이하기 좋고 갯바위 낚시 포인트도 있음
+snorkelingInfo: 
+warnings: 
+notes: 
+
+Region: 영덕
+Point ID: base_3_영덕 (Supabase ID: 28)
+Point Name: 창포리 해맞이공원
+Latitude: 36.4111968859923
+Longitude: 129.430062071215
+DB Environment Status: NULL
+DB Environment: null
+Normalized Environment: {"terrain":"unknown","exposure":"medium","breakwaterShelter":"medium","onshoreWindSensitivity":"medium","eastWindSensitivity":"medium","swellSensitivity":"medium","exposureDirection":"unknown"}
+pointType: 
+parking: 공영주차장
+toilet: 공중화장실
+shower: 없음
+pointFeature: 현지 제보 기반 숨은 포인트. 시야가 맑고 물고기가 많으며 소라·해삼·성게 등을 볼 수 있다고 소개
+snorkelingInfo: 
+warnings: 
+notes: 
+
+Region: 영덕
+Point ID: base_8_영덕 (Supabase ID: 33)
+Point Name: 축산항 인근
+Latitude: 36.5122826188956
+Longitude: 129.444284644974
+DB Environment Status: NULL
+DB Environment: null
+Normalized Environment: {"terrain":"unknown","exposure":"medium","breakwaterShelter":"medium","onshoreWindSensitivity":"medium","eastWindSensitivity":"medium","swellSensitivity":"medium","exposureDirection":"unknown"}
+pointType: 
+parking: 매우협소
+toilet: 없음
+shower: 없음
+pointFeature: 현지인이 오래전부터 이용. 맑은 물에서 다양한 물고기를 볼 수 있음
+snorkelingInfo: 인근 도로 주차 후  도보 로 블루로드 산책길 로 접근
+warnings: 
+notes: 
+
+Region: 영덕
+Point ID: base_9_영덕 (Supabase ID: 34)
+Point Name: 해양체험관 아래
+Latitude: 36.4171724556126
+Longitude: 129.431271061844
+DB Environment Status: NULL
+DB Environment: null
+Normalized Environment: {"terrain":"unknown","exposure":"medium","breakwaterShelter":"medium","onshoreWindSensitivity":"medium","eastWindSensitivity":"medium","swellSensitivity":"medium","exposureDirection":"unknown"}
+pointType: 
+parking: 센터 주차장 이용
+toilet: 공영화장실
+shower: 확인 필요
+pointFeature: 작은 방파제가 있으며 방문객이 많지 않아 한적함
+snorkelingInfo: 
+warnings: 
+notes: 
+
+Region: 울진
+Point ID: base_1_울진 (Supabase ID: 42)
+Point Name: 구산해수욕장
+Latitude: 36.7531031887748
+Longitude: 129.468877994265
+DB Environment Status: NULL
+DB Environment: null
+Normalized Environment: {"terrain":"unknown","exposure":"medium","breakwaterShelter":"medium","onshoreWindSensitivity":"medium","eastWindSensitivity":"medium","swellSensitivity":"medium","exposureDirection":"unknown"}
+pointType: 
+parking: 있음
+toilet: 있음
+shower: 있음
+pointFeature: 수심이 얕고 물이 맑으며 해변 주변에 소나무숲이 있는 해수욕장
+snorkelingInfo: 스노클링을 처음 하는 사람에게 적합한 곳
+warnings: 
+notes: 
+
+Region: 울진
+Point ID: ce8960ae-c00f-46ff-93a8-2f7b7793f89c (Supabase ID: 58)
+Point Name: 나곡1리 어촌체험마을
+Latitude: 37.1139189238989
+Longitude: 129.376369458778
+DB Environment Status: complete
+DB Environment: {"terrain":"unknown","exposure":"medium","swellSensitivity":"medium","breakwaterShelter":"medium","exposureDirection":"unknown","eastWindSensitivity":"medium","onshoreWindSensitivity":"medium"}
+Normalized Environment: {"terrain":"unknown","exposure":"medium","breakwaterShelter":"medium","onshoreWindSensitivity":"medium","eastWindSensitivity":"medium","swellSensitivity":"medium","exposureDirection":"unknown"}
+pointType: 
+parking: 있음
+toilet: 있음
+shower: 있음
+pointFeature: 
+snorkelingInfo: 
+warnings: 
+notes: 
+
+Region: 울진
+Point ID: base_10_울진 (Supabase ID: 51)
+Point Name: 나곡해수욕장
+Latitude: 37.1265253793637
+Longitude: 129.372203080804
+DB Environment Status: NULL
+DB Environment: null
+Normalized Environment: {"terrain":"unknown","exposure":"medium","breakwaterShelter":"medium","onshoreWindSensitivity":"medium","eastWindSensitivity":"medium","swellSensitivity":"medium","exposureDirection":"unknown"}
+pointType: 
+parking: 있음
+toilet: 있음
+shower: 
+pointFeature: 약 300m 길이의 해변과 크고 작은 갯바위가 있는 곳
+snorkelingInfo: 스노클링과 서핑이 가능하며 나곡천이 바다로 들어가는 지점 주변 갯바위에서 물고기를 관찰하기 좋은 곳
+warnings: 
+notes: 
+
+Region: 울진
+Point ID: base_3_울진 (Supabase ID: 44)
+Point Name: 대나리방파제
+Latitude: 37.0047793592251
+Longitude: 129.417851029511
+DB Environment Status: NULL
+DB Environment: null
+Normalized Environment: {"terrain":"unknown","exposure":"medium","breakwaterShelter":"medium","onshoreWindSensitivity":"medium","eastWindSensitivity":"medium","swellSensitivity":"medium","exposureDirection":"unknown"}
+pointType: 
+parking: 방파제인근 갓길
+toilet: 없음
+shower: 없음
+pointFeature: 한적한 포인트 / 바위 모래 수초 조합 좋음
+snorkelingInfo: 
+warnings: 
+notes: 
+
+Region: 울진
+Point ID: base_4_울진 (Supabase ID: 45)
+Point Name: 망양정해수욕장
+Latitude: 36.9690135790861
+Longitude: 129.413559651719
+DB Environment Status: NULL
+DB Environment: null
+Normalized Environment: {"terrain":"unknown","exposure":"medium","breakwaterShelter":"medium","onshoreWindSensitivity":"medium","eastWindSensitivity":"medium","swellSensitivity":"medium","exposureDirection":"unknown"}
+pointType: 
+parking: 있음
+toilet: 있음
+shower: 있음
+pointFeature: 수심이 얕고 비교적 수온이 높은 편인 해변
+snorkelingInfo: 남녀노소 편하게 들어갈 수 있는 곳
+warnings: 
+notes: 
+
+Region: 울진
+Point ID: base_6_울진 (Supabase ID: 47)
+Point Name: 망양휴게소 포인트
+Latitude: 36.8740538160233
+Longitude: 129.421701577356
+DB Environment Status: NULL
+DB Environment: null
+Normalized Environment: {"terrain":"unknown","exposure":"medium","breakwaterShelter":"medium","onshoreWindSensitivity":"medium","eastWindSensitivity":"medium","swellSensitivity":"medium","exposureDirection":"unknown"}
+pointType: 
+parking: 망양휴게소 주차장 이용
+toilet: 망양휴게소 화장실 이용
+shower: 없음
+pointFeature: 이름 있는 해변이 아닌 숨은 해안 포인트
+snorkelingInfo: 물고기가 많은 포인트로 알려진 곳
+warnings: 
+notes: 
+
+Region: 울진
+Point ID: base_8_울진 (Supabase ID: 49)
+Point Name: 봉수항
+Latitude: 37.0644588177974
+Longitude: 129.426170702789
+DB Environment Status: NULL
+DB Environment: null
+Normalized Environment: {"terrain":"unknown","exposure":"medium","breakwaterShelter":"medium","onshoreWindSensitivity":"medium","eastWindSensitivity":"medium","swellSensitivity":"medium","exposureDirection":"unknown"}
+pointType: 
+parking: 있음
+toilet: 있음
+shower: 없음
+pointFeature: 물이 맑고 다양한 바위 지형이 있는 포인트
+snorkelingInfo: 프리다이빙과 스노클링 이용자들에게 알려져 있으며 수중 볼거리가 많은 곳
+warnings: 
+notes: 
+
+Region: 울진
+Point ID: daac6698-b265-48c7-bcc0-bfd2a7778d59 (Supabase ID: 54)
+Point Name: 산포리
+Latitude: 36.9435020502448
+Longitude: 129.420755111237
+DB Environment Status: NULL
+DB Environment: null
+Normalized Environment: {"terrain":"unknown","exposure":"medium","breakwaterShelter":"medium","onshoreWindSensitivity":"medium","eastWindSensitivity":"medium","swellSensitivity":"medium","exposureDirection":"unknown"}
+pointType: 
+parking: 산포3리 정거장 검색 갓길 주차
+toilet: 스팟에서 꽤 거리가 멈
+shower: 없음
+pointFeature: 조용한 아는 사람만 가는 스팟 / 백패킹 성지라고 함.
+snorkelingInfo: 
+warnings: 
+notes: 
+
+Region: 울진
+Point ID: e2c6575c-fa61-4beb-8e03-26084a22c6cd (Supabase ID: 56)
+Point Name: 연지해변
+Latitude: 36.9958568190774
+Longitude: 129.417385849789
+DB Environment Status: NULL
+DB Environment: null
+Normalized Environment: {"terrain":"unknown","exposure":"medium","breakwaterShelter":"medium","onshoreWindSensitivity":"medium","eastWindSensitivity":"medium","swellSensitivity":"medium","exposureDirection":"unknown"}
+pointType: 
+parking: 없음
+toilet: 없음
+shower: 없음
+pointFeature: 
+snorkelingInfo: 
+warnings: 
+notes: 
+
+Region: 울진
+Point ID: base_5_울진 (Supabase ID: 46)
+Point Name: 진복리 해변
+Latitude: 36.9283697796623
+Longitude: 129.418211581437
+DB Environment Status: NULL
+DB Environment: null
+Normalized Environment: {"terrain":"unknown","exposure":"medium","breakwaterShelter":"medium","onshoreWindSensitivity":"medium","eastWindSensitivity":"medium","swellSensitivity":"medium","exposureDirection":"unknown"}
+pointType: 
+parking: 도로변 공간 활용
+toilet: 없음
+shower: 
+pointFeature: 이름 있는 해수욕장이 아닌 한적한 해안으로 바위와 물풀이 많은 포인트
+snorkelingInfo: 물이 잔잔하고 스노클링하기 좋은 곳
+warnings: 
+notes: "휴가철에도 사람이 많지 않은 편"
+
+Region: 울진
+Point ID: base_9_울진 (Supabase ID: 50)
+Point Name: 하트해변
+Latitude: 37.0597664010359
+Longitude: 129.42788149368
+DB Environment Status: NULL
+DB Environment: null
+Normalized Environment: {"terrain":"unknown","exposure":"medium","breakwaterShelter":"medium","onshoreWindSensitivity":"medium","eastWindSensitivity":"medium","swellSensitivity":"medium","exposureDirection":"unknown"}
+pointType: 
+parking: 있음( 협소)
+toilet: 있음
+shower: 민박( 유료)
+pointFeature: 작은 암초지대에 하트 모양으로 모래가 쌓인 해변
+snorkelingInfo: 파도가 심하지 않은 날 스노클링하기 좋은 곳
+warnings: 
+notes: ["스노클링 장비 대여 없음","주차공간 협소"]
+
+Region: 울진
+Point ID: base_2_울진 (Supabase ID: 43)
+Point Name: 황금대게공원
+Latitude: 36.6998538172634
+Longitude: 129.476374809659
+DB Environment Status: NULL
+DB Environment: null
+Normalized Environment: {"terrain":"unknown","exposure":"medium","breakwaterShelter":"medium","onshoreWindSensitivity":"medium","eastWindSensitivity":"medium","swellSensitivity":"medium","exposureDirection":"unknown"}
+pointType: 
+parking: 황금대게공원 주차장 이용
+toilet: 있음
+shower: 없음
+pointFeature: 황금대게공원 바로 앞의 해안 포인트
+snorkelingInfo: 스노클링 포인트로 알려진 곳
+warnings: 
+notes: 
+
+[Full summary table]
+| Region | Point | Lat | Lng | Terrain | Exposure | Shelter | Onshore Wind | Swell | Exposure Direction |
+|---|---|---:|---:|---|---|---|---|---|---|
+| 강릉 | 강문해변 | 37.7954069393979 | 128.919356186753 | unknown | medium | medium | medium | medium | unknown |
+| 강릉 | 금진 옥계 해변 | 37.6289009310514 | 129.050662425201 | unknown | medium | medium | medium | medium | unknown |
+| 강릉 | 사근진해변주차장 | 37.808 | 128.909 | unknown | medium | medium | medium | medium | unknown |
+| 강릉 | 사천진 바위섬 | 37.8408585535528 | 128.877587380548 | mixed | high | low | high | high | unknown |
+| 강릉 | 소돌방파제 | 37.9027557731503 | 128.830918630599 | unknown | medium | medium | medium | medium | unknown |
+| 강릉 | 소돌아들바위공원 | 37.892 | 128.829 | rock | low | high | low | low | unknown |
+| 강릉 | 순포해변 | 37.8216967200687 | 128.889340970768 | unknown | medium | medium | medium | medium | unknown |
+| 강릉 | 심곡항 | 37.6645985087728 | 129.054947803353 | rock | high | low | high | high | unknown |
+| 강릉 | 안목해변 | 37.7729853522053 | 128.94924202064 | unknown | medium | medium | medium | medium | unknown |
+| 강릉 | 영진해변 | 37.8693536507163 | 128.846296158485 | unknown | medium | medium | medium | medium | unknown |
+| 고성 | 가진해변 | 38.373191067146 | 128.509633744093 | unknown | medium | medium | medium | medium | unknown |
+| 고성 | 백섬해상전망대 | 38.4507935625771 | 128.467708061273 | unknown | medium | medium | medium | medium | unknown |
+| 삼척 | 갈남항 | 37.2813158668178 | 129.324496343151 | unknown | medium | medium | medium | medium | unknown |
+| 삼척 | 궁촌항 | 37.3282260356847 | 129.269997471375 | unknown | medium | medium | medium | medium | unknown |
+| 삼척 | 대진항 | 37.3494717062655 | 129.260394257417 | unknown | medium | medium | medium | medium | unknown |
+| 삼척 | 맹방해수욕장 | 37.3892440778943 | 129.236583909239 | unknown | medium | medium | medium | medium | unknown |
+| 삼척 | 비화항 | 37.2152817364663 | 129.345902046906 | unknown | medium | medium | medium | medium | unknown |
+| 삼척 | 선창해변 | 37.4263456561431 | 129.19233564155 | unknown | medium | medium | medium | medium | unknown |
+| 삼척 | 신남해변 | 37.2641682683252 | 129.327879990431 | unknown | medium | medium | medium | medium | unknown |
+| 삼척 | 오분해변 | 37.4247633549319 | 129.192710238674 | unknown | medium | medium | medium | medium | unknown |
+| 삼척 | 용화해변 | 37.2899788964184 | 129.306761053814 | unknown | medium | medium | medium | medium | unknown |
+| 삼척 | 원평해수욕장 | 37.3171931739094 | 129.276664180598 | unknown | medium | medium | medium | medium | unknown |
+| 삼척 | 장호항 | 37.2890001092673 | 129.317490175579 | unknown | medium | medium | medium | medium | unknown |
+| 삼척 | 초곡항·문암해변 | 37.3098619433545 | 129.290867582479 | unknown | medium | medium | medium | medium | unknown |
+| 삼척 | 패밀리아팬션 앞 | 37.2819709213581 | 129.321242879537 | unknown | medium | medium | medium | medium | unknown |
+| 영덕 | BTS 밥대술 민박 | 36.4889677532808 | 129.444682558071 | unknown | medium | medium | medium | medium | unknown |
+| 영덕 | 경정해수욕장 | 36.4792480987331 | 129.433718996956 | unknown | medium | medium | medium | medium | unknown |
+| 영덕 | 구계항 방파제 | 36.3172112701148 | 129.379594590941 | unknown | medium | medium | medium | medium | unknown |
+| 영덕 | 대부방파제 | 36.3997932796626 | 129.420643515254 | unknown | medium | medium | medium | medium | unknown |
+| 영덕 | 대진스쿠버 앞 | 36.5636235083139 | 129.430291997022 | unknown | medium | medium | medium | medium | unknown |
+| 영덕 | 대탄방파제 | 36.4321323663723 | 129.435026781348 | unknown | medium | medium | medium | medium | unknown |
+| 영덕 | 대탄해변 | 36.4371709632081 | 129.433362666985 | unknown | medium | medium | medium | medium | unknown |
+| 영덕 | 덕신민박 앞 | 36.5385886460894 | 129.439479043291 | unknown | medium | medium | medium | medium | unknown |
+| 영덕 | 바다마루민박 ( 오메 방파제) | 36.4734609469429 | 129.434208640744 | unknown | medium | medium | medium | medium | unknown |
+| 영덕 | 사진리 151 | 36.5453167687301 | 129.439341640324 | unknown | medium | medium | medium | medium | unknown |
+| 영덕 | 석동방파제 | 36.466398866893 | 129.437130355974 | unknown | medium | medium | medium | medium | unknown |
+| 영덕 | 씨포트리조트 비밀해변 | 36.5006777677263 | 129.445873823156 | unknown | medium | medium | medium | medium | unknown |
+| 영덕 | 오보해수욕장 | 36.4407873360234 | 129.433072835439 | unknown | medium | medium | medium | medium | unknown |
+| 영덕 | 창포리 해맞이공원 | 36.4111968859923 | 129.430062071215 | unknown | medium | medium | medium | medium | unknown |
+| 영덕 | 축산항 인근 | 36.5122826188956 | 129.444284644974 | unknown | medium | medium | medium | medium | unknown |
+| 영덕 | 해양체험관 아래 | 36.4171724556126 | 129.431271061844 | unknown | medium | medium | medium | medium | unknown |
+| 울진 | 구산해수욕장 | 36.7531031887748 | 129.468877994265 | unknown | medium | medium | medium | medium | unknown |
+| 울진 | 나곡1리 어촌체험마을 | 37.1139189238989 | 129.376369458778 | unknown | medium | medium | medium | medium | unknown |
+| 울진 | 나곡해수욕장 | 37.1265253793637 | 129.372203080804 | unknown | medium | medium | medium | medium | unknown |
+| 울진 | 대나리방파제 | 37.0047793592251 | 129.417851029511 | unknown | medium | medium | medium | medium | unknown |
+| 울진 | 망양정해수욕장 | 36.9690135790861 | 129.413559651719 | unknown | medium | medium | medium | medium | unknown |
+| 울진 | 망양휴게소 포인트 | 36.8740538160233 | 129.421701577356 | unknown | medium | medium | medium | medium | unknown |
+| 울진 | 봉수항 | 37.0644588177974 | 129.426170702789 | unknown | medium | medium | medium | medium | unknown |
+| 울진 | 산포리 | 36.9435020502448 | 129.420755111237 | unknown | medium | medium | medium | medium | unknown |
+| 울진 | 연지해변 | 36.9958568190774 | 129.417385849789 | unknown | medium | medium | medium | medium | unknown |
+| 울진 | 진복리 해변 | 36.9283697796623 | 129.418211581437 | unknown | medium | medium | medium | medium | unknown |
+| 울진 | 하트해변 | 37.0597664010359 | 129.42788149368 | unknown | medium | medium | medium | medium | unknown |
+| 울진 | 황금대게공원 | 36.6998538172634 | 129.476374809659 | unknown | medium | medium | medium | medium | unknown |
+
+[Extraction issues]
+- DB environment completeness is evaluated across the 7 requested stored fields, including both onshoreWindSensitivity and eastWindSensitivity.
+- Normalization mirrors runtime behavior: eastWindSensitivity is overwritten with the selected onshore/east fallback value.
+- Empty strings and empty arrays in reference fields are preserved; no values were inferred.

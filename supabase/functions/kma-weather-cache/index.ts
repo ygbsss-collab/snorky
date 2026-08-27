@@ -64,7 +64,12 @@ function normalizeKma(items: any[]) {
     else if (x.category === "WSD") r.windSpeed = finite(v);
     else if (x.category === "VEC") r.windDirection = finite(v);
     else if (x.category === "POP") r.precipitationProbability = finite(v);
-    else if (x.category === "PCP") r.precipitation = { raw: String(v), mm: finite(v) };
+    else if (x.category === "PCP") {
+      const num = finite(v);
+      const rawStr = String(v).trim();
+      const mmVal = num !== null ? num : (rawStr === "강수없음" || rawStr === "0" || rawStr === "0.0" ? 0 : null);
+      r.precipitation = { raw: rawStr, mm: mmVal };
+    }
     else if (x.category === "SKY") r.sky = { code: finite(v) };
     else if (x.category === "PTY") r.precipitationType = { code: finite(v) };
   }

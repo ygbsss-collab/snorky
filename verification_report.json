@@ -1,0 +1,44 @@
+{
+  "header": {
+    "isVisible": null,
+    "backBtn": false,
+    "favBtn": false,
+    "daysCount": 0
+  },
+  "dayCards": [],
+  "shortSlots": {
+    "slotsCount": 0,
+    "slots": []
+  },
+  "midSlots": {
+    "isMidBadge": false,
+    "slotsCount": 0,
+    "slots": []
+  },
+  "responsive": {
+    "360px": {
+      "windowWidth": 360,
+      "isHorizontallyScrollableDays": false,
+      "slotWidth": 0,
+      "hasBodyHorizontalOverflow": false
+    },
+    "375px": {
+      "windowWidth": 375,
+      "isHorizontallyScrollableDays": false,
+      "slotWidth": 0,
+      "hasBodyHorizontalOverflow": false
+    },
+    "390px": {
+      "windowWidth": 390,
+      "isHorizontallyScrollableDays": false,
+      "slotWidth": 0,
+      "hasBodyHorizontalOverflow": false
+    },
+    "430px": {
+      "windowWidth": 430,
+      "isHorizontallyScrollableDays": false,
+      "slotWidth": 0,
+      "hasBodyHorizontalOverflow": false
+    }
+  }
+}

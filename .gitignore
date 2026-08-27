@@ -33,3 +33,4 @@ verification.png
 .tools/
 test_cache_data.json
 
+/.env

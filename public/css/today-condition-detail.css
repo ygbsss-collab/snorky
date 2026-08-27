@@ -507,24 +507,143 @@
   color: rgba(255, 255, 255, 0.9);
 }
 
-.tc-tide-graph { padding: 5px 4px 0; border-radius: 8px; background: linear-gradient(180deg,#dff4ff,#f8fcff); }
-.tc-tide-graph svg { display:block; width:100%; height:96px; overflow:visible; }
-.tc-tide-area { fill:#9eddf2; opacity:.65; }
-.tc-tide-line { fill:none; stroke:#1185b0; stroke-width:2.5; }
-.tc-tide-graph circle { fill:#fff; stroke:#1185b0; stroke-width:2; }
-.tc-tide-graph-labels { display:flex; justify-content:space-between; color:#31728c; font-size:8px; line-height:1.2; text-align:center; }
-.tc-tide-graph-labels b { color:#0f5575; font-size:9px; }
-.tc-tide-point-labels { fill:#31728c; font-size:8px; font-weight:700; }
-.tc-tide-point-labels text:nth-child(2), .tc-tide-point-labels text:nth-child(5) { fill:#0f5575; font-size:9px; font-weight:900; }
-.tc-tide-graph-labels { display:none; }
-#tcTideHighLowRow { display:none !important; }
-.tc-tide-point-labels { font-size:13px; }
-.tc-tide-point-labels text:nth-child(2), .tc-tide-point-labels text:nth-child(5) { font-size:14px; }
-.tc-tide-graph circle:nth-of-type(odd) { stroke:#ef6b67; }
-.tc-tide-graph circle:nth-of-type(even) { stroke:#178db8; }
-.tc-tide-current line { stroke:#f97316; stroke-width:1.5; stroke-dasharray:3 2; }
-.tc-tide-current circle { fill:#fff7ed; stroke:#ea580c; stroke-width:3; }
-.tc-tide-current text { fill:#9a3412; font-size:13px; font-weight:900; paint-order:stroke; stroke:#fff; stroke-width:3px; stroke-linejoin:round; }
+.tc-tide-section {
+  flex-shrink: 0;
+  margin: 12px 0 16px;
+  padding: 4px 12px;
+  overflow: hidden;
+  border: 1px solid rgba(78, 204, 222, 0.22);
+  border-radius: 16px;
+  background: linear-gradient(145deg, #063453 0%, #082a48 58%, #06243d 100%);
+  box-shadow: 0 8px 18px rgba(5, 50, 78, 0.13);
+}
+
+.tc-tide-heading {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  margin: 0 2px 3px;
+  color: #e5fbff;
+}
+
+.tc-tide-heading .tc-tide-ref-badge {
+  flex-shrink: 0;
+  background: rgba(3, 37, 61, 0.52);
+  border-color: rgba(159, 239, 246, 0.28);
+  color: #b8e7ee;
+  font-family: inherit;
+  white-space: nowrap;
+  appearance: none;
+  -webkit-appearance: none;
+}
+
+.tc-tide-heading .tc-tide-ref-badge:hover {
+  background: rgba(159, 239, 246, 0.1);
+  color: #e5fbff;
+}
+
+.tc-tide-graph {
+  overflow: hidden;
+  border-radius: 11px;
+  background: linear-gradient(180deg, rgba(3, 37, 61, 0.5), rgba(2, 29, 49, 0.18));
+}
+
+.tc-tide-graph svg {
+  display: block;
+  width: 100%;
+  height: auto;
+  min-height: 0;
+}
+
+.tc-tide-grid line {
+  stroke: rgba(131, 218, 239, 0.2);
+  stroke-width: 0.8;
+}
+
+.tc-tide-grid text {
+  fill: #91bdca;
+  font-size: 7.5px;
+  font-weight: 600;
+}
+
+.tc-tide-area {
+  fill: url(#tcTideAreaFill);
+}
+
+.tc-tide-line {
+  fill: none;
+  stroke: #48dfca;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.tc-tide-event circle {
+  stroke: #0b3654;
+  stroke-width: 1.5;
+}
+
+.tc-tide-event text {
+  fill: #c7e7ed;
+  font-size: 7.2px;
+  font-weight: 700;
+  paint-order: stroke;
+  stroke: #08314e;
+  stroke-linejoin: round;
+  stroke-width: 2px;
+}
+
+.tc-tide-event text + text {
+  fill: #a8d5df;
+  font-size: 6.8px;
+  font-weight: 600;
+}
+
+.tc-tide-event-high circle {
+  fill: #ff8977;
+}
+
+.tc-tide-event-high text:first-of-type {
+  fill: #ffb1a4;
+}
+
+.tc-tide-event-low circle {
+  fill: #f6ca65;
+}
+
+.tc-tide-event-low text:first-of-type {
+  fill: #f8d984;
+}
+
+.tc-tide-current line {
+  stroke: #a4eef1;
+  stroke-width: 1;
+  stroke-dasharray: 3 3;
+}
+
+.tc-tide-current circle {
+  fill: #d6fffb;
+  stroke: #40ddcd;
+  stroke-width: 2;
+}
+
+.tc-tide-current text {
+  fill: #d8ffff;
+  font-size: 7.2px;
+  font-weight: 800;
+  paint-order: stroke;
+  stroke: #08314e;
+  stroke-linejoin: round;
+  stroke-width: 2px;
+}
+
+.tc-tide-footnote {
+  margin: 6px 2px 0;
+  color: #92bdca;
+  font-size: 9px;
+  line-height: 1.2;
+  text-align: right;
+}
 
 
 .tc-hour-badge {
@@ -754,12 +873,13 @@
 }
 
 /* ─────────────────────────────────────────────────────────────
-   Square Detailed Metrics Grid (3x3)
+   Square Detailed Metrics Grid (3x3 Integrated Layout)
    ───────────────────────────────────────────────────────────── */
 .tc-metrics-section {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 12px;
+  margin-top: 4px;
 }
 
 .tc-metrics-header {
@@ -771,23 +891,23 @@
 
 .tc-metrics-header h3 {
   margin: 0;
-  font-size: 18px;
+  font-size: 20px;
   font-weight: 800;
-  color: var(--tc-on-surface);
-  letter-spacing: -0.01em;
+  color: #0f172a;
+  letter-spacing: -0.02em;
 }
 
 .tc-metrics-ref-badge {
   display: inline-flex;
   align-items: center;
   gap: 4px;
-  padding: 4px 8px;
-  background: var(--tc-surface-container);
-  border: 1px solid rgba(194, 198, 211, 0.3);
-  border-radius: 6px;
-  font-size: 11px;
+  padding: 5px 9px;
+  background: #f1f5f9;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  font-size: 11.5px;
   font-weight: 600;
-  color: var(--tc-on-surface-variant);
+  color: #475569;
   cursor: pointer;
   transition: background 0.15s ease, color 0.15s ease;
 }
@@ -805,6 +925,7 @@
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 10px;
+  align-items: stretch;
 }
 
 @media (max-width: 360px) {
@@ -816,36 +937,36 @@
 .tc-metric-card {
   min-width: 0;
   position: relative;
-  background: var(--tc-surface-lowest);
-  border: 1px solid rgba(194, 198, 211, 0.35);
-  border-radius: 16px;
-  padding: 10px 8px;
+  background: #ffffff;
+  border: 1px solid rgba(226, 232, 240, 0.85);
+  border-radius: 20px;
+  padding: 13px 6px 11px;
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
+  justify-content: space-between;
   text-align: center;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03);
-  aspect-ratio: 1 / 1;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.03);
   box-sizing: border-box;
+  min-height: 124px;
   transition: border-color 0.15s ease, transform 0.15s ease, box-shadow 0.15s ease;
 }
 
 .tc-metric-card:hover {
   border-color: rgba(0, 85, 164, 0.3);
-  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06);
 }
 
 .tc-metric-card .tc-metric-info-btn {
   position: absolute;
-  top: 4px;
-  right: 4px;
-  width: 22px;
-  height: 22px;
+  top: 6px;
+  right: 6px;
+  width: 20px;
+  height: 20px;
   padding: 0;
   border: 0;
   background: transparent;
-  color: var(--tc-outline);
+  color: #94a3b8;
   cursor: pointer;
   display: inline-flex;
   align-items: center;
@@ -860,82 +981,221 @@
 }
 
 .tc-metric-card .tc-metric-info-btn .material-symbols-outlined {
-  font-size: 13px;
+  font-size: 14px;
 }
 
 .tc-metric-icon-circle {
-  width: 30px;
-  height: 30px;
+  width: 36px;
+  height: 36px;
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
   margin-bottom: 4px;
-  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.04);
 }
 
 .tc-metric-icon-circle .material-symbols-outlined {
-  font-size: 18px;
+  font-size: 20px;
 }
 
 .tc-metric-title {
-  font-size: 10.5px;
+  font-size: 11.5px;
   font-weight: 700;
-  color: var(--tc-on-surface-variant);
+  color: #334155;
   margin-bottom: 2px;
-  line-height: 1.1;
-  white-space: normal;
-  overflow-wrap: anywhere;
+  line-height: 1.15;
+  white-space: nowrap;
 }
 
 .tc-metric-value-wrap {
   max-width: 100%;
-  overflow-wrap: anywhere;
-  font-size: 15px;
+  font-size: 16px;
   font-weight: 800;
-  color: var(--tc-on-surface);
+  color: #0f172a;
   line-height: 1.1;
   margin-bottom: 6px;
-  letter-spacing: -0.01em;
+  letter-spacing: -0.02em;
 }
 
 .tc-metric-value-wrap .tc-metric-unit {
-  font-size: 10px;
+  font-size: 11px;
   font-weight: 600;
-  color: var(--tc-on-surface-variant);
+  color: #64748b;
   font-style: normal;
-  margin-left: 1px;
+  margin-left: 2px;
 }
 
 .tc-metric-pill {
-  width: calc(100% - 6px);
-  padding: 2px 4px;
+  width: calc(100% - 8px);
+  padding: 3px 6px;
   border-radius: 99px;
-  font-size: 9px;
+  font-size: 10px;
   font-weight: 700;
   text-align: center;
-  line-height: 1.1;
+  line-height: 1.15;
   white-space: nowrap;
   box-sizing: border-box;
 }
 
-/* Category Circle Themes */
+/* Category Circle Themes (matching reference image) */
 .circle-wave { background: #e0f2fe; color: #0284c7; }
-.circle-wind { background: #f3e8ff; color: #9333ea; }
+.circle-temp { background: #f3e8ff; color: #9333ea; }
 .circle-period { background: #dbeafe; color: #2563eb; }
-.circle-temp { background: #fee2e2; color: #dc2626; }
+.circle-current { background: #fee2e2; color: #e11d48; }
+.circle-wind { background: #f3e8ff; color: #9333ea; }
+.circle-direction { background: #f1f5f9; color: #475569; }
+.circle-vis { background: #ffedd5; color: #ea580c; }
 .circle-rain { background: #e0e7ff; color: #4f46e5; }
 .circle-cloud { background: #f1f5f9; color: #475569; }
-.circle-current { background: #ffedd5; color: #ea580c; }
-.circle-direction { background: #ecfdf5; color: #059669; }
-.circle-vis { background: #fdf2f8; color: #db2777; }
 
-/* Status Pill Themes */
-.pill-good { background: #d1fae5; color: #047857; border: 1px solid #a7f3d0; }
-.pill-normal { background: #fef3c7; color: #b45309; border: 1px solid #fde68a; }
+/* Status Pill Themes (matching reference image) */
+.pill-good { background: #dcfce7; color: #15803d; border: 1px solid #bbf7d0; }
+.pill-normal { background: #eff6ff; color: #1d4ed8; border: 1px solid #fde68a; }
 .pill-caution { background: #ffedd5; color: #c2410c; border: 1px solid #fed7aa; }
 .pill-bad { background: #fee2e2; color: #b91c1c; border: 1px solid #fca5a5; }
 .pill-neutral { background: #f1f5f9; color: #475569; border: 1px solid #e2e8f0; }
+
+/* ─────────────────────────────────────────────────────────────
+   Integrated Tide Card (Inside 3x3 Grid, 2-column span)
+   ───────────────────────────────────────────────────────────── */
+.tc-metric-card.tc-tide-card {
+  grid-column: span 2;
+  background: #0e2235;
+  border: 1px solid rgba(148, 163, 184, 0.25);
+  border-radius: 20px;
+  padding: 8px 8px 4px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  position: relative;
+  overflow: hidden;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+}
+
+.tc-tide-card-header {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  z-index: 10;
+}
+
+.tc-tide-more-btn {
+  background: rgba(255, 255, 255, 0.12);
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  color: #e2e8f0;
+  font-size: 10px;
+  font-weight: 700;
+  padding: 2px 9px;
+  border-radius: 99px;
+  cursor: pointer;
+  font-family: inherit;
+  line-height: 1.2;
+  transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+}
+
+.tc-tide-more-btn:hover {
+  background: rgba(255, 255, 255, 0.2);
+  color: #ffffff;
+  border-color: rgba(255, 255, 255, 0.4);
+}
+
+.tc-tide-card .tc-tide-graph {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: flex-end;
+  border-radius: 0;
+  background: transparent;
+}
+
+.tc-tide-card .tc-tide-graph svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+  min-height: 96px;
+}
+
+.tc-tide-grid line {
+  stroke: rgba(131, 218, 239, 0.15);
+  stroke-width: 0.8;
+}
+
+.tc-tide-grid text {
+  fill: #81a8b6;
+  font-size: 7.2px;
+  font-weight: 600;
+}
+
+.tc-tide-area {
+  fill: url(#tcTideAreaFill);
+}
+
+.tc-tide-line {
+  fill: none;
+  stroke: #2dd4bf;
+  stroke-width: 2.2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.tc-tide-event circle {
+  stroke: #061c2e;
+  stroke-width: 1.5;
+}
+
+.tc-tide-event text {
+  fill: #e0f2fe;
+  font-size: 7.2px;
+  font-weight: 700;
+  paint-order: stroke;
+  stroke: #051c2e;
+  stroke-linejoin: round;
+  stroke-width: 2.5px;
+}
+
+.tc-tide-event text + text {
+  fill: #93c5fd;
+  font-size: 6.8px;
+  font-weight: 600;
+}
+
+.tc-tide-event-high circle {
+  fill: #fb7185;
+}
+
+.tc-tide-event-high text:first-of-type {
+  fill: #fecdd3;
+}
+
+.tc-tide-event-low circle {
+  fill: #fbbf24;
+}
+
+.tc-tide-event-low text:first-of-type {
+  fill: #fde68a;
+}
+
+.tc-tide-current line {
+  stroke: #7dd3fc;
+  stroke-width: 1;
+  stroke-dasharray: 2.5 2.5;
+}
+
+.tc-tide-current circle {
+  fill: #ffffff;
+  stroke: #2dd4bf;
+  stroke-width: 2.5;
+}
+
+.tc-tide-current text {
+  fill: #ffffff;
+  font-size: 7.5px;
+  font-weight: 800;
+  paint-order: stroke;
+  stroke: #051c2e;
+  stroke-linejoin: round;
+  stroke-width: 2.5px;
+}
 
 /* ─────────────────────────────────────────────────────────────
    Safety & Advisory Section
@@ -1124,35 +1384,41 @@
 
 .tc-sheet-head h3 {
   margin: 0;
-  font-size: 17px;
+  font-size: 20px;
   font-weight: 800;
-  color: var(--tc-primary);
+  color: #072740;
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 8px;
+}
+
+.tc-sheet-head h3 .material-symbols-outlined {
+  font-size: 25px;
+  color: #072740;
 }
 
 .tc-sheet-close {
-  width: 42px;
-  height: 42px;
+  width: 40px;
+  height: 40px;
   border-radius: 50%;
   border: 1px solid #d9e1e5;
   background: #eef2f4;
   color: #526b76;
-  font-size: 24px;
+  font-size: 22px;
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: background 0.15s ease;
+  transition: all 0.15s ease;
 }
 
 .tc-sheet-close:hover {
   background: #e2e8f0;
+  color: #0f172a;
 }
 
 .tc-sheet-content {
-  font-size: 13.5px;
+  font-size: 14.5px;
   color: var(--tc-on-surface);
   line-height: 1.6;
   display: flex;
@@ -1192,30 +1458,40 @@
   padding: 12px;
 }
 
-.tc-sheet-factor-item {
+.tc-sheet-factors.tc-tide-sheet-factors {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 18px;
+  padding: 18px 20px;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.03);
+}
+
+.tc-sheet-factors.tc-tide-sheet-factors .tc-sheet-factor-item {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  font-size: 12.5px;
   border-bottom: 1px dashed #e2e8f0;
-  padding-bottom: 6px;
+  padding: 10px 0;
 }
 
-.tc-sheet-factor-item:last-child {
+.tc-sheet-factors.tc-tide-sheet-factors .tc-sheet-factor-item:last-child {
   border-bottom: none;
   padding-bottom: 0;
 }
 
-.tc-sheet-factor-title {
-  color: var(--tc-on-surface-variant);
+.tc-sheet-factors.tc-tide-sheet-factors .tc-sheet-factor-title {
+  color: #64748b;
   display: flex;
   align-items: center;
-  gap: 5px;
+  gap: 6px;
+  font-size: 15.5px;
+  font-weight: 600;
 }
 
-.tc-sheet-factor-val {
-  font-weight: 700;
-  color: var(--tc-on-surface);
+.tc-sheet-factors.tc-tide-sheet-factors .tc-sheet-factor-val {
+  font-weight: 800;
+  color: #0f172a;
+  font-size: 16.5px;
 }
 
 .tc-sheet-desc-box {
@@ -1225,4 +1501,31 @@
   font-size: 12px;
   color: #475569;
   line-height: 1.5;
+}
+
+/* ─────────────────────────────────────────────────────────────
+   Tide Forecast Modal Card (Enlarged Full Width Chart)
+   ───────────────────────────────────────────────────────────── */
+.tc-tide-modal-card {
+  background: #0e2235;
+  border-radius: 20px;
+  padding: 18px 12px 14px;
+  margin-top: 6px;
+  border: 1px solid rgba(148, 163, 184, 0.25);
+  box-shadow: 0 4px 16px rgba(14, 34, 53, 0.18);
+  box-sizing: border-box;
+  width: 100%;
+}
+
+.tc-tide-modal-graph {
+  width: 100%;
+  position: relative;
+}
+
+.tc-tide-modal-graph svg {
+  width: 100%;
+  height: auto;
+  min-height: 195px;
+  display: block;
+  overflow: visible;
 }

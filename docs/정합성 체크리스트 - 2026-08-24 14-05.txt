@@ -1,0 +1,516 @@
+정합성 체크리스트 - 2026-08-24 14-05
+현재까지 확인된 사실, 기준서 오류 정정, 실제 코드 충돌, 남은 검증을 한 문서에 통합
+0. 최상위 검증 원칙
+목적은 코드를 기준서에 맞추는 것이 아니라, 실제 코드·DB·API 동작과 알고리즘 기준서·API 기준서를 상호 검증해 최종 정합성을 만드는 것이다.
+기준서가 틀렸으면 기준서를 수정한다. API 기준서가 틀렸으면 API 기준서를 수정한다. 실제 코드가 레거시·중복·오류면 코드를 수정한다.
+체크리스트는 기준이 아니라 검증 기록이다. 이전 결론이 새 실증과 충돌하면 이전 결론을 정정한다.
+없는 값·수식·임계값·상태코드를 만들지 않는다. 근거가 부족하면 [확인 필요]로 둔다.
+같은 의미의 데이터는 한 경로만 유지하고, 실제 소비처가 없는 필드는 수집·정규화·캐시·응답에서 제거한다.
+IDE·코덱스 명령은 최소 토큰으로 작성하고, 같이 검증 가능한 항목은 한 번에 묶는다.
+1. 현재 전체 상태
+영역
+현재 결론
+상태
+알고리즘 구간
+TODAY / SHORT(+1~+3) / MID(+4~+6)
+✅ V1.5 원문 확인
+Hard Safety
+유의파고 0.80m 이상 BLOCK, 점수 숨김, BEST 제외
+✅ V1.5·엔진 일치
+서버 Evaluation
+현재 없음. 계산은 프론트에 존재
+🔴 구조 불일치
+Nearby BEST
+현재 브라우저 전수 계산
+🔴 서버 Result 기준과 불일치
+중기 KMA
+API 실호출·06/18·+4 보존 규칙 확인
+✅
+History
+계산 48시간 / 서버 History 보존 72시간
+✅
+해양 필드
+실제 소비 기준으로 유지/제거 재정리 완료
+✅
+Cache 잠금·최신성
+실제 코드 확인
+✅
+Cache 실제 보존
+삭제 함수 정의 확인, 실제 호출 주기 미확인
+🟡 [확인 필요]
+Result 품질 상태
+기존 READY/PARTIAL/UNKNOWN 직접 재사용 불가
+🟡 상태코드 [확인 필요]
+2. V1.5 실제 원문 대조 결과
+항목
+V1.5 확인 내용
+상태
+TODAY
+오늘, TODAY 모드
+✅
+SHORT
++1~+3일, 시간별/3시간 예보 로직
+✅
+MID
++4~+6일, 오전 06~12 / 오후 12~18
+✅
+MID 입력
+유의파고·파주기·수온·해류속도 중심, 방향성 보정 제외
+✅
+Hard Safety
+유의파고 0.80m 이상 BLOCK, 환경보정으로 해제 금지
+✅
+파주기
+별도 점수 아님. 기존 파고 손실 증폭계수
+✅
+너울 민감도
+파주기 장주기 손실 증폭 + Visibility 보정
+✅
+외해 노출
+Base Visibility 파도 교란 보정
+✅
+차폐
+Base Visibility 파도 교란 완화
+✅
+바다 노출 방향
+풍향 상대각 계산용
+✅
+3. 해양·기상 필드 최종 정리
+항목
+필드
+실제 소비 목적
+처리
+유의파고
+wave_height
+Condition / Safety / Visibility / UI
+✅ 유지
+풍속(해상)
+기상 풍속
+Condition / UI
+✅ 유지
+파주기
+wave_period
+파고 손실 보정 / Visibility / UI
+✅ 유지
+해류속도
+ocean_current_velocity
+Condition / UI
+✅ 유지
+풍향(해상)
+기상 풍향
+바다 노출 방향과 상대각 보정 / UI
+✅ 유지
+수온
+sea_surface_temperature
+활동 적합성 / 추천 제한 / UI
+✅ 유지
+강수량
+RN1·예보 강수량
+Visibility / UI
+✅ 유지
+구름량
+cloud cover
+시각조건 / UI
+✅ 유지
+예상 수중시야
+Evaluation 결과
+UI
+✅ 유지
+파향
+wave_direction
+공통 엔진/UI 소비 없음, 레거시만
+🔴 제거
+너울 높이
+swell_wave_height
+공통 엔진/UI 소비 없음, 레거시만
+🔴 제거
+너울 주기
+swell_wave_period
+wave_period로 단일화, 레거시만
+🔴 제거
+너울 방향
+swell_wave_direction
+공통 엔진/UI 소비 없음, 레거시만
+🔴 제거
+해류방향
+ocean_current_direction
+확정 소비처 없음
+🔴 제거
+해수면 높이
+sea_level_height_msl
+프로젝트 전체 소비 0
+🔴 제거
+중요 구분
+풍향(해상)과 파향은 다른 값이다. 풍향은 유지, 파향은 제거한다.
+너울 민감도는 유지한다. 실제 역할은 wave_period 장주기 손실·Visibility 보정이다.
+Open-Meteo가 필드를 제공한다는 사실만으로 수집 유지 근거가 되지 않는다.
+4. 너울 관련 기존 결론 정정 이력
+단계
+확인 내용
+판정
+초기
+실제 레거시 코드가 너울 높이·주기·방향을 사용 → 필요성 재검토
+검증 계속
+중간
+너울 높이·주기·방향 유지 + 복합 Safety Gate 가능성
+❌ 이후 근거 부족으로 폐기
+V1.5 재검증
+너울 높이·주기·방향은 확정 Condition/Visibility/Safety/UI 소비 목적 없음
+✅
+실제 공통 엔진
+snorky-eval.js는 너울 방향/너울 높이/너울 주기 미소비
+✅
+최종
+레거시 제거 후 너울 높이·주기·방향 제거. 너울 민감도만 유지
+✅ 최종
+5. 레거시 3C·폴백
+위치
+현재 동작
+처리
+index.html
+레거시 3C 계산 실행, 정상 v12 결과에는 미반영
+🔴 제거
+nearby-best.js
+레거시 계산 병행, v12 실패 시 폴백
+🔴 제거
+home-v2.js
+v12 없을 때 레거시 점수 폴백
+🔴 제거
+today-best.js
+v12 없을 때 레거시 점수로 BEST 진입 가능
+🔴 제거
+today-condition-detail.js
+v12 없을 때 레거시 점수/시야 폴백
+🔴 제거
+V1.5 실패 처리
+점수 -- / 확인 필요 / BEST 제외
+✅ 대체 기준
+삭제 순서: 레거시 3C·폴백 제거 → 실패는 --/확인 필요/BEST 제외 → 미사용 해양 필드 제거
+6. 서버 Evaluation 구조
+항목
+현재
+처리
+Evaluation Result 테이블
+현재 없음
+🔴 신규
+서버 Condition/Visibility 계산
+현재 없음
+🔴 신규
+원천 Cache 갱신 후 재평가
+현재 없음
+🔴 신규
+Point Profile 변경 후 재평가
+DB 변경 기준 없음
+🔴 신규
+00:00 KST 날짜 전환
+열린 앱 자동 재생성 없음
+🔴 신규
+UI
+컴포넌트 자체는 Result 바인딩 위주
+🟡 공통 Result로 통일 필요
+7. Evaluation Result 계약
+영역
+계약
+상태
+고유 식별
+point_id + target_date + mode + period_start + period_end
+✅ 확정
+모드
+TODAY / SHORT / MID
+✅
+버전
+algorithm_version = V1.5
+✅
+Condition
+최종 점수·등급·설명
+✅
+Visibility
+점수·등급·설명·평가 방식
+✅
+Safety
+최종 상태·이유·Worst Gate
+✅
+중기 UI 범위
+오전/오후 Marine min~max
+✅
+원천 발표시간
+실제 사용한 KMA/Marine/Safety 발표시간
+✅
+Profile 변경 기준
+points.updated_at 재사용
+✅
+내부 계산시각
+evaluatedAt
+✅
+Result 품질
+Point/구간별 실제 소비 입력 존재 여부로 별도 판정
+🟡 코드/상태명 [확인 필요]
+8. Result 상태 계층 분리
+상태
+현재 의미
+처리
+READY
+수집/API·Cache 준비 상태
+Result 품질값으로 직접 사용 금지
+PARTIAL
+현재 일부 배치 실패 운영 상태
+Point별 Result 품질과 다름
+UNKNOWN
+Safety/Visibility 판정불가와 조회불가 의미 혼용
+Safety UNKNOWN은 Safety에 유지
+fresh/stale/failed
+Cache 상태
+Result 품질과 분리
+Result 품질
+실제 소비 입력 기준
+🟡 [확인 필요]
+결측을 0·평균·추정·보간·예보값으로 채우지 않는다.
+9. 중기 KMA +4~+6
+항목
+계약
+상태
+활동구간
+오전 06~12 / 오후 12~18
+✅
+Marine Condition
+활동구간 평균
+✅
+Marine UI
+활동구간 min~max
+✅
+Worst Gate
+원본 hourly 최악값
+✅
+자연광
+MID에는 KASI/Daylight Factor 미적용
+✅
+Visibility
+MID_MARINE_ONLY
+✅
+수온
+평균=활동 적합성/추천 제한, min~max=UI
+✅
+getMidLandFcst
+06 +4/+5/+6, 18 +5/+6
+✅ 실호출
+getMidTa
+06 +4/+5/+6, 18 +5/+6
+✅ 실호출
++4 보존
+18시가 06 성공본 +4를 null로 덮어쓰지 않음
+✅
+신규 Point 18시 이후
+06 Cache 없으면 같은 날 06 발표본 1회 Bootstrap
+✅
+10. 중기 Cache 계약
+항목
+계약
+상태
+원본 키
+source + reg_id + tm_fc
+✅
+중기 육상
+KMA_MID_LAND + 육상 구역코드
+✅
+중기 기온
+KMA_MID_TA + 기온 지점코드
+✅
+중복 방지
+unique/Freshness/멱등성
+✅
+부분 실패
+성공 항목 유지, 실패 코드만 재시도
+✅
+결합 위치
+Frontend 직접 결합 금지, 서버 Normalize/Evaluation에서 결합
+✅
+11. History · RN1
+항목
+계약
+상태
+계산 창
+최근 48시간
+✅
+서버 History 보존
+72시간
+✅
+Marine
+과거 48시간 직접 확보 가능
+✅
+RN1
+KMA 초단기실황 1시간 실제 강수량
+✅
+RN1 저장
+nx/ny 격자 단위 실제 관측 누적
+✅
+RN1 결측
+추정·보간·예보 대체 금지
+✅
+RN1 일정
+매시 +20 1차 / +30 재시도
+✅ 정책
+12. Scheduler · 잠금 · 최신성
+항목
+현재/기준
+상태
+KMA 단기 잠금
+RPC 잠금 600초
+✅ 실제 코드
+Marine 잠금
+RPC 리스 600초
+✅ 실제 코드
+특보 잠금
+RPC 잠금 300초
+✅ 실제 코드
+KMA 최신성
+fresh <180분 / grace 180~360 / stale >360
+✅ 실제 코드
+Marine 최신성
+fresh <360분 / grace 360~720 / stale >720
+✅ 실제 코드
+특보 최신성
+fetched_at 약 10분 기준
+✅ 실제 코드
+단기 목표 일정
+발표 +10/+15/+30, 성공 후 SKIP
+✅ 운영정책 / 미구현
+RN1 일정
++20/+30
+✅ 운영정책 / 미구현
+특보 일정
+5분
+✅ 현재 유지
+Marine 일정
+현재 00:30/06:30/12:30/18:30
+✅
+Marine 추가 재시도
+정확한 슬롯
+🟡 [확인 필요]
+중기 일정
+06/18 +10/+15/+30
+✅ 정책 / 신규 Edge 필요
+13. Cache 실제 보존 로직
+Cache
+정의된 삭제 규칙
+현재 판정
+kma_weather_cache
+3일 초과 삭제 함수 정의, grid별 최신 fresh 1건 보호
+🟡 실제 호출주기 [확인 필요]
+open_meteo_marine_cache
+7일 초과 삭제 함수 정의, cache_key별 최신 issued_at 세트 보호
+🟡 실제 호출주기 [확인 필요]
+khoa_*_cache
+7일 초과 삭제 함수 정의, 최신 fresh 보호
+🟡 실제 호출주기 [확인 필요]
+kma_safety_cache
+cleanup 함수 확인 안 됨
+🟡 자동 삭제 정책 없음
+Freshness와 실제 보존시간은 다른 개념이다. History 72시간 계약도 Forecast Cache snapshot 보존과 분리한다.
+14. UI · Point Profile
+항목
+실제 역할
+상태
+너울 민감도
+wave_period 장주기 보정/Visibility에 실제 사용
+✅ 유지
+바다 노출 방향
+기상 풍향 상대각 계산 전용
+✅ 유지
+외해 노출
+Visibility 교란 보정
+✅ 유지
+차폐
+Visibility 교란 완화
+✅ 유지
+UI 명칭
+'바다 노출 방향'이 파향/너울방향으로 오해될 수 있음
+🟡 명칭 검토
+Today '현재'
+가장 가까운 유효 예보 슬롯 UI 표현
+✅
+15. Kakao · 서비스 분리
+기능
+역할
+상태
+지도
+지도/마커
+✅ Condition과 분리
+거리/이동시간
+Mobility
+✅
+로그인
+Auth
+✅
+외부 검색
+음식점/카페/숙소 링크
+✅
+장애 영향
+Kakao 실패가 Condition/Visibility/Safety를 막지 않음
+✅
+16. 현재 수정 대상
+대상
+수정 내용
+상태
+코드
+레거시 3C 계산 제거
+🔴
+코드
+v12 실패 시 레거시 점수 폴백 제거
+🔴
+코드
+실패 시 -- / 확인 필요 / BEST 제외로 통일
+🔴
+코드/API
+파향·너울 높이·너울 주기·너울 방향·해류방향·해수면 높이 제거
+🔴
+코드
+Frontend Condition/Visibility 계산을 서버 Evaluation으로 이동
+🔴
+코드
+Nearby BEST 서버 Result 기반으로 전환
+🔴
+코드
+00:00 KST Result 재생성 경로
+🔴
+코드
+원천 Cache 갱신/Point Profile 변경 후 재평가
+🔴
+알고리즘 기준서
+최근 검증 결과와 충돌하는 오래된 너울 유지/복합 Safety 서술이 있으면 정정
+🔴 문서 대조 후
+API 기준서
+미사용 해양 6필드 수집 유지 서술이 있으면 정정
+🔴 문서 대조 후
+체크리스트
+이전 '너울 높이·주기 유지/복합 Safety' 결론 폐기
+✅ 이번 문서 반영
+17. 남은 검증
+순서
+항목
+목적
+1
+Cache cleanup 실제 호출/cron
+삭제 함수 정의가 실제 실행되는지 확인
+2
+Result 품질 상태코드
+기존 상태값과 분리된 최종 계약 확정
+3
+Marine 추가 재시도 시각
+운영정책 최종 결정
+4
+UI ↔ 공통 Result 1:1
+Home/Today/6일/상세/BEST 실제 소비필드
+5
+서버 Evaluation 이관 범위
+V1.5 공통 엔진 함수/입력/출력 최종 확정
+6
+통합 문서 정합성 검사
+V1.5 + API 기준서 + 최신 체크리스트 + 실제 코드/API를 1회 대조
+18. 다음 통합 검증 방식
+다음부터는 문서별 개별 검사가 아니라 4축을 한 번에 대조한다.
+1) 실제 코드·DB·API 동작
+2) V1.5 알고리즘 기준서
+3) API·Cache·Supabase 기준서
+4) 이 정합성 체크리스트
+판정 결과는 `실제 동작 | V1.5 | API 기준서 | 체크리스트 | 충돌 | 수정 대상` 형태로 기록한다.
+수정 대상은 기준서 / API 기준서 / 코드 / 체크리스트 / [확인 필요] 중 하나로 명확히 지정한다.

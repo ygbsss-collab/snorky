@@ -1,0 +1,646 @@
+/* ==========================================================================
+   SNORKY 3.0: 6-Day Condition Forecast Detail View
+   Stitch Design System — SNORKY V1.5 Data Rules
+   ========================================================================== */
+
+/* ─────────────────────────────────────────────────────────────
+   Content Layout (inherits .today-condition-modal vars)
+   ───────────────────────────────────────────────────────────── */
+#dailyForecastDetailModal .df-content {
+  padding: 12px 0 40px;
+  overflow-y: auto;
+  overflow-x: hidden;
+  -webkit-overflow-scrolling: touch;
+  background: var(--tc-surface-low, #f2f4f6);
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  flex: 1;
+  min-height: 0;
+}
+
+/* Title section */
+.df-title-section {
+  padding: 4px 20px 14px;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+}
+
+.df-title-section h2 {
+  margin: 0 0 2px;
+  font-size: 28px;
+  font-weight: 800;
+  line-height: 1.2;
+  letter-spacing: -0.02em;
+  color: var(--tc-on-surface, #191c1e);
+}
+
+.df-title-section p {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 400;
+  color: var(--tc-on-surface-variant, #424751);
+  line-height: 1.4;
+}
+
+.df-title-date-range {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--tc-on-surface-variant, #424751);
+  white-space: nowrap;
+  flex-shrink: 0;
+  margin-bottom: 2px;
+}
+
+.df-title-date-range .material-symbols-outlined {
+  font-size: 15px;
+  color: var(--tc-outline, #727783);
+}
+
+/* ─────────────────────────────────────────────────────────────
+   Day Selector — 85×85 horizontal scroll cards
+   ───────────────────────────────────────────────────────────── */
+.df-days-section {
+  padding: 0 20px 14px;
+  flex-shrink: 0;
+}
+
+.df-days {
+  display: flex;
+  gap: 10px;
+  overflow-x: auto;
+  padding: 4px 2px 8px;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+  scroll-snap-type: x mandatory;
+}
+
+.df-days::-webkit-scrollbar { display: none; }
+
+/* Day Card — 85×85 square (Stitch exact) */
+.df-day-card {
+  flex: 0 0 85px;
+  width: 85px;
+  height: 85px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  padding: 6px 6px 4px;
+  position: relative;
+  overflow: hidden;
+  border: 1px solid rgba(194, 198, 211, 0.3);
+  border-radius: 14px;
+  background: var(--tc-surface-lowest, #ffffff);
+  cursor: pointer;
+  font-family: inherit;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+  scroll-snap-align: start;
+  transition: transform 0.14s ease, box-shadow 0.14s ease;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.df-day-card:active { transform: scale(0.96); }
+
+/* Unselected top label */
+.df-day-label {
+  position: absolute;
+  top: 7px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+  color: var(--tc-on-surface-variant, #424751);
+  line-height: 1;
+}
+
+/* Center content */
+.df-day-center {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  margin-top: 8px;
+}
+
+.df-day-score-big {
+  font-size: 22px;
+  font-weight: 900;
+  line-height: 1;
+  color: var(--tc-on-surface, #191c1e);
+}
+
+.df-day-weather-sm {
+  font-size: 15px;
+  line-height: 1;
+}
+
+/* Bottom status pill */
+.df-day-pill {
+  position: absolute;
+  bottom: 5px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 9px;
+  font-weight: 700;
+  padding: 2px 7px;
+  border-radius: 20px;
+  white-space: nowrap;
+  line-height: 1.3;
+}
+
+/* SELECTED state — full primary bg (Stitch exact) */
+.df-day-card.selected {
+  background: var(--tc-primary, #003e7a);
+  border-color: var(--tc-primary, #003e7a);
+  box-shadow: 0 4px 14px rgba(0, 62, 122, 0.28);
+}
+
+.df-day-card.selected .df-day-label {
+  color: rgba(175, 204, 255, 0.9);
+}
+
+.df-day-card.selected .df-day-score-big {
+  color: #ffffff;
+}
+
+.df-day-card.selected .df-day-weather-sm {
+  color: rgba(255, 255, 255, 0.85);
+}
+
+.df-day-card.selected .df-day-pill {
+  background: rgba(255, 255, 255, 0.18);
+  color: #ffffff;
+}
+
+/* Score classes for unselected cards */
+.score-good   .df-day-score-big { color: #15803d; }
+.score-normal .df-day-score-big { color: #0369a1; }
+.score-caution .df-day-score-big { color: #b45309; }
+.score-bad    .df-day-score-big { color: #b91c1c; }
+.score-none   .df-day-score-big { color: var(--tc-outline, #727783); }
+
+/* Pill colors for unselected */
+.pill-good    { background: #d1fae5; color: #047857; }
+.pill-normal  { background: #dbeafe; color: #1d4ed8; }
+.pill-caution { background: #fef3c7; color: #b45309; }
+.pill-bad     { background: #fee2e2; color: #b91c1c; }
+.pill-neutral { background: var(--tc-surface-container, #eceef0); color: var(--tc-on-surface-variant, #424751); }
+
+/* ─────────────────────────────────────────────────────────────
+   Detail container
+   ───────────────────────────────────────────────────────────── */
+.df-detail-wrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.df-section-title {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 6px 20px 10px;
+}
+
+.df-section-title h3 {
+  margin: 0;
+  font-size: 17px;
+  font-weight: 700;
+  color: var(--tc-on-surface, #191c1e);
+}
+
+.df-section-title-sub {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--tc-on-surface-variant, #424751);
+}
+
+/* ─────────────────────────────────────────────────────────────
+   Short forecast — horizontal time mini cards (85×85)
+   ───────────────────────────────────────────────────────────── */
+.df-time-slots-scroll {
+  display: flex;
+  gap: 10px;
+  overflow-x: auto;
+  padding: 4px 20px 10px;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+  scroll-snap-type: x mandatory;
+}
+
+.df-time-slots-scroll::-webkit-scrollbar { display: none; }
+
+/* Time Mini Card — 85×85 (Stitch exact) */
+.df-time-card {
+  flex: 0 0 85px;
+  width: 85px;
+  height: 85px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  padding: 6px 4px 4px;
+  position: relative;
+  overflow: hidden;
+  border: 1px solid rgba(194, 198, 211, 0.3);
+  border-radius: 14px;
+  background: var(--tc-surface-lowest, #ffffff);
+  cursor: pointer;
+  font-family: inherit;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+  scroll-snap-align: start;
+  transition: transform 0.14s ease, box-shadow 0.14s ease;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.df-time-card:active { transform: scale(0.96); }
+
+.df-time-label {
+  position: absolute;
+  top: 7px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  color: var(--tc-on-surface-variant, #424751);
+  white-space: nowrap;
+  line-height: 1;
+}
+
+.df-time-center {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  margin-top: 8px;
+}
+
+.df-time-weather-icon {
+  font-size: 20px;
+  line-height: 1;
+}
+
+.df-time-aux {
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--tc-on-surface, #191c1e);
+  line-height: 1;
+}
+
+/* Bottom score+status pill */
+.df-time-pill {
+  position: absolute;
+  bottom: 5px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 9px;
+  font-weight: 700;
+  padding: 2px 6px;
+  border-radius: 20px;
+  white-space: nowrap;
+  line-height: 1.3;
+}
+
+.df-time-pill-divider {
+  width: 1px;
+  height: 8px;
+  opacity: 0.3;
+  border-radius: 1px;
+}
+
+/* SELECTED time card — full primary (Stitch) + scale up */
+.df-time-card.selected {
+  background: var(--tc-primary, #003e7a);
+  border-color: var(--tc-primary, #003e7a);
+  box-shadow: 0 4px 14px rgba(0, 62, 122, 0.28);
+  transform: scale(1.05);
+  z-index: 1;
+}
+
+.df-time-card.selected .df-time-label { color: rgba(175, 204, 255, 0.9); }
+.df-time-card.selected .df-time-weather-icon { color: #fcd34d; }
+.df-time-card.selected .df-time-aux { color: rgba(255, 255, 255, 0.9); }
+.df-time-card.selected .df-time-pill {
+  background: rgba(255, 255, 255, 0.18);
+  color: #ffffff;
+}
+.df-time-card.selected .df-time-pill-divider {
+  background: #ffffff;
+}
+
+/* ─────────────────────────────────────────────────────────────
+   Bento — 3-column metric grid
+   ───────────────────────────────────────────────────────────── */
+.df-bento-section {
+  padding: 6px 20px 12px;
+}
+
+.df-bento-heading {
+  font-size: 17px;
+  font-weight: 700;
+  color: var(--tc-on-surface, #191c1e);
+  margin: 0 0 10px;
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+}
+
+.df-bento-heading-sub {
+  font-size: 13px;
+  font-weight: 400;
+  color: var(--tc-on-surface-variant, #424751);
+}
+
+.df-bento-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+}
+
+.df-bento-card {
+  background: var(--tc-surface-lowest, #ffffff);
+  border: 1px solid rgba(194, 198, 211, 0.3);
+  border-radius: 16px;
+  padding: 10px 8px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 4px;
+}
+
+.df-bento-icon-wrap {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.df-bento-icon-wrap .material-symbols-outlined {
+  font-size: 16px;
+}
+
+.df-bento-label {
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--tc-on-surface-variant, #424751);
+  line-height: 1.2;
+}
+
+.df-bento-value {
+  font-size: 15px;
+  font-weight: 800;
+  color: var(--tc-on-surface, #191c1e);
+  line-height: 1.1;
+}
+
+.df-bento-unit {
+  font-size: 10px;
+  font-weight: 500;
+  color: var(--tc-on-surface-variant, #424751);
+}
+
+.df-bento-pill {
+  font-size: 9px;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 20px;
+  border-width: 1px;
+  border-style: solid;
+  width: 100%;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Bento icon backgrounds */
+.bento-bg-blue   { background: #dbeafe; } .bento-cl-blue   { color: #2563eb; }
+.bento-bg-purple { background: #f3e8ff; } .bento-cl-purple { color: #9333ea; }
+.bento-bg-cyan   { background: #cffafe; } .bento-cl-cyan   { color: #0891b2; }
+.bento-bg-red    { background: #fee2e2; } .bento-cl-red    { color: #dc2626; }
+.bento-bg-teal   { background: #ccfbf1; } .bento-cl-teal   { color: #0d9488; }
+.bento-bg-indigo { background: #e0e7ff; } .bento-cl-indigo { color: #4f46e5; }
+.bento-bg-sky    { background: #e0f2fe; } .bento-cl-sky    { color: #0284c7; }
+.bento-bg-slate  { background: #f1f5f9; } .bento-cl-slate  { color: #475569; }
+.bento-bg-orange { background: #ffedd5; } .bento-cl-orange { color: #ea580c; }
+.bento-bg-pink   { background: #fdf2f8; } .bento-cl-pink   { color: #db2777; }
+
+/* Bento pill colors */
+.bpill-good    { background: #d1fae5; color: #047857; border-color: #a7f3d0; }
+.bpill-normal  { background: #dbeafe; color: #1d4ed8; border-color: #93c5fd; }
+.bpill-caution { background: #fef3c7; color: #b45309; border-color: #fde68a; }
+.bpill-bad     { background: #fee2e2; color: #b91c1c; border-color: #fca5a5; }
+.bpill-neutral { background: #f1f5f9; color: #64748b; border-color: #e2e8f0; }
+
+/* ─────────────────────────────────────────────────────────────
+   Mid (+4~+6) — AM/PM section cards
+   ───────────────────────────────────────────────────────────── */
+.df-mid-cards {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  padding: 4px 20px 14px;
+}
+
+.df-mid-card {
+  background: var(--tc-surface-lowest, #ffffff);
+  border: 1px solid rgba(194, 198, 211, 0.3);
+  border-radius: 16px;
+  padding: 14px 12px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  transition: transform 0.14s ease, box-shadow 0.14s ease;
+  font-family: inherit;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.df-mid-card:active { transform: scale(0.97); }
+
+.df-mid-card-head {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.df-mid-period-icon {
+  font-size: 18px;
+  color: var(--tc-secondary, #006684);
+}
+
+.df-mid-period-label {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--tc-on-surface, #191c1e);
+}
+
+.df-mid-card-body {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+
+.df-mid-score {
+  font-size: 28px;
+  font-weight: 900;
+  line-height: 1;
+  color: var(--tc-on-surface, #191c1e);
+}
+
+.df-mid-card-pill {
+  font-size: 9px;
+  font-weight: 700;
+  padding: 3px 10px;
+  border-radius: 20px;
+  white-space: nowrap;
+}
+
+/* Selected mid card */
+.df-mid-card.selected {
+  background: var(--tc-primary, #003e7a);
+  border-color: var(--tc-primary, #003e7a);
+  box-shadow: 0 4px 14px rgba(0, 62, 122, 0.28);
+}
+
+.df-mid-card.selected .df-mid-period-icon { color: rgba(175, 204, 255, 0.85); }
+.df-mid-card.selected .df-mid-period-label { color: rgba(255, 255, 255, 0.85); }
+.df-mid-card.selected .df-mid-score { color: #ffffff; }
+.df-mid-card.selected .df-mid-card-pill {
+  background: rgba(255, 255, 255, 0.2);
+  color: #ffffff;
+}
+
+/* Bento section separator when shown after mid card */
+.df-mid-bento-label {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--tc-on-surface-variant, #424751);
+  padding: 4px 20px 8px;
+}
+
+/* ─────────────────────────────────────────────────────────────
+   Empty / Loading
+   ───────────────────────────────────────────────────────────── */
+.df-empty {
+  text-align: center;
+  padding: 24px 20px;
+  color: var(--tc-outline, #727783);
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.df-empty-card {
+  margin: 0 20px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  padding: 28px 20px;
+  background: var(--tc-surface-lowest, #ffffff);
+  border: 1px solid rgba(194, 198, 211, 0.4);
+  border-radius: 16px;
+  color: var(--tc-on-surface-variant, #424751);
+}
+
+.df-empty-card .material-symbols-outlined {
+  font-size: 32px;
+  color: var(--tc-outline, #727783);
+}
+
+.df-empty-card p {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 500;
+  text-align: center;
+  line-height: 1.5;
+}
+
+.df-loading {
+  margin: 0 20px;
+  padding: 20px 16px;
+  text-align: center;
+  color: var(--tc-outline, #727783);
+  font-size: 13px;
+  font-weight: 500;
+  background: var(--tc-surface-lowest, #ffffff);
+  border-radius: 14px;
+  border: 1px solid rgba(194, 198, 211, 0.3);
+  animation: dfPulse 1.4s ease-in-out infinite;
+}
+
+@keyframes dfPulse {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0.5; }
+}
+
+/* ─────────────────────────────────────────────────────────────
+   Divider between sections
+   ───────────────────────────────────────────────────────────── */
+.df-section-divider {
+  height: 1px;
+  background: rgba(194, 198, 211, 0.35);
+  margin: 6px 20px 14px;
+}
+
+/* ─────────────────────────────────────────────────────────────
+   Responsive
+   ───────────────────────────────────────────────────────────── */
+
+/* 360px and below */
+@media (max-width: 360px) {
+  .df-day-card,
+  .df-time-card {
+    flex: 0 0 78px;
+    width: 78px;
+    height: 78px;
+  }
+  .df-title-section h2 { font-size: 24px; }
+  .df-bento-grid { gap: 8px; }
+  .df-bento-card { padding: 8px 6px; }
+  .df-bento-value { font-size: 14px; }
+  .df-days-section,
+  .df-title-section { padding-left: 14px; padding-right: 14px; }
+}
+
+/* 430px+ */
+@media (min-width: 431px) {
+  .df-day-card,
+  .df-time-card {
+    flex: 0 0 90px;
+    width: 90px;
+    height: 90px;
+  }
+  .df-day-score-big { font-size: 24px; }
+  .df-time-weather-icon { font-size: 22px; }
+}
+
+/* Tablet/Desktop */
+@media (min-width: 700px) {
+  #dailyForecastDetailModal .df-content { padding-bottom: 56px; }
+  .df-title-section { padding: 8px 28px 16px; }
+  .df-days-section  { padding: 0 28px 16px; }
+  .df-time-slots-scroll { padding: 4px 28px 12px; }
+  .df-bento-section { padding: 6px 28px 16px; }
+  .df-mid-cards     { padding: 4px 28px 16px; }
+  .df-bento-grid    { gap: 12px; }
+}

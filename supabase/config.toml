@@ -24,3 +24,6 @@ verify_jwt = false
 
 [functions.kma-weather-cache]
 verify_jwt = false
+
+[functions.submit-inquiry]
+verify_jwt = false

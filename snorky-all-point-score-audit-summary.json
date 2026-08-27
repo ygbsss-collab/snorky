@@ -1,0 +1,75 @@
+﻿{
+    "commit":  "f87d131ebb408310d1b27d9f83262305e5d5a510",
+    "timestamp":  "2026-08-14T10:00",
+    "points":  53,
+    "regions":  5,
+    "api_requests":  106,
+    "unique_requests":  106,
+    "elapsed_seconds":  9.14,
+    "data_missing":  0,
+    "max":  68,
+    "min":  15,
+    "average":  44,
+    "median":  44,
+    "ge80":  0,
+    "ge65":  6,
+    "lt50":  34,
+    "hard":  13,
+    "score20":  2,
+    "score49":  1,
+    "distribution":  {
+                         "85~100":  0,
+                         "70~84":  0,
+                         "50~69":  19,
+                         "30~49":  21,
+                         "0~29":  13
+                     },
+    "best":  0,
+    "worth":  6,
+    "check":  13,
+    "region_stats":  [
+                         {
+                             "region":  "강릉",
+                             "points":  10,
+                             "max":  32,
+                             "average":  23.9,
+                             "top_point":  "안목해변",
+                             "hard":  9
+                         },
+                         {
+                             "region":  "고성",
+                             "points":  2,
+                             "max":  28,
+                             "average":  24,
+                             "top_point":  "가진해변",
+                             "hard":  2
+                         },
+                         {
+                             "region":  "삼척",
+                             "points":  13,
+                             "max":  41,
+                             "average":  34.4,
+                             "top_point":  "비화항",
+                             "hard":  2
+                         },
+                         {
+                             "region":  "영덕",
+                             "points":  16,
+                             "max":  68,
+                             "average":  64.8,
+                             "top_point":  "대부방파제",
+                             "hard":  0
+                         },
+                         {
+                             "region":  "울진",
+                             "points":  12,
+                             "max":  52,
+                             "average":  47,
+                             "top_point":  "구산해수욕장",
+                             "hard":  0
+                         }
+                     ],
+    "failures":  [
+
+                 ]
+}

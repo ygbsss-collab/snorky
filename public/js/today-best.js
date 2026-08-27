@@ -10,9 +10,11 @@ function grade(score){return window.getSnorkySeaConditionLabel?.(score)||"바다
 function safetyFor(point){return window.SNORKYMarineSafety?.getPointMarineSafety(point)||{status:"UNKNOWN"}}
 function validSnapshot(){return state.snapshot&&Date.now()-state.snapshot.createdAt<SNAPSHOT_TTL}
 function stableSort(a,b){
-  const scoreA=a.v12?.conditionScore??(Number.isFinite(a.score)?a.score:-Infinity);
-  const scoreB=b.v12?.conditionScore??(Number.isFinite(b.score)?b.score:-Infinity);
-  return scoreB-scoreA||a.sourceIndex-b.sourceIndex||String(a.region).localeCompare(String(b.region),"ko-KR")||String(a.name).localeCompare(String(b.name),"ko-KR")||String(a.id).localeCompare(String(b.id));
+  const scoreA = Number(a.v12?.conditionScore);
+  const scoreB = Number(b.v12?.conditionScore);
+  const validA = Number.isFinite(scoreA) ? scoreA : -Infinity;
+  const validB = Number.isFinite(scoreB) ? scoreB : -Infinity;
+  return validB - validA || a.sourceIndex - b.sourceIndex || String(a.region).localeCompare(String(b.region),"ko-KR") || String(a.name).localeCompare(String(b.name),"ko-KR") || String(a.id).localeCompare(String(b.id));
 }
 
 function createDialog(){
@@ -39,11 +41,8 @@ async function waitForPoints(){
   throw new Error("전체 포인트 정보를 불러오지 못했습니다.");
 }
 function isRecommendablePoint(point){
-  const v12=point?.v12;
-  if(v12){
-    return v12.safety==="PASS"&&Number.isFinite(v12.conditionScore)&&v12.conditionScore>=50;
-  }
-  return !point.error&&Number.isFinite(point.score)&&!point.hardLabel&&point.score>=50;
+  const v12 = point?.v12;
+  return Boolean(v12 && v12.safety === "PASS" && Number.isFinite(Number(v12.conditionScore)));
 }
 function casePolicy(eligible,rows){
   if(!eligible.length){
@@ -56,7 +55,7 @@ function casePolicy(eligible,rows){
     return{caseName:"E",title:"오늘은 추천할 만한 바다 날씨 상태가 아닙니다.",subtitle:"",sectionTitle:"",rows:[],medals:false};
   }
   const topPoint=eligible[0];
-  const highest=topPoint?.v12?.conditionScore??topPoint?.score;
+  const highest=Number(topPoint?.v12?.conditionScore);
   const count=eligible.length;
   const subtitle=count>=3?"오늘 바다가 좋은 포인트를 골라봤어요.":`오늘 추천 가능한 ${count}개 포인트를 골라봤어요.`;
   return{caseName:highest>=80?"A":highest>=65?"B":"C",title:"",subtitle,rows:eligible.slice(0,10),medals:true};
@@ -64,43 +63,75 @@ function casePolicy(eligible,rows){
 async function evaluate(){
   if(state.running)return;state.running=true;setLoading("SNORKY 전체 포인트를 확인 중입니다.");
   try{
-    await window.SNORKYMarineSafety?.ready;
-    const points=await waitForPoints(),service=window.SNORKYNearbyBest;
-    if(!service?.evaluatePoints)throw new Error("기존 Today 평가 엔진을 사용할 수 없습니다.");
-    const {scored,diagnostics}=await service.evaluatePoints(points);
-    const rows=scored.map((point,index)=>{
-      const v12=point.v12;
-      const safety=v12?.safety||safetyFor(point).status;
-      const hard=v12?.safety==="BLOCK"?(v12.safetyReasons?.[0]||"BLOCK"):(point.hardLabel||"NONE");
-      const hasScore=v12?Number.isFinite(v12.conditionScore):Number.isFinite(point.score);
-      const isRecommendable=isRecommendablePoint(point);
-      const included=isRecommendable;
-      let reason="";
-      if(!hasScore||point.error)reason=point.error||"평가 실패";
-      else if(safety==="BLOCK")reason=v12?.safetyReasons?.[0]||"공식 해상특보";
-      else if(safety==="UNKNOWN")reason=v12?.safetyReasons?.[0]||"해상특보 확인 불가";
-      else if(v12?.conditionScore!=null&&v12.conditionScore<50)reason="50점 미만 (나쁨)";
-      return{...point,sourceIndex:index,kma:safety,hard,included,reason,v12};
+    const points=await waitForPoints();
+    const resultReader = window.SNORKYEvaluationResults;
+    if(!resultReader?.loadTodayResults)throw new Error("Result 조회 어댑터를 불러오지 못했습니다.");
+
+    const todayMap = await resultReader.loadTodayResults();
+    const rows = points.map((point, index) => {
+      const pid = String(point.supabaseId || point.id);
+      const res = todayMap.get(pid);
+
+      const safety = res?.safety_status || "UNKNOWN";
+      const hasScore = res && res.quality_status !== "UNKNOWN" && Number.isFinite(Number(res.condition_score));
+      const score = hasScore ? Number(res.condition_score) : null;
+      const isRecommendable = safety === "PASS" && hasScore;
+
+      let reason = "";
+      if (!res || !hasScore) reason = "데이터 확인 필요";
+      else if (safety === "BLOCK") reason = (res.safety_reasons?.[0] || "공식 해상특보");
+      else if (safety === "UNKNOWN") reason = "해상특보 확인 불가";
+
+      const v12 = res ? {
+        conditionScore: score,
+        conditionStatus: res.condition_status,
+        safety: res.safety_status,
+        safetyReasons: res.safety_reasons || [],
+        qualityStatus: res.quality_status,
+        recommendation: res.recommendation,
+        visibilityGrade: res.visibility_grade,
+        visibilityScore: res.visibility_score,
+        waveHeight: res.wave_height ?? res.metrics?.wave_height ?? null,
+        seaTemperature: res.sea_temperature ?? res.metrics?.sea_temperature ?? null,
+        windSpeed: res.wind_speed ?? res.metrics?.wind_speed ?? null,
+      } : null;
+
+      return {
+        ...point,
+        sourceIndex: index,
+        score,
+        kma: safety,
+        hard: safety === "BLOCK" ? (res?.safety_reasons?.[0] || "BLOCK") : "NONE",
+        included: isRecommendable,
+        reason,
+        wave_height: res?.wave_height ?? res?.metrics?.wave_height ?? null,
+        visibility_grade: res?.visibility_grade ?? null,
+        visibility_score: res?.visibility_score ?? null,
+        sea_temperature: res?.sea_temperature ?? null,
+        wind_speed: res?.wind_speed ?? null,
+        res,
+        v12,
+      };
     });
-    const rankBest=window.rankSnorkyBestPoints||window.SNORKYEval?.rankBestPoints;
-    const eligible=rankBest?rankBest(rows,{limit:100}):rows.filter(isRecommendablePoint);
-    const top10=eligible.slice(0,10);
-    const policy=casePolicy(top10,rows);
-    const sourceById=new Map(points.flatMap(point=>[[String(point.supabaseId??""),point],[String(point.id??""),point]]));
-    const homeRows=top10.map(point=>({...sourceById.get(String(point.id)),...point,images:sourceById.get(String(point.id))?.images||[],v12:point.v12}));
-    const snapshot={createdAt:Date.now(),pointsTotal:points.length,rows,eligible:top10,homeRows,policy,diagnostics};
-    state.snapshot=snapshot;
+
+    const eligible = rows.filter(p => p.included).sort((a, b) => (b.score || 0) - (a.score || 0) || a.sourceIndex - b.sourceIndex);
+    const top10 = eligible.slice(0, 10);
+    const policy = casePolicy(top10, rows);
+    const sourceById = new Map(points.flatMap(point => [[String(point.supabaseId ?? ""), point], [String(point.id ?? ""), point]]));
+    const homeRows = top10.map(point => ({ ...sourceById.get(String(point.id)), ...point, images: sourceById.get(String(point.id))?.images || [], v12: point.v12 }));
+    const snapshot = { createdAt: Date.now(), pointsTotal: points.length, rows, eligible: top10, homeRows, policy, diagnostics: { source: "point_evaluation_results" } };
+    state.snapshot = snapshot;
     render(snapshot);
-    document.dispatchEvent(new CustomEvent("snorky:today-best-ready",{detail:snapshot}));
+    document.dispatchEvent(new CustomEvent("snorky:today-best-ready", { detail: snapshot }));
     logDevelopment(snapshot);
-  }catch(error){console.error("[SNORKY TODAY BEST] 실행 실패",error);getDialog().querySelector(".today-best-results").innerHTML=`<p class="nearby-best-status error">${escapeHtml(error?.message||"오늘의 BEST를 계산하지 못했습니다.")}</p>`;document.dispatchEvent(new CustomEvent("snorky:today-best-error",{detail:error}))}
+  }catch(error){console.error("[SNORKY TODAY BEST] 실행 실패",error);getDialog().querySelector(".today-best-results").innerHTML=`<p class="nearby-best-status error">${escapeHtml(error?.message||"오늘의 BEST를 불러오지 못했습니다.")}</p>`;document.dispatchEvent(new CustomEvent("snorky:today-best-error",{detail:error}))}
   finally{state.running=false;if(state.pendingRefresh){state.pendingRefresh=false;queueMicrotask(evaluate)}}
 }
 function render(snapshot){
   const {policy}=snapshot;
   const rows=policy.rows.map((point,index)=>{
     const v12=point.v12;
-    const scoreVal=v12?.conditionScore!=null?Math.round(v12.conditionScore):(Number.isFinite(point.score)?point.score:null);
+    const scoreVal=v12?.conditionScore!=null?Math.round(v12.conditionScore):null;
     const scoreText=scoreVal!=null?`${scoreVal}점`:"--";
     const conditionText=window.getSnorkyConditionStatus?.(point)||"보통";
     const rankLabel=index<3?["🥇","🥈","🥉"][index]:String(index+1);

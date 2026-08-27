@@ -1,0 +1,17 @@
+{
+  "source": "Supabase READ immediately before approved environment-only update",
+  "region": { "id": 1, "name": "강릉" },
+  "capturedAt": "2026-08-14T09:01:55+09:00",
+  "points": [
+    { "id": 8, "legacy_id": "base_8_강릉", "region_id": 1, "name": "강문해변", "lat": 37.7954069393979, "lng": 128.919356186753, "environment": null },
+    { "id": 10, "legacy_id": "base_10_강릉", "region_id": 1, "name": "금진 옥계 해변", "lat": 37.6289009310514, "lng": 129.050662425201, "environment": null },
+    { "id": 7, "legacy_id": "base_7_강릉", "region_id": 1, "name": "사근진해변주차장", "lat": 37.808, "lng": 128.909, "environment": null },
+    { "id": 6, "legacy_id": "base_6_강릉", "region_id": 1, "name": "사천진 바위섬", "lat": 37.8408585535528, "lng": 128.877587380548, "environment": { "terrain": "mixed", "exposure": "high", "swellSensitivity": "high", "breakwaterShelter": "low", "eastWindSensitivity": "high" } },
+    { "id": 2, "legacy_id": "base_2_강릉", "region_id": 1, "name": "소돌방파제", "lat": 37.9027557731503, "lng": 128.830918630599, "environment": null },
+    { "id": 1, "legacy_id": "base_1_강릉", "region_id": 1, "name": "소돌아들바위공원", "lat": 37.892, "lng": 128.829, "environment": { "terrain": "rock", "exposure": "low", "swellSensitivity": "low", "breakwaterShelter": "high", "eastWindSensitivity": "low" } },
+    { "id": 5, "legacy_id": "base_5_강릉", "region_id": 1, "name": "순포해변", "lat": 37.8216967200687, "lng": 128.889340970768, "environment": null },
+    { "id": 11, "legacy_id": "base_11_강릉", "region_id": 1, "name": "심곡항", "lat": 37.6645985087728, "lng": 129.054947803353, "environment": { "terrain": "rock", "exposure": "high", "swellSensitivity": "high", "breakwaterShelter": "low", "eastWindSensitivity": "high" } },
+    { "id": 9, "legacy_id": "base_9_강릉", "region_id": 1, "name": "안목해변", "lat": 37.7729853522053, "lng": 128.94924202064, "environment": null },
+    { "id": 4, "legacy_id": "base_4_강릉", "region_id": 1, "name": "영진해변", "lat": 37.8693536507163, "lng": 128.846296158485, "environment": null }
+  ]
+}
