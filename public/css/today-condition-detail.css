@@ -124,6 +124,15 @@
 }
 
 
+.tc-top-app-bar-spacer {
+  display: inline-block;
+  width: 42px;
+  height: 42px;
+  flex-shrink: 0;
+  visibility: hidden;
+  pointer-events: none;
+}
+
 .tc-favorite-btn.active {
   color: #ef4444;
 }
@@ -135,14 +144,14 @@
 .tc-top-app-bar.tc-title-compact { padding-left: 14px; padding-right: 14px; }
 .tc-top-app-bar.tc-title-tight { padding-left: 10px; padding-right: 10px; }
 .tc-top-app-bar.tc-title-overflow { padding-left: 6px; padding-right: 6px; }
-.tc-title-compact .tc-icon-btn { width: 38px; height: 38px; }
-.tc-title-tight .tc-icon-btn { width: 34px; height: 34px; }
-.tc-title-overflow .tc-icon-btn { width: 30px; height: 30px; }
+.tc-title-compact .tc-icon-btn, .tc-title-compact .tc-top-app-bar-spacer { width: 38px; height: 38px; }
+.tc-title-tight .tc-icon-btn, .tc-title-tight .tc-top-app-bar-spacer { width: 34px; height: 34px; }
+.tc-title-overflow .tc-icon-btn, .tc-title-overflow .tc-top-app-bar-spacer { width: 30px; height: 30px; }
 .tc-title-compact .tc-app-title { font-size: 16px; }
 .tc-title-tight .tc-app-title { font-size: 14px; }
 .tc-title-overflow .tc-app-title { font-size: 12px; }
 .tc-top-app-bar,.point-modal-head { min-height:72px; }
-.tc-top-app-bar .tc-icon-btn,.point-modal-head .point-modal-close,.point-modal-head .point-modal-favorite { width:46px; height:46px; }
+.tc-top-app-bar .tc-icon-btn, .tc-top-app-bar .tc-top-app-bar-spacer, .point-modal-head .point-modal-close, .point-modal-head .point-modal-favorite { width:46px; height:46px; }
 .point-modal-head .point-modal-title-row h2 { width:100%; max-width:calc(100vw - 124px); font-size:18px; white-space:nowrap; overflow:visible; text-overflow:clip; }
 @media (max-width:700px) {
   .point-modal-head .point-modal-title-row h2 { max-width:calc(100vw - 124px); font-size:18px!important; }
@@ -952,7 +961,11 @@
   transition: border-color 0.15s ease, transform 0.15s ease, box-shadow 0.15s ease;
 }
 
-.tc-metric-card:hover {
+.tc-metric-card-clickable {
+  cursor: pointer;
+}
+
+.tc-metric-card-clickable:hover {
   border-color: rgba(0, 85, 164, 0.3);
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06);
 }
@@ -1060,16 +1073,18 @@
    ───────────────────────────────────────────────────────────── */
 .tc-metric-card.tc-tide-card {
   grid-column: span 2;
-  background: #0e2235;
-  border: 1px solid rgba(148, 163, 184, 0.25);
+  background: #ffffff;
+  border: 1px solid rgba(226, 232, 240, 0.85);
   border-radius: 20px;
-  padding: 8px 8px 4px;
+  padding: 10px 8px 6px;
   display: flex;
   flex-direction: column;
   justify-content: space-between;
   position: relative;
   overflow: hidden;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.03);
+  box-sizing: border-box;
+  min-height: 124px;
 }
 
 .tc-tide-card-header {
@@ -1080,12 +1095,12 @@
 }
 
 .tc-tide-more-btn {
-  background: rgba(255, 255, 255, 0.12);
-  border: 1px solid rgba(255, 255, 255, 0.22);
-  color: #e2e8f0;
-  font-size: 10px;
+  background: #f1f5f9;
+  border: 1px solid #e2e8f0;
+  color: #475569;
+  font-size: 10.5px;
   font-weight: 700;
-  padding: 2px 9px;
+  padding: 2px 8px;
   border-radius: 99px;
   cursor: pointer;
   font-family: inherit;
@@ -1094,9 +1109,9 @@
 }
 
 .tc-tide-more-btn:hover {
-  background: rgba(255, 255, 255, 0.2);
-  color: #ffffff;
-  border-color: rgba(255, 255, 255, 0.4);
+  background: #e2e8f0;
+  color: #0f172a;
+  border-color: #cbd5e1;
 }
 
 .tc-tide-card .tc-tide-graph {
@@ -1112,18 +1127,19 @@
   display: block;
   width: 100%;
   height: 100%;
-  min-height: 96px;
+  min-height: 98px;
 }
 
 .tc-tide-grid line {
-  stroke: rgba(131, 218, 239, 0.15);
-  stroke-width: 0.8;
+  stroke: rgba(226, 232, 240, 0.85);
+  stroke-width: 0.75;
 }
 
 .tc-tide-grid text {
-  fill: #81a8b6;
-  font-size: 7.2px;
+  fill: #64748b;
+  font-size: 8.5px;
   font-weight: 600;
+  font-family: inherit;
 }
 
 .tc-tide-area {
@@ -1132,67 +1148,60 @@
 
 .tc-tide-line {
   fill: none;
-  stroke: #2dd4bf;
+  stroke: #0d9488;
   stroke-width: 2.2;
   stroke-linecap: round;
   stroke-linejoin: round;
 }
 
 .tc-tide-event circle {
-  stroke: #061c2e;
-  stroke-width: 1.5;
+  stroke: #ffffff;
+  stroke-width: 1.8;
 }
 
 .tc-tide-event text {
-  fill: #e0f2fe;
-  font-size: 7.2px;
-  font-weight: 700;
+  font-family: inherit;
   paint-order: stroke;
-  stroke: #051c2e;
+  stroke: #ffffff;
   stroke-linejoin: round;
   stroke-width: 2.5px;
 }
 
-.tc-tide-event text + text {
-  fill: #93c5fd;
-  font-size: 6.8px;
-  font-weight: 600;
-}
-
 .tc-tide-event-high circle {
-  fill: #fb7185;
+  fill: #f43f5e;
 }
 
 .tc-tide-event-high text:first-of-type {
-  fill: #fecdd3;
+  fill: #e11d48;
 }
 
 .tc-tide-event-low circle {
-  fill: #fbbf24;
+  fill: #0284c7;
 }
 
 .tc-tide-event-low text:first-of-type {
-  fill: #fde68a;
+  fill: #0284c7;
 }
 
 .tc-tide-current line {
-  stroke: #7dd3fc;
+  stroke: #0284c7;
   stroke-width: 1;
-  stroke-dasharray: 2.5 2.5;
+  stroke-dasharray: 2 2;
 }
 
 .tc-tide-current circle {
-  fill: #ffffff;
-  stroke: #2dd4bf;
-  stroke-width: 2.5;
+  fill: #0284c7;
+  stroke: #ffffff;
+  stroke-width: 2;
 }
 
 .tc-tide-current text {
-  fill: #ffffff;
-  font-size: 7.5px;
+  fill: #0369a1;
+  font-family: inherit;
+  font-size: 8.5px;
   font-weight: 800;
   paint-order: stroke;
-  stroke: #051c2e;
+  stroke: #ffffff;
   stroke-linejoin: round;
   stroke-width: 2.5px;
 }
@@ -1452,46 +1461,68 @@
   display: flex;
   flex-direction: column;
   gap: 8px;
-  background: #f8fafc;
-  border: 1px solid #e2e8f0;
-  border-radius: 12px;
-  padding: 12px;
-}
-
-.tc-sheet-factors.tc-tide-sheet-factors {
   background: #ffffff;
   border: 1px solid #e2e8f0;
-  border-radius: 18px;
-  padding: 18px 20px;
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.03);
+  border-radius: 14px;
+  padding: 14px 16px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02);
 }
 
-.tc-sheet-factors.tc-tide-sheet-factors .tc-sheet-factor-item {
+.tc-sheet-factor-item {
   display: flex;
-  align-items: center;
-  justify-content: space-between;
+  flex-direction: column;
+  gap: 4px;
   border-bottom: 1px dashed #e2e8f0;
   padding: 10px 0;
 }
 
-.tc-sheet-factors.tc-tide-sheet-factors .tc-sheet-factor-item:last-child {
-  border-bottom: none;
-  padding-bottom: 0;
+.tc-sheet-factor-item:first-child {
+  padding-top: 2px;
 }
 
-.tc-sheet-factors.tc-tide-sheet-factors .tc-sheet-factor-title {
-  color: #64748b;
+.tc-sheet-factor-item:last-child {
+  border-bottom: none;
+  padding-bottom: 2px;
+}
+
+.tc-sheet-factor-head {
   display: flex;
   align-items: center;
-  gap: 6px;
-  font-size: 15.5px;
+  justify-content: space-between;
+  width: 100%;
+}
+
+.tc-sheet-factor-title {
+  color: #64748b;
+  font-size: 13.5px;
   font-weight: 600;
 }
 
-.tc-sheet-factors.tc-tide-sheet-factors .tc-sheet-factor-val {
-  font-weight: 800;
+.tc-sheet-factor-val {
+  font-weight: 700;
   color: #0f172a;
-  font-size: 16.5px;
+  font-size: 14.5px;
+}
+
+.tc-sheet-factor-val.tc-sheet-factor-highlight {
+  color: #047857;
+  font-weight: 800;
+}
+
+.tc-sheet-factor-desc {
+  font-size: 12.5px;
+  font-weight: 500;
+  color: #64748b;
+  line-height: 1.4;
+  letter-spacing: -0.2px;
+}
+
+.tc-tide-sheet-subinfo {
+  font-size: 13px;
+  font-weight: 500;
+  color: #64748b;
+  margin: -2px 0 2px 2px;
+  letter-spacing: -0.2px;
 }
 
 .tc-sheet-desc-box {
@@ -1507,12 +1538,12 @@
    Tide Forecast Modal Card (Enlarged Full Width Chart)
    ───────────────────────────────────────────────────────────── */
 .tc-tide-modal-card {
-  background: #0e2235;
+  background: #ffffff;
   border-radius: 20px;
   padding: 18px 12px 14px;
   margin-top: 6px;
-  border: 1px solid rgba(148, 163, 184, 0.25);
-  box-shadow: 0 4px 16px rgba(14, 34, 53, 0.18);
+  border: 1px solid rgba(226, 232, 240, 0.85);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.04);
   box-sizing: border-box;
   width: 100%;
 }

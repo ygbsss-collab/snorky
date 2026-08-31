@@ -7,21 +7,21 @@
    Content Layout (inherits .today-condition-modal vars)
    ───────────────────────────────────────────────────────────── */
 #dailyForecastDetailModal .df-content {
-  padding: 12px 0 40px;
+  padding: 14px 16px 36px;
   overflow-y: auto;
   overflow-x: hidden;
   -webkit-overflow-scrolling: touch;
   background: var(--tc-surface-low, #f2f4f6);
   display: flex;
   flex-direction: column;
-  gap: 0;
+  gap: 14px;
   flex: 1;
   min-height: 0;
 }
 
 /* Title section */
 .df-title-section {
-  padding: 4px 20px 14px;
+  padding: 0;
   display: flex;
   justify-content: space-between;
   align-items: flex-end;
@@ -62,10 +62,12 @@
 }
 
 /* ─────────────────────────────────────────────────────────────
-   Day Selector — 85×85 horizontal scroll cards
+   Day Selector — 85×85 horizontal scroll cards (Today tc-hourly-section 동일)
    ───────────────────────────────────────────────────────────── */
 .df-days-section {
-  padding: 0 20px 14px;
+  width: calc(100% + 32px);
+  margin: 0 -16px;
+  padding: 0 16px;
   flex-shrink: 0;
 }
 
@@ -73,7 +75,7 @@
   display: flex;
   gap: 10px;
   overflow-x: auto;
-  padding: 4px 2px 8px;
+  padding: 2px 0 6px;
   -webkit-overflow-scrolling: touch;
   scrollbar-width: none;
   scroll-snap-type: x mandatory;
@@ -81,7 +83,7 @@
 
 .df-days::-webkit-scrollbar { display: none; }
 
-/* Day Card — 85×85 square (Stitch exact) */
+/* Day Card — 85×85 square (단순화: 날짜 + 대표날씨 + 컨디션) */
 .df-day-card {
   flex: 0 0 85px;
   width: 85px;
@@ -89,74 +91,53 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
-  gap: 3px;
-  padding: 6px 6px 4px;
+  justify-content: space-between;
+  padding: 7px 4px 6px;
   position: relative;
   overflow: hidden;
-  border: 1px solid rgba(194, 198, 211, 0.3);
+  border: 1px solid rgba(194, 198, 211, 0.35);
   border-radius: 14px;
   background: var(--tc-surface-lowest, #ffffff);
   cursor: pointer;
   font-family: inherit;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
   scroll-snap-align: start;
-  transition: transform 0.14s ease, box-shadow 0.14s ease;
+  transition: transform 0.14s ease, box-shadow 0.14s ease, border-color 0.14s ease, background 0.14s ease;
+  user-select: none;
   -webkit-tap-highlight-color: transparent;
+  box-sizing: border-box;
 }
 
 .df-day-card:active { transform: scale(0.96); }
 
-/* Unselected top label */
 .df-day-label {
-  position: absolute;
-  top: 7px;
-  left: 50%;
-  transform: translateX(-50%);
-  font-size: 10px;
+  font-size: 11px;
   font-weight: 700;
-  letter-spacing: 0.02em;
-  white-space: nowrap;
   color: var(--tc-on-surface-variant, #424751);
   line-height: 1;
+  letter-spacing: 0.01em;
 }
 
-/* Center content */
-.df-day-center {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 2px;
-  margin-top: 8px;
-}
-
-.df-day-score-big {
-  font-size: 22px;
-  font-weight: 900;
+.df-day-weather-icon {
+  font-size: 26px;
   line-height: 1;
-  color: var(--tc-on-surface, #191c1e);
-}
-
-.df-day-weather-sm {
-  font-size: 15px;
-  line-height: 1;
+  margin: auto 0;
 }
 
 /* Bottom status pill */
 .df-day-pill {
-  position: absolute;
-  bottom: 5px;
-  left: 50%;
-  transform: translateX(-50%);
-  font-size: 9px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
   font-weight: 700;
-  padding: 2px 7px;
-  border-radius: 20px;
+  padding: 2px 8px;
+  border-radius: 99px;
   white-space: nowrap;
-  line-height: 1.3;
+  line-height: 1.1;
 }
 
-/* SELECTED state — full primary bg (Stitch exact) */
+/* SELECTED state — full primary bg */
 .df-day-card.selected {
   background: var(--tc-primary, #003e7a);
   border-color: var(--tc-primary, #003e7a);
@@ -164,19 +145,15 @@
 }
 
 .df-day-card.selected .df-day-label {
-  color: rgba(175, 204, 255, 0.9);
+  color: rgba(255, 255, 255, 0.9);
 }
 
-.df-day-card.selected .df-day-score-big {
-  color: #ffffff;
-}
-
-.df-day-card.selected .df-day-weather-sm {
-  color: rgba(255, 255, 255, 0.85);
+.df-day-card.selected .df-day-weather-icon {
+  color: #fcd34d !important;
 }
 
 .df-day-card.selected .df-day-pill {
-  background: rgba(255, 255, 255, 0.18);
+  background: rgba(255, 255, 255, 0.2);
   color: #ffffff;
 }
 
@@ -200,14 +177,15 @@
 .df-detail-wrapper {
   display: flex;
   flex-direction: column;
-  gap: 0;
+  gap: 14px;
 }
 
 .df-section-title {
   display: flex;
-  align-items: center;
+  align-items: baseline;
   justify-content: space-between;
-  padding: 6px 20px 10px;
+  padding: 0;
+  margin-bottom: -4px;
 }
 
 .df-section-title h3 {
@@ -217,20 +195,29 @@
   color: var(--tc-on-surface, #191c1e);
 }
 
-.df-section-title-sub {
-  font-size: 12px;
-  font-weight: 500;
-  color: var(--tc-on-surface-variant, #424751);
+.df-section-title-sub,
+.df-mid-section-sub {
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--tc-on-surface-variant, #64748b);
+  letter-spacing: -0.2px;
 }
 
 /* ─────────────────────────────────────────────────────────────
-   Short forecast — horizontal time mini cards (85×85)
+   Short forecast — horizontal time mini cards (Today tc-hourly-section 동일)
    ───────────────────────────────────────────────────────────── */
+.df-time-section {
+  width: calc(100% + 32px);
+  margin: 0 -16px;
+  padding: 0 16px;
+  flex-shrink: 0;
+}
+
 .df-time-slots-scroll {
   display: flex;
   gap: 10px;
   overflow-x: auto;
-  padding: 4px 20px 10px;
+  padding: 2px 0 6px;
   -webkit-overflow-scrolling: touch;
   scrollbar-width: none;
   scroll-snap-type: x mandatory;
@@ -238,7 +225,7 @@
 
 .df-time-slots-scroll::-webkit-scrollbar { display: none; }
 
-/* Time Mini Card — 85×85 (Stitch exact) */
+/* Time Mini Card — 85×85 (Today tc-hour-card 동일 구조) */
 .df-time-card {
   flex: 0 0 85px;
   width: 85px;
@@ -246,43 +233,39 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
-  gap: 2px;
-  padding: 6px 4px 4px;
+  justify-content: space-between;
+  padding: 6px 4px 5px;
   position: relative;
   overflow: hidden;
-  border: 1px solid rgba(194, 198, 211, 0.3);
+  border: 1px solid rgba(194, 198, 211, 0.35);
   border-radius: 14px;
   background: var(--tc-surface-lowest, #ffffff);
   cursor: pointer;
   font-family: inherit;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
   scroll-snap-align: start;
-  transition: transform 0.14s ease, box-shadow 0.14s ease;
+  transition: transform 0.14s ease, box-shadow 0.14s ease, border-color 0.14s ease, background 0.14s ease;
+  user-select: none;
   -webkit-tap-highlight-color: transparent;
+  box-sizing: border-box;
 }
 
 .df-time-card:active { transform: scale(0.96); }
 
 .df-time-label {
-  position: absolute;
-  top: 7px;
-  left: 50%;
-  transform: translateX(-50%);
-  font-size: 10px;
+  font-size: 11px;
   font-weight: 700;
-  letter-spacing: 0.02em;
   color: var(--tc-on-surface-variant, #424751);
-  white-space: nowrap;
   line-height: 1;
+  letter-spacing: 0.02em;
 }
 
-.df-time-center {
+.df-time-mid {
   display: flex;
-  flex-direction: column;
   align-items: center;
-  gap: 2px;
-  margin-top: 8px;
+  justify-content: center;
+  gap: 4px;
+  margin: 1px 0;
 }
 
 .df-time-weather-icon {
@@ -290,55 +273,240 @@
   line-height: 1;
 }
 
-.df-time-aux {
-  font-size: 10px;
-  font-weight: 600;
+.df-time-temp {
+  font-size: 13.5px;
+  font-weight: 800;
   color: var(--tc-on-surface, #191c1e);
   line-height: 1;
 }
 
-/* Bottom score+status pill */
-.df-time-pill {
-  position: absolute;
-  bottom: 5px;
-  left: 50%;
-  transform: translateX(-50%);
-  display: flex;
-  align-items: center;
-  gap: 4px;
+.df-time-rain {
   font-size: 9px;
   font-weight: 700;
-  padding: 2px 6px;
-  border-radius: 20px;
+  color: var(--tc-on-surface-variant, #424751);
+  line-height: 1.1;
   white-space: nowrap;
-  line-height: 1.3;
+}
+
+/* Bottom score+status pill */
+.df-time-pill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  font-size: 9.5px;
+  font-weight: 700;
+  padding: 2px 6px;
+  border-radius: 99px;
+  white-space: nowrap;
+  line-height: 1.1;
 }
 
 .df-time-pill-divider {
   width: 1px;
-  height: 8px;
-  opacity: 0.3;
-  border-radius: 1px;
+  height: 7px;
+  background: currentColor;
+  opacity: 0.35;
 }
 
-/* SELECTED time card — full primary (Stitch) + scale up */
-.df-time-card.selected {
+/* SELECTED time card — full primary (Today tc-hour-card.active 동일) */
+.df-time-card.selected,
+.df-time-card.active {
   background: var(--tc-primary, #003e7a);
   border-color: var(--tc-primary, #003e7a);
   box-shadow: 0 4px 14px rgba(0, 62, 122, 0.28);
-  transform: scale(1.05);
+  transform: scale(1.04);
   z-index: 1;
 }
 
-.df-time-card.selected .df-time-label { color: rgba(175, 204, 255, 0.9); }
-.df-time-card.selected .df-time-weather-icon { color: #fcd34d; }
-.df-time-card.selected .df-time-aux { color: rgba(255, 255, 255, 0.9); }
-.df-time-card.selected .df-time-pill {
-  background: rgba(255, 255, 255, 0.18);
+.df-time-card.selected .df-time-label,
+.df-time-card.active .df-time-label { color: rgba(255, 255, 255, 0.9); }
+.df-time-card.selected .df-time-weather-icon,
+.df-time-card.active .df-time-weather-icon { color: #fcd34d !important; }
+.df-time-card.selected .df-time-temp,
+.df-time-card.active .df-time-temp { color: #ffffff; }
+.df-time-card.selected .df-time-rain,
+.df-time-card.active .df-time-rain { color: rgba(255, 255, 255, 0.9); }
+.df-time-card.selected .df-time-pill,
+.df-time-card.active .df-time-pill {
+  background: #a7f3d0;
+  color: #065f46;
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.1);
+}
+.df-time-card.selected .df-time-pill.pill-bad,
+.df-time-card.active .df-time-pill.pill-bad {
+  background: #fca5a5;
+  color: #7f1d1d;
+}
+
+/* ─────────────────────────────────────────────────────────────
+   Hero Score Card (Today tc-hero-card 완벽 호환)
+   ───────────────────────────────────────────────────────────── */
+.df-hero-section {
+  padding: 0;
+  width: 100%;
+}
+
+.df-hero-card {
+  position: relative;
+  flex-shrink: 0;
+  width: 100%;
+  border-radius: 18px;
+  overflow: hidden;
+  box-shadow: 0 8px 24px rgba(0, 62, 122, 0.18);
+  display: flex;
+  align-items: center;
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  padding: 16px 18px;
+  color: #ffffff;
+  box-sizing: border-box;
+}
+
+.df-hero-card .tc-hero-bg {
+  position: absolute;
+  inset: 0;
+  background-size: cover;
+  background-position: center;
+  z-index: 0;
+}
+
+.df-hero-card .tc-hero-overlay {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, rgba(0, 62, 122, 0.92) 0%, rgba(0, 85, 164, 0.82) 60%, rgba(0, 102, 132, 0.65) 100%);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  z-index: 1;
+}
+
+.df-hero-card .tc-hero-content {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  gap: 12px;
+}
+
+.df-hero-card .tc-hero-left {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+}
+
+.df-hero-card .tc-hero-status-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.df-hero-card .tc-hero-status-text {
+  font-size: 22px;
+  font-weight: 800;
+  line-height: 1.1;
+  letter-spacing: -0.01em;
+}
+
+.df-hero-card .tc-hero-status-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  padding: 2px 8px;
+  border-radius: 99px;
+  font-size: 10.5px;
+  font-weight: 700;
+  background: #059669;
+  color: #ffffff;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15);
+}
+
+.df-hero-card .tc-hero-status-chip .material-symbols-outlined {
+  font-size: 12px;
+}
+
+.df-hero-card .tc-hero-status-chip.chip-normal {
+  background: #d97706;
+}
+
+.df-hero-card .tc-hero-status-chip.chip-caution {
+  background: #ea580c;
+}
+
+.df-hero-card .tc-hero-status-chip.chip-bad,
+.df-hero-card .tc-hero-status-chip.chip-block {
+  background: #dc2626;
+}
+
+.df-hero-card .tc-hero-caption {
+  margin: 2px 0 0;
+  font-size: 12.5px;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.9);
+  line-height: 1.4;
+  word-break: keep-all;
+}
+
+.df-hero-card .tc-hero-gauge-wrap {
+  position: relative;
+  width: 64px;
+  height: 64px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.12);
+  border-radius: 50%;
+  backdrop-filter: blur(6px);
+  padding: 3px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  box-sizing: border-box;
+}
+
+.df-hero-card .tc-hero-gauge-svg {
+  width: 100%;
+  height: 100%;
+  transform: rotate(-90deg);
+}
+
+.df-hero-card .tc-hero-gauge-track {
+  fill: transparent;
+  stroke: rgba(255, 255, 255, 0.2);
+  stroke-width: 8;
+}
+
+.df-hero-card .tc-hero-gauge-progress {
+  fill: transparent;
+  stroke: #a7f3d0;
+  stroke-width: 8;
+  stroke-linecap: round;
+  transition: stroke-dashoffset 0.5s ease, stroke 0.3s ease;
+}
+
+.df-hero-card .tc-hero-gauge-text {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+}
+
+.df-hero-card .tc-hero-gauge-val {
+  font-size: 22px;
+  font-weight: 800;
+  line-height: 1;
   color: #ffffff;
 }
-.df-time-card.selected .df-time-pill-divider {
-  background: #ffffff;
+
+.df-hero-card .tc-hero-gauge-unit {
+  font-size: 10px;
+  font-weight: 700;
+  color: rgba(255, 255, 255, 0.85);
+  margin-top: -2px;
 }
 
 /* ─────────────────────────────────────────────────────────────
@@ -456,7 +624,8 @@
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 10px;
-  padding: 4px 20px 14px;
+  padding: 0;
+  width: 100%;
 }
 
 .df-mid-card {
@@ -476,19 +645,36 @@
 
 .df-mid-card:active { transform: scale(0.97); }
 
+.df-mid-card {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background: var(--tc-surface-card, #ffffff);
+  border: 1.5px solid var(--tc-outline-variant, #e0e2ec);
+  border-radius: 16px;
+  padding: 16px 12px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+}
+
 .df-mid-card-head {
   display: flex;
   align-items: center;
+  justify-content: center;
   gap: 6px;
 }
 
 .df-mid-period-icon {
-  font-size: 18px;
-  color: var(--tc-secondary, #006684);
+  font-size: 20px;
+  line-height: 1;
 }
 
 .df-mid-period-label {
-  font-size: 12px;
+  font-size: 15px;
   font-weight: 700;
   color: var(--tc-on-surface, #191c1e);
 }
@@ -497,20 +683,22 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 4px;
+  gap: 8px;
+  margin-top: 6px;
+  text-align: center;
 }
 
-.df-mid-score {
-  font-size: 28px;
-  font-weight: 900;
-  line-height: 1;
-  color: var(--tc-on-surface, #191c1e);
+.df-mid-pop-line {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--tc-on-surface-variant, #64748b);
+  letter-spacing: -0.2px;
 }
 
 .df-mid-card-pill {
-  font-size: 9px;
+  font-size: 11px;
   font-weight: 700;
-  padding: 3px 10px;
+  padding: 3px 12px;
   border-radius: 20px;
   white-space: nowrap;
 }
@@ -522,13 +710,8 @@
   box-shadow: 0 4px 14px rgba(0, 62, 122, 0.28);
 }
 
-.df-mid-card.selected .df-mid-period-icon { color: rgba(175, 204, 255, 0.85); }
-.df-mid-card.selected .df-mid-period-label { color: rgba(255, 255, 255, 0.85); }
-.df-mid-card.selected .df-mid-score { color: #ffffff; }
-.df-mid-card.selected .df-mid-card-pill {
-  background: rgba(255, 255, 255, 0.2);
-  color: #ffffff;
-}
+.df-mid-card.selected .df-mid-period-label { color: #ffffff; }
+.df-mid-card.selected .df-mid-pop-line { color: rgba(255, 255, 255, 0.85); }
 
 /* Bento section separator when shown after mid card */
 .df-mid-bento-label {
@@ -539,108 +722,511 @@
 }
 
 /* ─────────────────────────────────────────────────────────────
-   Empty / Loading
+   날씨 카드 (Today tc-weather-card 구조 재사용)
    ───────────────────────────────────────────────────────────── */
-.df-empty {
-  text-align: center;
-  padding: 24px 20px;
-  color: var(--tc-outline, #727783);
-  font-size: 13px;
-  font-weight: 500;
+.df-weather-section {
+  padding: 0 20px 14px;
 }
 
-.df-empty-card {
-  margin: 0 20px;
+.df-weather-card {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 16px;
+  background: var(--tc-surface-lowest, #ffffff);
+  border: 1px solid rgba(194, 198, 211, 0.35);
+  border-radius: 16px;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.04);
+}
+
+.df-weather-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.df-weather-icon-circle {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #fff8e1 0%, #fef3c7 100%);
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.05);
+  flex-shrink: 0;
+}
+
+.df-weather-icon-circle .material-symbols-outlined {
+  font-size: 26px;
+}
+
+.df-weather-label-wrap {
   display: flex;
   flex-direction: column;
-  align-items: center;
-  gap: 10px;
-  padding: 28px 20px;
-  background: var(--tc-surface-lowest, #ffffff);
-  border: 1px solid rgba(194, 198, 211, 0.4);
-  border-radius: 16px;
+  gap: 3px;
+}
+
+.df-weather-label {
+  font-size: 17px;
+  font-weight: 700;
+  color: var(--tc-on-surface, #191c1e);
+  line-height: 1.1;
+}
+
+.df-weather-sub {
+  font-size: 11px;
+  font-weight: 600;
   color: var(--tc-on-surface-variant, #424751);
 }
 
-.df-empty-card .material-symbols-outlined {
-  font-size: 32px;
-  color: var(--tc-outline, #727783);
+.df-weather-divider {
+  width: 1px;
+  height: 38px;
+  background: rgba(194, 198, 211, 0.4);
+  margin: 0 8px;
+  flex-shrink: 0;
 }
 
-.df-empty-card p {
+.df-weather-right {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  justify-content: center;
+}
+
+.df-temp-row {
+  display: flex;
+  align-items: baseline;
+}
+
+.df-temp-current {
+  font-size: 26px;
+  font-weight: 800;
+  line-height: 1;
+  color: var(--tc-on-surface, #191c1e);
+  letter-spacing: -0.02em;
+}
+
+.df-rain-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 5px;
+}
+
+.df-rain-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--tc-on-surface-variant, #424751);
+}
+
+.df-rain-item .material-symbols-outlined {
+  font-size: 14px;
+}
+
+/* ─────────────────────────────────────────────────────────────
+   바다 수치 — tc-metric-card 패턴 (Today 동일)
+   ───────────────────────────────────────────────────────────── */
+.df-metrics-section {
+  padding: 0;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.df-metrics-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0;
+}
+
+.df-metrics-header h3 {
   margin: 0;
-  font-size: 13px;
-  font-weight: 500;
-  text-align: center;
-  line-height: 1.5;
+  font-size: 20px;
+  font-weight: 800;
+  color: #0f172a;
+  letter-spacing: -0.02em;
 }
 
-.df-loading {
-  margin: 0 20px;
-  padding: 20px 16px;
+.df-metrics-ref-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 5px 9px;
+  background: #f1f5f9;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  font-size: 11.5px;
+  font-weight: 600;
+  color: #475569;
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+.df-metrics-ref-badge:hover {
+  background: #e2e8f0;
+  color: #003e7a;
+}
+
+.df-metrics-ref-badge .material-symbols-outlined {
+  font-size: 14px;
+}
+
+/* 3-column grid — Today tc-metrics-grid 동일 */
+.df-metrics-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+  align-items: stretch;
+}
+
+/* 메트릭 카드 — Today tc-metric-card 완전 동일 구조 */
+.df-metric-card {
+  min-width: 0;
+  position: relative;
+  background: #ffffff;
+  border: 1px solid rgba(226, 232, 240, 0.85);
+  border-radius: 20px;
+  padding: 13px 6px 11px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: space-between;
   text-align: center;
-  color: var(--tc-outline, #727783);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.03);
+  box-sizing: border-box;
+  min-height: 124px;
+  transition: border-color 0.15s ease, transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.df-metric-clickable {
+  cursor: pointer;
+}
+
+.df-metric-clickable:hover {
+  border-color: rgba(0, 85, 164, 0.3);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06);
+}
+
+.df-metric-info-btn {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  width: 20px;
+  height: 20px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: #94a3b8;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  transition: color 0.15s ease, background 0.15s ease;
+}
+
+.df-metric-info-btn:hover {
+  color: var(--tc-primary, #003e7a);
+  background: rgba(0, 62, 122, 0.08);
+}
+
+.df-metric-info-btn .material-symbols-outlined {
+  font-size: 14px;
+}
+
+.df-metric-icon-circle {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 4px;
+}
+
+.df-metric-icon-circle .material-symbols-outlined {
+  font-size: 20px;
+}
+
+.df-metric-title {
+  font-size: 11.5px;
+  font-weight: 700;
+  color: #334155;
+  margin-bottom: 2px;
+  line-height: 1.15;
+  white-space: nowrap;
+}
+
+.df-metric-value-wrap {
+  max-width: 100%;
+  font-size: 16px;
+  font-weight: 800;
+  color: #0f172a;
+  line-height: 1.1;
+  margin-bottom: 6px;
+  letter-spacing: -0.02em;
+}
+
+.df-metric-unit {
+  font-size: 11px;
+  font-weight: 600;
+  color: #64748b;
+  font-style: normal;
+  margin-left: 2px;
+}
+
+.df-metric-pill {
+  width: calc(100% - 8px);
+  padding: 3px 6px;
+  border-radius: 99px;
+  font-size: 10px;
+  font-weight: 700;
+  text-align: center;
+  line-height: 1.15;
+  white-space: nowrap;
+  box-sizing: border-box;
+}
+
+/* 아이콘 원 색상 — Today circle-* 동일 */
+.circle-wave      { background: #e0f2fe; color: #0284c7; }
+.circle-temp      { background: #f3e8ff; color: #9333ea; }
+.circle-period    { background: #dbeafe; color: #2563eb; }
+.circle-current   { background: #fee2e2; color: #e11d48; }
+.circle-wind      { background: #f3e8ff; color: #9333ea; }
+.circle-direction { background: #f1f5f9; color: #475569; }
+.circle-vis       { background: #ffedd5; color: #ea580c; }
+.circle-rain      { background: #e0e7ff; color: #4f46e5; }
+
+/* Pill 색상 — Today pill-* 동일 */
+.pill-good    { background: #dcfce7; color: #15803d; border: 1px solid #bbf7d0; }
+.pill-normal  { background: #eff6ff; color: #1d4ed8; border: 1px solid #fde68a; }
+.pill-caution { background: #ffedd5; color: #c2410c; border: 1px solid #fed7aa; }
+.pill-bad     { background: #fee2e2; color: #b91c1c; border: 1px solid #fca5a5; }
+.pill-neutral { background: #f1f5f9; color: #475569; border: 1px solid #e2e8f0; }
+
+/* ─────────────────────────────────────────────────────────────
+   조석 카드 — Today tc-tide-card 동일 (2-column span)
+   ───────────────────────────────────────────────────────────── */
+.df-metric-card.df-tide-card {
+  grid-column: span 2;
+  background: #ffffff;
+  border: 1px solid rgba(226, 232, 240, 0.85);
+  border-radius: 20px;
+  padding: 10px 8px 6px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  position: relative;
+  overflow: hidden;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.03);
+  box-sizing: border-box;
+  min-height: 124px;
+}
+
+.df-tide-card-header {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  z-index: 10;
+}
+
+.df-tide-more-btn {
+  background: #f1f5f9;
+  border: 1px solid #e2e8f0;
+  color: #475569;
+  font-size: 10.5px;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 99px;
+  cursor: pointer;
+  font-family: inherit;
+  line-height: 1.2;
+  transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+}
+
+.df-tide-more-btn:hover {
+  background: #e2e8f0;
+  color: #0f172a;
+  border-color: #cbd5e1;
+}
+
+.df-tide-graph {
+  width: 100%;
+  height: 100%;
+  min-height: 98px;
+  display: flex;
+  align-items: flex-end;
+  background: transparent;
+}
+
+.df-tide-graph svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+/* 조석 SVG 내 스타일 (Today tc-tide-* 동일) */
+.df-tide-grid line {
+  stroke: rgba(226, 232, 240, 0.85);
+  stroke-width: 0.75;
+}
+
+.df-tide-grid text {
+  fill: #64748b;
+  font-size: 8.5px;
+  font-weight: 600;
+  font-family: inherit;
+}
+
+.df-tide-area {
+  fill: url(#dfTideAreaFill);
+}
+
+.df-tide-line {
+  fill: none;
+  stroke: #0d9488;
+  stroke-width: 2.2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.df-tide-event circle {
+  stroke: #ffffff;
+  stroke-width: 1.8;
+}
+
+.df-tide-event text {
+  font-family: inherit;
+  paint-order: stroke;
+  stroke: #ffffff;
+  stroke-linejoin: round;
+  stroke-width: 2.5px;
+}
+
+.df-tide-event-high circle { fill: #f43f5e; }
+.df-tide-event-low  circle { fill: #0284c7; }
+
+.df-tide-current line {
+  stroke: #0284c7;
+  stroke-width: 1;
+  stroke-dasharray: 2 2;
+}
+
+.df-tide-current circle {
+  fill: #0284c7;
+  stroke: #ffffff;
+  stroke-width: 2;
+}
+
+.df-tide-current text {
+  fill: #0369a1;
+  font-family: inherit;
+  font-size: 8.5px;
+  font-weight: 800;
+  paint-order: stroke;
+  stroke: #ffffff;
+  stroke-linejoin: round;
+  stroke-width: 2.5px;
+}
+
+/* 확대 조석 모달 카드 */
+.tc-tide-modal-card {
+  background: #ffffff;
+  border-radius: 20px;
+  padding: 18px 12px 14px;
+  margin-top: 6px;
+  border: 1px solid rgba(226, 232, 240, 0.85);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.04);
+  box-sizing: border-box;
+  width: 100%;
+}
+
+.tc-tide-modal-graph {
+  width: 100%;
+  position: relative;
+}
+
+.tc-tide-modal-graph svg {
+  width: 100%;
+  height: auto;
+  min-height: 195px;
+  display: block;
+  overflow: visible;
+}
+
+.tc-tide-sheet-subinfo {
   font-size: 13px;
   font-weight: 500;
-  background: var(--tc-surface-lowest, #ffffff);
+  color: #64748b;
+  margin: -2px 0 2px 2px;
+  letter-spacing: -0.2px;
+}
+
+.tc-sheet-factors {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
   border-radius: 14px;
-  border: 1px solid rgba(194, 198, 211, 0.3);
-  animation: dfPulse 1.4s ease-in-out infinite;
+  padding: 14px 16px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02);
 }
 
-@keyframes dfPulse {
-  0%, 100% { opacity: 1; }
-  50%       { opacity: 0.5; }
+.tc-sheet-factor-item {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  border-bottom: 1px dashed #e2e8f0;
+  padding: 10px 0;
 }
 
-/* ─────────────────────────────────────────────────────────────
-   Divider between sections
-   ───────────────────────────────────────────────────────────── */
-.df-section-divider {
-  height: 1px;
-  background: rgba(194, 198, 211, 0.35);
-  margin: 6px 20px 14px;
+.tc-sheet-factor-item:first-child {
+  padding-top: 2px;
 }
 
-/* ─────────────────────────────────────────────────────────────
-   Responsive
-   ───────────────────────────────────────────────────────────── */
-
-/* 360px and below */
-@media (max-width: 360px) {
-  .df-day-card,
-  .df-time-card {
-    flex: 0 0 78px;
-    width: 78px;
-    height: 78px;
-  }
-  .df-title-section h2 { font-size: 24px; }
-  .df-bento-grid { gap: 8px; }
-  .df-bento-card { padding: 8px 6px; }
-  .df-bento-value { font-size: 14px; }
-  .df-days-section,
-  .df-title-section { padding-left: 14px; padding-right: 14px; }
+.tc-sheet-factor-item:last-child {
+  border-bottom: none;
+  padding-bottom: 2px;
 }
 
-/* 430px+ */
-@media (min-width: 431px) {
-  .df-day-card,
-  .df-time-card {
-    flex: 0 0 90px;
-    width: 90px;
-    height: 90px;
-  }
-  .df-day-score-big { font-size: 24px; }
-  .df-time-weather-icon { font-size: 22px; }
+.tc-sheet-factor-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
 }
 
-/* Tablet/Desktop */
-@media (min-width: 700px) {
-  #dailyForecastDetailModal .df-content { padding-bottom: 56px; }
-  .df-title-section { padding: 8px 28px 16px; }
-  .df-days-section  { padding: 0 28px 16px; }
-  .df-time-slots-scroll { padding: 4px 28px 12px; }
-  .df-bento-section { padding: 6px 28px 16px; }
-  .df-mid-cards     { padding: 4px 28px 16px; }
-  .df-bento-grid    { gap: 12px; }
+.tc-sheet-factor-title {
+  color: #64748b;
+  font-size: 13.5px;
+  font-weight: 600;
 }
+
+.tc-sheet-factor-val {
+  font-weight: 700;
+  color: #0f172a;
+  font-size: 14.5px;
+}
+
+.tc-sheet-factor-val.tc-sheet-factor-highlight {
+  color: #047857;
+  font-weight: 800;
+}
+
+.tc-sheet-factor-desc {
+  font-size: 12.5px;
+  font-weight: 500;
+  color: #64748b;
+  line-height: 1.4;
+  letter-spacing: -0.2px;
+}
+

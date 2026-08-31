@@ -642,7 +642,7 @@ export function evaluateShort(dto: ShortEvaluationInputDTO): ServerEvaluationRes
   const visResult = visibilityB({ wave_height: waveH!, precipitation: precip }, dto.point.environment, combinedHistory);
   
   // V1.5 §20~§23: Visual Condition & Final Visual Visibility
-  const lightState = resolveVisualLightState(dto.forecast_time, dto.sun_times, [6, 9, 12, 15, 18]);
+  const lightState = resolveVisualLightState(dto.forecast_time, dto.sun_times, [3, 6, 9, 12, 15, 18, 21]);
   const weatherState = classifyVisualWeatherState(dto.kma_slot);
   const finalVis = computeFinalVisualVisibility(visResult.score, visResult.grade, lightState, weatherState);
 
@@ -808,7 +808,11 @@ export function evaluateMid(dto: MidEvaluationInputDTO): ServerEvaluationResult 
       entry_score: entryResult.a,
       comfort_score: comfScore,
       temperature_suitability: tempSuit.label,
-      temperature_cap: tempSuit.recommendationCap
+      temperature_cap: tempSuit.recommendationCap,
+      ta_min: (dto.kma_mid_temp?.temp_min !== undefined && dto.kma_mid_temp?.temp_min !== null && Number.isFinite(Number(dto.kma_mid_temp.temp_min))) ? Number(dto.kma_mid_temp.temp_min) : null,
+      ta_max: (dto.kma_mid_temp?.temp_max !== undefined && dto.kma_mid_temp?.temp_max !== null && Number.isFinite(Number(dto.kma_mid_temp.temp_max))) ? Number(dto.kma_mid_temp.temp_max) : null,
+      rain_probability: (dto.kma_mid_land?.precipitation_probability !== undefined && dto.kma_mid_land?.precipitation_probability !== null && Number.isFinite(Number(dto.kma_mid_land.precipitation_probability))) ? Number(dto.kma_mid_land.precipitation_probability) : null,
+      weather_text: dto.kma_mid_land?.weather ? String(dto.kma_mid_land.weather) : null,
     },
     min_max_metrics: {
       wave_height: { min: Math.min(...waveHeights), max: maxWave, mean: Math.round(meanWave * 100) / 100 },

@@ -20,6 +20,96 @@
     return window.getSnorkySupabase ? window.getSnorkySupabase() : window.snorkySupabase;
   }
 
+  function getResultHour(row) {
+    if (row?.hour !== null && row?.hour !== "" && Number.isFinite(Number(row?.hour))) return Number(row.hour);
+
+    const periodStart = row?.period_start || row?.forecast_time;
+    if (!periodStart) return null;
+
+    const text = String(periodStart);
+    if (text.includes("+09:00")) {
+      const match = text.match(/T(\d{2}):/);
+      return match ? Number(match[1]) : null;
+    }
+
+    const parsed = new Date(text);
+    if (Number.isNaN(parsed.getTime())) return null;
+    return new Date(parsed.getTime() + 9 * 3600000).getUTCHours();
+  }
+
+  function selectCurrentTodayHourlySlot(rows, referenceTime = new Date()) {
+    if (!Array.isArray(rows) || !rows.length) return null;
+
+    const candidates = rows
+      .map(row => ({ row, hour: getResultHour(row) }))
+      .filter(item => Number.isFinite(item.hour));
+    if (!candidates.length) return rows[0] || null;
+
+    const nowHour = referenceTime.getHours() + referenceTime.getMinutes() / 60;
+    const latestPast = [...candidates].filter(item => item.hour < nowHour).sort((a, b) => b.hour - a.hour)[0];
+    const nearestFuture = [...candidates].filter(item => item.hour >= nowHour).sort((a, b) => a.hour - b.hour)[0];
+    const selected = !latestPast ? nearestFuture : !nearestFuture ? latestPast
+      : nowHour - latestPast.hour <= nearestFuture.hour - nowHour ? latestPast : nearestFuture;
+    return selected?.row || candidates[0].row;
+  }
+
+  function getWarningDisplayLabel(warning) {
+    if (!warning) return null;
+    const type = String(warning.warningName || "").replace(/\s+/g, "").trim();
+    const level = String(warning.levelName || "").replace(/\s+/g, "").trim();
+    if (!type && !level) return null;
+    if (level && type.includes(level)) return type;
+    if (/주의보$|경보$|특보$/.test(type)) return type;
+    return `${type || "해상"}${level || "특보"}`;
+  }
+
+  function getSafetyReasonDisplayLabel(reason) {
+    const text = String(reason || "").trim();
+    if (!text) return null;
+    const warningMatch = text.replace(/\s+/g, "").match(/(태풍(?:주의보|경보)|풍랑(?:주의보|경보)|폭풍해일(?:주의보|경보)|지진해일(?:주의보|경보)|호우(?:주의보|경보)|강풍(?:주의보|경보)|해일(?:주의보|경보))/);
+    if (warningMatch) return warningMatch[1];
+    if (/유의파고|파고/.test(text)) return "유의파고 위험";
+    if (/조류|유속/.test(text)) return "강한 조류";
+    if (/풍속|강풍|바람/.test(text)) return "강한 바람";
+    if (/낙뢰/.test(text)) return "낙뢰 위험";
+    if (/호우|폭우/.test(text)) return "호우 위험";
+    return "기타 안전 위험";
+  }
+
+  function safetyDisplayPriority(label) {
+    const priorities = {
+      "태풍경보": 1,
+      "태풍주의보": 2,
+      "풍랑경보": 3,
+      "풍랑주의보": 4,
+      "호우경보": 6,
+      "호우주의보": 7,
+      "강풍경보": 8,
+      "강풍주의보": 9,
+    };
+    if (priorities[label]) return priorities[label];
+    if (String(label).startsWith("폭풍해일") || String(label).startsWith("지진해일")) return 5;
+    return 99;
+  }
+
+  function formatSafetyBlockSummary(warningOrWarnings, reasons = []) {
+    const labels = [];
+    const warnings = Array.isArray(warningOrWarnings) ? warningOrWarnings : [warningOrWarnings].filter(Boolean);
+    warnings.forEach(warning => {
+      const warningLabel = getWarningDisplayLabel(warning);
+      if (warningLabel && !labels.includes(warningLabel)) labels.push(warningLabel);
+    });
+
+    (Array.isArray(reasons) ? reasons : []).forEach(reason => {
+      const label = getSafetyReasonDisplayLabel(reason);
+      if (label && !labels.includes(label)) labels.push(label);
+    });
+
+    if (!labels.length) labels.push("기타 안전 위험");
+    labels.sort((a, b) => safetyDisplayPriority(a) - safetyDisplayPriority(b));
+    return `입수 금지 · ${labels[0]}${labels.length > 1 ? ` 외 ${labels.length - 1}건` : ""}`;
+  }
+
   /**
    * Loads all TODAY results for all active points for today's KST date.
    * Returns Map<point_id, ResultRow>
@@ -245,6 +335,8 @@
     getKstDateString,
     loadTodayResults,
     loadTodayHourly,
+    selectCurrentTodayHourlySlot,
+    formatSafetyBlockSummary,
     loadShortResultsForPoint,
     loadMidResultsForPoint,
     loadAllSlotsForPoint,

@@ -393,6 +393,7 @@ let snorkyMapWarningMode=false;
 let snorkyMapSelectedRegion="";
 let snorkyMapSelectedPoint=null;
 let snorkyMapExpanded=false;
+let snorkyMapPreviewRequestId=0;
 let lastMapExpandedState=false;
 let snorkyMapLayerType="roadmap";
 
@@ -1161,28 +1162,46 @@ function restoreMapState(returnState){
   });
 }
 
-function showPointPreviewCard(point){
+async function showPointPreviewCard(point){
   const preview=document.getElementById("snorkyMapPreviewCard");
   const nearestBox=document.getElementById("snorkyMapNearestBox");
   const warningBox=document.getElementById("snorkyMapWarningBox");
   const panel=document.getElementById("snorkyMapBottomPanel");
   if(!preview||!nearestBox)return;
 
+  const pointId=String(point.supabaseId||point.id||"");
+  const requestId=++snorkyMapPreviewRequestId;
+  const resultReader=window.SNORKYEvaluationResults;
+  let resultRow=null;
+  if(resultReader?.loadTodayHourly&&resultReader?.selectCurrentTodayHourlySlot){
+    try{
+      const hourlyRows=await resultReader.loadTodayHourly(pointId);
+      resultRow=resultReader.selectCurrentTodayHourlySlot(hourlyRows);
+    }catch(error){
+      console.warn(`[SNORKY Map Preview] TODAY_HOURLY 조회 실패: ${pointId}`,error);
+    }
+  }
+  if(requestId!==snorkyMapPreviewRequestId)return;
+  if(String(snorkyMapSelectedPoint?.supabaseId||snorkyMapSelectedPoint?.id||"")!==pointId)return;
+
   const image=pointImage(point);
   const distance=Number.isFinite(point.distance)?point.distance.toFixed(1)+"km":"--";
 
-  // 1. Evaluate/Snapshot row lookup
-  const todaySnapshot=window.SNORKYTodayBest?.getSnapshot?.();
-  const allRows=todaySnapshot?.rows||todaySnapshot?.homeRows||todaySnapshot?.evaluated||[];
-  const evalItem=allRows.find(e=>
-    String(e.point?.id||e.id)===String(point.id)||
-    String(e.point?.supabaseId||e.supabaseId)===String(point.supabaseId)||
-    String(e.point?.id||e.id)===String(point.supabaseId)||
-    String(e.point?.supabaseId||e.supabaseId)===String(point.id)
-  );
-
-  // 2. V1.2 CommonResult 우선 참조 — 없으면 기존 evalItem 폴백
-  const v12=evalItem?.v12||point.v12||null;
+  // Today 상세와 동일한 현재 TODAY_HOURLY 슬롯만 참조
+  const resultMetrics=resultRow?.metrics||{};
+  const v12=resultRow?{
+    conditionScore:resultRow.condition_score,
+    conditionStatus:resultRow.condition_status,
+    safety:resultRow.safety_status,
+    safetyReasons:resultRow.safety_reasons||[],
+    qualityStatus:resultRow.quality_status,
+    recommendation:resultRow.recommendation,
+    visibilityGrade:resultRow.visibility_grade??resultMetrics.visibility_grade??null,
+    visibilityScore:resultRow.visibility_score??resultMetrics.visibility_score??null,
+    waveHeight:resultRow.wave_height??resultMetrics.wave_height??null,
+    seaTemperature:resultRow.sea_temperature??resultMetrics.sea_temperature??null,
+    windSpeed:resultRow.wind_speed??resultMetrics.wind_speed??null
+  }:null;
   const liveSafety=window.SNORKYMarineSafety?.statusForPoint(point);
   const liveWarning=liveSafety?.warning;
   const nonWarningReason=(v12?.safetyReasons||[]).find(reason=>!String(reason).includes("발효 중"));
@@ -1201,38 +1220,24 @@ function showPointPreviewCard(point){
 
   // 예상 수중시야: TODAY Result의 visibility_grade 우선 매핑
   let visDisplay="--";
-  const rawVis = v12?.visibilityGrade || point.visibility_grade || evalItem?.visibility_grade || evalItem?.res?.visibility_grade || evalItem?.row?.underwater_visibility_label;
+  const rawVis=v12?.visibilityGrade;
   if(!isBlocked && !isUnknown && rawVis && rawVis !== "UNKNOWN"){
     visDisplay = rawVis;
   }
 
-  // 파고: TODAY Result의 wave_height 우선 매핑
-  const rawWave = v12?.waveHeight ?? evalItem?.wave_height ?? evalItem?.res?.metrics?.wave_height ?? point.wave_height ?? evalItem?.res?.wave_height ?? evalItem?.row?.wave_height ?? evalItem?.wave;
+  // 파고와 Safety 사유는 동일한 TODAY_HOURLY 결과 행을 사용
+  const rawWave=v12?.waveHeight;
   const waveDisplay = Number.isFinite(Number(rawWave)) ? `${Number(rawWave).toFixed(1)}m` : "--";
 
-  // 수온: 최신 TODAY Result의 metrics.sea_temperature 우선 매핑
-  const rawSeaTemperature = v12?.seaTemperature ?? evalItem?.res?.metrics?.sea_temperature ?? evalItem?.sea_temperature ?? null;
+  const rawSeaTemperature=v12?.seaTemperature;
   const seaTemperatureDisplay = Number.isFinite(Number(rawSeaTemperature)) ? `${Number(rawSeaTemperature).toFixed(1)}°C` : "--";
 
   // 3. Safety Warning Banner (BLOCK / UNKNOWN) — PASS는 완전 숨김
   let warningHtml="";
   if(isBlocked){
-    let blockReason="";
-    if(liveWarning){
-      const area=liveWarning.areaName||liveSafety?.areaName||"";
-      const name=liveWarning.warningName||"해상";
-      const level=liveWarning.levelName||"특보";
-      blockReason=`${area?area+" ":""}${name}${level} 발효 중`;
-    }else if(nonWarningReason){
-      blockReason=nonWarningReason;
-    }else if(evalItem?.hardLabel){
-      blockReason=evalItem.hardLabel;
-    }else if(evalItem?.reason){
-      blockReason=evalItem.reason;
-    }else{
-      blockReason="해상 위험 요인 감지";
-    }
-    warningHtml=`<div class="snorky-map-preview-warning"><span class="snorky-map-warning-text">입수 금지 · ${escapeHtml(blockReason)}</span></div>`;
+    const safetySummary=resultReader?.formatSafetyBlockSummary?.(liveSafety?.warnings||liveWarning,v12?.safetyReasons)
+      ||"입수 금지 · 기타 안전 위험";
+    warningHtml=`<div class="snorky-map-preview-warning"><span class="snorky-map-warning-text">${escapeHtml(safetySummary)}</span></div>`;
   }else if(isUnknown){
     warningHtml=`<div class="snorky-map-preview-warning"><span class="snorky-map-warning-text">안전 정보 확인 필요</span></div>`;
   }

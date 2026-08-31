@@ -28,7 +28,7 @@ export function marineUrl(latitude: number | number[], longitude: number | numbe
   url.searchParams.set("latitude", Array.isArray(latitude) ? latitude.join(",") : String(latitude));
   url.searchParams.set("longitude", Array.isArray(longitude) ? longitude.join(",") : String(longitude));
   url.searchParams.set("hourly", MARINE_HOURLY_FIELDS.join(","));
-  url.searchParams.set("wind_speed_unit", "ms");
+  url.searchParams.set("velocity_unit", "ms");
   url.searchParams.set("timezone", "Asia/Seoul");
   url.searchParams.set("past_days", "2");
   url.searchParams.set("forecast_days", "7");

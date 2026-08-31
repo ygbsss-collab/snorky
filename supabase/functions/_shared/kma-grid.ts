@@ -19,9 +19,10 @@ export type SnorkyPoint = {
   longitude?: number | null;
   environment?: PointEnvironment | null;
   warning_area_code?: string | null;
+  land_warning_area_code?: string | null;
   updated_at?: string | null;
 };
-export type GridPoint = { id: string | number; name: string; region: string | null; latitude: number; longitude: number; environment?: PointEnvironment | null; warning_area_code?: string | null };
+export type GridPoint = { id: string | number; name: string; region: string | null; latitude: number; longitude: number; environment?: PointEnvironment | null; warning_area_code?: string | null; land_warning_area_code?: string | null };
 export type GridGroup = { gridKey: string; nx: number; ny: number; points: GridPoint[] };
 
 const BOUNDS={minLat:32,maxLat:39.8,minLon:124,maxLon:132};

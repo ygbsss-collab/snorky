@@ -81,6 +81,7 @@ export interface TodayEvaluationInputDTO {
     status: "PASS" | "BLOCK" | "UNKNOWN";
     active_warnings: string[];
     warning_area_code?: string | null;
+    land_warning_area_code?: string | null;
   };
   sun_times: KasiSunTimesInput;
   marine_history: MarineHistoryItem[];

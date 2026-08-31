@@ -62,6 +62,7 @@ export async function runPointEvaluationBatch(
     pointIds?: Array<number | string>;
     dryRun?: boolean;
     evaluatedAt?: string;
+    modes?: Array<"TODAY" | "TODAY_HOURLY" | "SHORT" | "MID">;
   } = {}
 ): Promise<EvaluationRefreshReport> {
   const runId = crypto.randomUUID();
@@ -88,6 +89,7 @@ export async function runPointEvaluationBatch(
         {
           evaluatedAt,
           dryRun: Boolean(options.dryRun),
+          modes: options.modes,
         }
       );
 
@@ -174,6 +176,7 @@ if (typeof (globalThis as any).Deno !== "undefined" && (globalThis as any).Deno?
         pointIds: body?.point_ids,
         dryRun: Boolean(body?.dry_run),
         evaluatedAt: body?.evaluated_at,
+        modes: body?.modes,
       });
 
       return json(report, 200);

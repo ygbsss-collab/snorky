@@ -7,28 +7,51 @@ const state={status:"UNKNOWN",warnings:[],updatedAt:null,error:null};
 const registeredAreaCodes=new Set();
 
 function snapshot(){return{status:state.status,warnings:[...state.warnings],updatedAt:state.updatedAt,error:state.error}}
-function pointAreaCode(point){
-  const code=String(point?.warningAreaCode||point?.warning_area_code||"").trim();
-  if(/^S\d{7}$/.test(code))return code;
+function pointAreaCodes(point){
+  const codes=[];
+  const add=(value,pattern)=>{const code=String(value||"").trim();if(pattern.test(code)&&!codes.includes(code))codes.push(code)};
+  add(point?.warningAreaCode||point?.warning_area_code,/^S\d{7}$/);
   const lat=Number(point?.lat??point?.[1]),lng=Number(point?.lng??point?.[2]);
   if(Number.isFinite(lat)&&Number.isFinite(lng)&&typeof window.SNORKYWarningZones?.resolveWarningAreaCode==="function"){
     const resolved=window.SNORKYWarningZones.resolveWarningAreaCode(lat,lng);
-    if(/^S\d{7}$/.test(resolved||""))return resolved;
+    add(resolved,/^S\d{7}$/);
   }
-  const regCode=String(point?.region?.warningAreaCode||point?.region?.warning_area_code||"").trim();
-  if(/^S\d{7}$/.test(regCode))return regCode;
-  return null;
+  add(point?.region?.warningAreaCode||point?.region?.warning_area_code,/^S\d{7}$/);
+  add(point?.landWarningAreaCode||point?.land_warning_area_code,/^L\d{7}$/);
+  add(point?.region?.landWarningAreaCode||point?.region?.land_warning_area_code,/^L\d{7}$/);
+  return codes;
 }
-function statusForCode(code,areaName=null){
-  if(!/^S\d{7}$/.test(code||""))return{status:"UNKNOWN",warningAreaCode:null,areaName,warning:null};
-  if(state.status!=="READY")return{status:"UNKNOWN",warningAreaCode:code,areaName,warning:null};
-  const warning=state.warnings.find(item=>item.active&&(item.regId===code||item.regUp===code))||null;
-  return{status:warning?"BLOCK":"PASS",warningAreaCode:code,areaName:areaName||warning?.areaName||null,warning};
+function pointAreaCode(point){return pointAreaCodes(point).find(code=>code.startsWith("S"))||null}
+function warningPriority(item){
+  const key=`${item?.warningName||""}${item?.levelName||""}`;
+  if(key==="태풍경보")return 1;if(key==="태풍주의보")return 2;
+  if(key==="풍랑경보")return 3;if(key==="풍랑주의보")return 4;
+  if(item?.warningName==="폭풍해일"||item?.warningName==="지진해일")return 5;
+  if(key==="호우경보")return 6;if(key==="호우주의보")return 7;
+  if(key==="강풍경보")return 8;if(key==="강풍주의보")return 9;
+  return 99;
 }
-function statusForPoint(point){return statusForCode(pointAreaCode(point),point?.warningAreaName||null)}
+function statusForCodes(codes,areaName=null){
+  const valid=[...new Set((codes||[]).filter(code=>/^[LS]\d{7}$/.test(code||"")))];
+  if(!valid.length)return{status:"UNKNOWN",warningAreaCode:null,warningAreaCodes:[],areaName,warning:null,warnings:[]};
+  if(state.status!=="READY")return{status:"UNKNOWN",warningAreaCode:valid[0],warningAreaCodes:valid,areaName,warning:null,warnings:[]};
+  const matched=state.warnings.filter(item=>{
+    if(!item.active)return false;
+    const matchedArea=valid.find(code=>item.regId===code||item.regUp===code);
+    if(!matchedArea)return false;
+    return !matchedArea.startsWith("L")||["호우","강풍","태풍"].includes(String(item.warningName||""));
+  });
+  const deduped=[];
+  const seen=new Set();
+  matched.sort((a,b)=>warningPriority(a)-warningPriority(b)).forEach(item=>{const key=`${item.warningName||""}:${item.levelName||""}`;if(!seen.has(key)){seen.add(key);deduped.push(item)}});
+  const warning=deduped[0]||null;
+  return{status:warning?"BLOCK":"PASS",warningAreaCode:valid[0],warningAreaCodes:valid,areaName:areaName||warning?.areaName||null,warning,warnings:deduped};
+}
+function statusForCode(code,areaName=null){return statusForCodes([code],areaName)}
+function statusForPoint(point){return statusForCodes(pointAreaCodes(point),point?.warningAreaName||null)}
 function isBlocked(point){return statusForPoint(point).status==="BLOCK"}
 function passesRecommendationGate(point){return statusForPoint(point).status==="PASS"}
-function registerPoints(points){for(const point of points||[]){const code=pointAreaCode(point);if(code)registeredAreaCodes.add(code)}renderBanner()}
+function registerPoints(points){for(const point of points||[])for(const code of pointAreaCodes(point))registeredAreaCodes.add(code);renderBanner()}
 
 function ensureBanner(){
   let banner=document.getElementById("kmaSafetyBanner");
@@ -61,5 +84,5 @@ async function refresh(){
 }
 
 const ready=refresh();
-window.SNORKYMarineSafety=Object.freeze({testMode:TEST_MODE,get activeWarnings(){return[...state.warnings]},get state(){return snapshot()},ready,refresh,pointAreaCode,statusForCode,statusForPoint,getPointMarineSafety:statusForPoint,isBlocked,passesRecommendationGate,registerPoints});
+window.SNORKYMarineSafety=Object.freeze({testMode:TEST_MODE,get activeWarnings(){return[...state.warnings]},get state(){return snapshot()},ready,refresh,pointAreaCode,pointAreaCodes,statusForCode,statusForCodes,statusForPoint,getPointMarineSafety:statusForPoint,isBlocked,passesRecommendationGate,registerPoints});
 })();

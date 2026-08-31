@@ -220,138 +220,147 @@
   function renderTideGraphToSvg(svg, isModal = false) {
     if (!svg) return;
 
-    const tideEvents = getTideEvents();
-
-    const chart = isModal
-      ? { width: 340, left: 20, right: 320, top: 44, bottom: 122 }
-      : { width: 360, left: 18, right: 342, top: 22, bottom: 70 };
-
-    const minLevel = Math.min(...tideEvents.map(event => event.level));
-    const maxLevel = Math.max(...tideEvents.map(event => event.level));
-    const levelRange = Math.max(1, maxLevel - minLevel);
-
-    const chartEvents = tideEvents.map(event => {
-      const levelRatio = (event.level - minLevel) / levelRange;
-      const x = chart.left + (event.minutes / 1440) * (chart.right - chart.left);
-      const y = isModal
-        ? (event.type === "high" ? chart.top + 22 - levelRatio * 18 : chart.bottom - 12 - levelRatio * 18)
-        : (event.type === "high" ? chart.top + 14 - levelRatio * 9 : chart.bottom - 8 - levelRatio * 10);
-      return { ...event, x, y };
-    });
-
-    const start = {
-      type: "boundary",
-      minutes: 0,
-      x: chart.left,
-      y: Math.min(chart.bottom - (isModal ? 6 : 5), chartEvents[0].y + (isModal ? 20 : 16)),
-    };
-    const end = {
-      type: "boundary",
-      minutes: 1440,
-      x: chart.right,
-      y: Math.max(chart.top + (isModal ? 10 : 7), chartEvents[chartEvents.length - 1].y - (isModal ? 16 : 14)),
-    };
-    const timelinePoints = [start, ...chartEvents, end];
-
-    const now = new Date();
-    const kstMinutes = (now.getUTCHours() + 9) % 24 * 60 + now.getUTCMinutes();
-    let left = timelinePoints[0];
-    let right = timelinePoints[1];
-    for (let index = 0; index < timelinePoints.length - 1; index += 1) {
-      if (kstMinutes >= timelinePoints[index].minutes && kstMinutes <= timelinePoints[index + 1].minutes) {
-        left = timelinePoints[index];
-        right = timelinePoints[index + 1];
-        break;
+    try {
+      const tideEvents = getTideEvents();
+      if (!tideEvents || !tideEvents.length) {
+        svg.innerHTML = `
+          <text x="${isModal ? 170 : 180}" y="${isModal ? 90 : 50}"
+                font-size="${isModal ? 14 : 11.5}" font-weight="600" fill="#94a3b8"
+                text-anchor="middle">조석 데이터 없음</text>`;
+        return;
       }
-    }
 
-    const span = Math.max(1, right.minutes - left.minutes);
-    const ratio = Math.max(0, Math.min(1, (kstMinutes - left.minutes) / span));
-    const curveRatio = ratio * ratio * (3 - 2 * ratio);
-    const markerX = left.x + (right.x - left.x) * ratio;
-    const markerY = left.y + (right.y - left.y) * curveRatio;
-    const hasLevelBounds = Number.isFinite(left.level) && Number.isFinite(right.level);
-    const currentLevel = hasLevelBounds ? Math.round(left.level + (right.level - left.level) * ratio) : null;
-    const nearTidePoint = left.type !== "boundary" && right.type !== "boundary"
-      && Math.min(Math.abs(kstMinutes - left.minutes), Math.abs(right.minutes - kstMinutes)) <= 30;
-    const direction = right.y < left.y ? "밀물" : "썰물";
-    const state = nearTidePoint
-      ? (Math.abs(right.level - left.level) < 1 ? "물때 전환" : `${left.type === "high" ? "썰물" : "밀물"} 전환`)
-      : direction;
-    const currentTime = `${String(Math.floor(kstMinutes / 60)).padStart(2, "0")}:${String(kstMinutes % 60).padStart(2, "0")}`;
-    const currentAria = currentLevel == null
-      ? `현재 ${currentTime}, ${state}`
-      : `현재 ${currentTime}, ${currentLevel}cm, ${state}`;
+      const chart = isModal
+        ? { left: 16, right: 324, top: 40, bottom: 122, labelY: 158 }
+        : { left: 14, right: 346, top: 18, bottom: 74,  labelY: 90 };
 
-    const curvePoints = timelinePoints;
-    const curvePath = curvePoints.reduce((path, point, index) => {
-      if (index === 0) return `M ${point.x.toFixed(1)} ${point.y.toFixed(1)}`;
-      const previous = curvePoints[index - 1];
-      const distance = point.x - previous.x;
-      return `${path} C ${(previous.x + distance * 0.45).toFixed(1)} ${previous.y.toFixed(1)}, ${(point.x - distance * 0.45).toFixed(1)} ${point.y.toFixed(1)}, ${point.x.toFixed(1)} ${point.y.toFixed(1)}`;
-    }, "");
-    const areaPath = `${curvePath} L ${chart.right} ${chart.bottom} L ${chart.left} ${chart.bottom} Z`;
+      const minLevel = Math.min(...tideEvents.map(e => e.level));
+      const maxLevel = Math.max(...tideEvents.map(e => e.level));
+      const levelRange = Math.max(1, maxLevel - minLevel);
+      const gradId = isModal ? "tcTideModalAreaFill" : "tcTideAreaFill";
 
-    const timeGrid = Array.from({ length: 12 }, (_, index) => {
-      const hour = index * 2;
-      const x = chart.left + (hour / 24) * (chart.right - chart.left);
-      const textY = isModal ? "158" : "91";
-      const fontSize = isModal ? "13.5" : "9";
-      const strokeW = isModal ? "1.5" : "1";
-      const fontColor = isModal ? "#cbd5e1" : "#94a3b8";
-      return `<g><line x1="${x.toFixed(1)}" y1="${chart.top}" x2="${x.toFixed(1)}" y2="${chart.bottom}" stroke-width="${strokeW}"/><text x="${x.toFixed(1)}" y="${textY}" font-size="${fontSize}" font-weight="${isModal ? '700' : '400'}" fill="${fontColor}" text-anchor="middle">${hour}시</text></g>`;
-    }).join("");
+      const chartEvents = tideEvents.map(event => {
+        const levelRatio = (event.level - minLevel) / levelRange;
+        const x = chart.left + (event.minutes / 1440) * (chart.right - chart.left);
+        const isHigh = event.type === "high";
+        const y = isHigh
+          ? chart.top + (isModal ? 20 : 14) - levelRatio * (isModal ? 18 : 9)
+          : chart.bottom - (isModal ? 12 : 8) - levelRatio * (isModal ? 18 : 10);
+        return { ...event, x, y };
+      });
 
-    const eventLabels = chartEvents.map(event => {
-      const isHigh = event.type === "high";
-      const r = isModal ? "7" : "3.2";
-      if (isModal) {
-        const nameY = isHigh ? event.y - 22 : event.y + 19;
-        const valueY = isHigh ? nameY + 15 : nameY + 18;
-        const label = isHigh ? "만조" : "간조";
+      const start = {
+        type: "boundary",
+        minutes: 0,
+        x: chart.left,
+        y: Math.min(chart.bottom - (isModal ? 6 : 5), chartEvents[0].y + (isModal ? 20 : 16)),
+      };
+      const end = {
+        type: "boundary",
+        minutes: 1440,
+        x: chart.right,
+        y: Math.max(chart.top + (isModal ? 10 : 7), chartEvents[chartEvents.length - 1].y - (isModal ? 16 : 14)),
+      };
+      const pts = [start, ...chartEvents, end];
+
+      // KST 현재 시각 위치 계산
+      const now = new Date();
+      const kstMinutes = (now.getUTCHours() + 9) % 24 * 60 + now.getUTCMinutes();
+      let left = pts[0];
+      let right = pts[1];
+      for (let index = 0; index < pts.length - 1; index += 1) {
+        if (kstMinutes >= pts[index].minutes && kstMinutes <= pts[index + 1].minutes) {
+          left = pts[index];
+          right = pts[index + 1];
+          break;
+        }
+      }
+
+      const span = Math.max(1, right.minutes - left.minutes);
+      const ratio = Math.max(0, Math.min(1, (kstMinutes - left.minutes) / span));
+      const curveRatio = ratio * ratio * (3 - 2 * ratio);
+      const markerX = left.x + (right.x - left.x) * ratio;
+      const markerY = left.y + (right.y - left.y) * curveRatio;
+      const hasLevelBounds = Number.isFinite(left.level) && Number.isFinite(right.level);
+      const currentLevel = hasLevelBounds ? Math.round(left.level + (right.level - left.level) * ratio) : null;
+      const currentTime = `${String(Math.floor(kstMinutes / 60)).padStart(2, "0")}:${String(kstMinutes % 60).padStart(2, "0")}`;
+      const currentAria = currentLevel == null
+        ? `현재 ${currentTime}`
+        : `현재 ${currentTime}, ${currentLevel}cm`;
+
+      const currentLabelX = Math.max(isModal ? 58 : 43, Math.min(chart.right - (isModal ? 58 : 43), markerX));
+      const currentMarkerR = isModal ? "6.5" : "3.8";
+      const currentTextY = isModal ? "18" : "11";
+      const currentFontSize = isModal ? "14" : "8.5";
+      const lineStrokeWidth = isModal ? 3.2 : 2;
+
+      const curvePath = pts.reduce((path, point, index) => {
+        if (index === 0) return `M ${point.x.toFixed(1)} ${point.y.toFixed(1)}`;
+        const prev = pts[index - 1];
+        const dist = point.x - prev.x;
+        return `${path} C ${(prev.x + dist * 0.45).toFixed(1)} ${prev.y.toFixed(1)}, ${(point.x - dist * 0.45).toFixed(1)} ${point.y.toFixed(1)}, ${point.x.toFixed(1)} ${point.y.toFixed(1)}`;
+      }, "");
+      const areaPath = `${curvePath} L ${chart.right} ${chart.bottom} L ${chart.left} ${chart.bottom} Z`;
+
+      const fs = isModal ? 13.5 : 8.5;
+      const timeGrid = Array.from({ length: 12 }, (_, i) => {
+        const hour = i * 2;
+        const x = chart.left + (hour / 24) * (chart.right - chart.left);
+        return `<g><line x1="${x.toFixed(1)}" y1="${chart.top}" x2="${x.toFixed(1)}" y2="${chart.bottom}" stroke-width="${isModal ? 1.2 : 0.75}"/><text x="${x.toFixed(1)}" y="${chart.labelY}" font-size="${fs}" font-weight="600" fill="#64748b" text-anchor="middle">${hour}시</text></g>`;
+      }).join("");
+
+      const eventLabels = chartEvents.map(event => {
+        const isHigh = event.type === "high";
+        const nameY  = isHigh ? event.y - (isModal ? 20 : 12) : event.y + (isModal ? 18 : 11);
+        const valueY = nameY + (isModal ? 15 : 9);
+        const label  = isHigh ? "만조" : "간조";
+        const color  = isHigh ? "#e11d48" : "#0284c7";
+        const cr     = isModal ? 6.5 : 3.8;
+        const nsz    = isModal ? 14 : 8.5;
+        const vsz    = isModal ? 16 : 8.5;
         return `
           <g class="tc-tide-event tc-tide-event-${event.type}">
-            <circle cx="${event.x.toFixed(1)}" cy="${event.y.toFixed(1)}" r="${r}" stroke-width="2.5"/>
-            <text x="${event.x.toFixed(1)}" y="${nameY.toFixed(1)}" font-size="14.5" font-weight="700" fill="#f1f5f9" text-anchor="middle">${label} ${event.time}</text>
-            <text x="${event.x.toFixed(1)}" y="${valueY.toFixed(1)}" font-size="18.5" font-weight="900" fill="#ffffff" text-anchor="middle">${event.level}cm</text>
+            <circle cx="${event.x.toFixed(1)}" cy="${event.y.toFixed(1)}" r="${cr}" stroke-width="${isModal ? 2.5 : 1.8}"/>
+            <text x="${event.x.toFixed(1)}" y="${nameY.toFixed(1)}" font-size="${nsz}" font-weight="700" fill="${color}" text-anchor="middle" paint-order="stroke" stroke="#ffffff" stroke-width="${isModal ? 3.5 : 2.5}" stroke-linejoin="round">${label} ${event.time}</text>
+            <text x="${event.x.toFixed(1)}" y="${valueY.toFixed(1)}" font-size="${vsz}" font-weight="${isModal ? 900 : 800}" fill="#0f172a" text-anchor="middle" paint-order="stroke" stroke="#ffffff" stroke-width="${isModal ? 3.5 : 2.5}" stroke-linejoin="round">${event.level}cm</text>
           </g>`;
-      } else {
-        const nameY = isHigh ? Math.max(10, event.y - 12) : Math.min(77, event.y + 10);
-        const valueY = nameY + 8;
-        const label = isHigh ? "만조" : "간조";
-        return `<g class="tc-tide-event tc-tide-event-${event.type}"><circle cx="${event.x.toFixed(1)}" cy="${event.y.toFixed(1)}" r="${r}"/><text x="${event.x.toFixed(1)}" y="${nameY.toFixed(1)}" text-anchor="middle">${label} ${event.time}</text><text x="${event.x.toFixed(1)}" y="${valueY.toFixed(1)}" text-anchor="middle">${event.level}cm</text></g>`;
-      }
-    }).join("");
+      }).join("");
 
-    const currentLabelX = Math.max(isModal ? 58 : 43, Math.min(chart.right - (isModal ? 58 : 43), markerX));
-    const gradId = isModal ? "tcTideModalAreaFill" : "tcTideAreaFill";
-    const currentMarkerR = isModal ? "8" : "3.8";
-    const currentTextY = isModal ? "16" : "10";
-    const currentFontSize = isModal ? "16.5" : "9.5";
-    const lineStrokeWidth = isModal ? "3.8" : "2";
-
-    svg.innerHTML = `
-      <defs>
-        <linearGradient id="${gradId}" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stop-color="#39d3c0" stop-opacity="${isModal ? '0.48' : '0.38'}"/>
-          <stop offset="100%" stop-color="#39d3c0" stop-opacity="0.02"/>
-        </linearGradient>
-      </defs>
-      <g class="tc-tide-grid">${timeGrid}</g>
-      <path class="tc-tide-area" fill="url(#${gradId})" d="${areaPath}"/>
-      <path class="tc-tide-line" stroke-width="${lineStrokeWidth}" d="${curvePath}"/>
-      ${eventLabels}
-      <g class="tc-tide-current" aria-label="${currentAria}">
-        <line x1="${markerX.toFixed(1)}" y1="${chart.top}" x2="${markerX.toFixed(1)}" y2="${chart.bottom}" stroke-width="${isModal ? '2' : '1'}" stroke-dasharray="${isModal ? '4 3' : '2 2'}"/>
-        <circle cx="${markerX.toFixed(1)}" cy="${markerY.toFixed(1)}" r="${currentMarkerR}" stroke-width="${isModal ? '2.5' : '1.5'}"/>
-        <text x="${currentLabelX.toFixed(1)}" y="${currentTextY}" font-size="${currentFontSize}" font-weight="900" text-anchor="middle">현재 ${currentTime}</text>
-      </g>`;
+      svg.innerHTML = `
+        <defs>
+          <linearGradient id="${gradId}" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stop-color="#0d9488" stop-opacity="${isModal ? 0.22 : 0.18}"/>
+            <stop offset="100%" stop-color="#0d9488" stop-opacity="0.01"/>
+          </linearGradient>
+        </defs>
+        <g class="tc-tide-grid">${timeGrid}</g>
+        <path class="tc-tide-area" fill="url(#${gradId})" d="${areaPath}"/>
+        <path class="tc-tide-line" stroke-width="${lineStrokeWidth}" d="${curvePath}"/>
+        ${eventLabels}
+        <g class="tc-tide-current" aria-label="${currentAria}">
+          <line x1="${markerX.toFixed(1)}" y1="${chart.top}" x2="${markerX.toFixed(1)}" y2="${chart.bottom}" stroke-width="${isModal ? '1.5' : '1'}" stroke-dasharray="${isModal ? '3 3' : '2 2'}"/>
+          <circle cx="${markerX.toFixed(1)}" cy="${markerY.toFixed(1)}" r="${currentMarkerR}" stroke-width="${isModal ? '2' : '1.5'}"/>
+          <text x="${currentLabelX.toFixed(1)}" y="${currentTextY}" font-size="${currentFontSize}" font-weight="900" text-anchor="middle">현재 ${currentTime}</text>
+        </g>`;
+    } catch (err) {
+      console.warn("[SNORKY Today Detail] renderTideGraphToSvg error:", err);
+      try {
+        svg.innerHTML = `
+          <text x="${isModal ? 170 : 180}" y="${isModal ? 90 : 50}"
+                font-size="${isModal ? 14 : 11.5}" font-weight="600" fill="#94a3b8"
+                text-anchor="middle">조석 데이터 없음</text>`;
+      } catch (_) {}
+    }
   }
 
   function renderTideSection() {
-    const svg = document.querySelector("#tcTideCard .tc-tide-graph svg, #tcTideSection .tc-tide-graph svg, .tc-tide-graph svg");
-    if (svg) {
-      renderTideGraphToSvg(svg, false);
+    try {
+      const svg = document.querySelector("#tcTideCard .tc-tide-graph svg, #tcTideSection .tc-tide-graph svg, .tc-tide-graph svg");
+      if (svg) {
+        renderTideGraphToSvg(svg, false);
+      }
+    } catch (err) {
+      console.warn("[SNORKY Today Detail] renderTideSection error:", err);
     }
   }
 
@@ -376,11 +385,7 @@
             <span class="material-symbols-outlined">arrow_back</span>
           </button>
           <h1 id="tcPointTitle" class="tc-app-title">포인트 컨디션</h1>
-          <button id="tcFavoriteBtn" class="tc-icon-btn tc-favorite-btn" type="button" aria-label="즐겨찾기">
-            <svg viewBox="0 0 24 24" width="22" height="22" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
-            </svg>
-          </button>
+          <div class="tc-top-app-bar-spacer" aria-hidden="true"></div>
         </header>
 
         <!-- Scrollable Body -->
@@ -468,7 +473,7 @@
             <div class="tc-metrics-header">
               <h3>바다 수치</h3>
               <div id="tcMetricsRefBadge" class="tc-metrics-ref-badge" role="button" tabindex="0">
-                <span id="tcMetricsRefTime">--</span>
+                <span id="tcMetricsRefTime">기상 데이터 출처 및 기준시각</span>
                 <span class="material-symbols-outlined">info</span>
               </div>
             </div>
@@ -518,7 +523,6 @@
 
     // Event bindings
     document.getElementById("tcBackBtn")?.addEventListener("click", () => close(true));
-    document.getElementById("tcFavoriteBtn")?.addEventListener("click", toggleFavorite);
     document.getElementById("tcTideMoreBtn")?.addEventListener("click", openTideSheet);
     document.getElementById("tcMetricsRefBadge")?.addEventListener("click", () => openSourceSheet());
     document.getElementById("tcFooterCard")?.addEventListener("click", () => openSourceSheet());
@@ -564,8 +568,9 @@
     const latestPast = [...slots].filter(r => r.hour < nowHour).sort((a, b) => b.hour - a.hour)[0];
     if (!selectedHour || !todayRows.some(r => r.hour === selectedHour) || (latestPast && selectedHour < latestPast.hour)) {
       const nearestFuture = [...slots].filter(r => r.hour >= nowHour).sort((a, b) => a.hour - b.hour)[0];
-      const initial = !latestPast ? nearestFuture : !nearestFuture ? latestPast
-        : nowHour - latestPast.hour <= nearestFuture.hour - nowHour ? latestPast : nearestFuture;
+      const initial = window.SNORKYEvaluationResults?.selectCurrentTodayHourlySlot?.(slots, now)
+        || (!latestPast ? nearestFuture : !nearestFuture ? latestPast
+        : nowHour - latestPast.hour <= nearestFuture.hour - nowHour ? latestPast : nearestFuture);
       selectedHour = initial?.hour ?? slots[0]?.hour ?? todayRows[0].hour;
     }
     if (currentHour === null || !slots.some(r => r.hour === currentHour)) currentHour = selectedHour;
@@ -770,7 +775,7 @@
 
       const [todayMap, hourlyResultRows] = await Promise.all([
         reader.loadTodayResults ? reader.loadTodayResults(true).catch(() => new Map()) : Promise.resolve(new Map()),
-        reader.loadTodayHourly(currentPointId, true)
+        reader.loadTodayHourly(currentPointId)
       ]);
 
       if (!hourlyResultRows || !hourlyResultRows.length) {
@@ -1092,13 +1097,11 @@
     let captionText = "시간대별 바다 컨디션을 확인하세요.";
 
     if (isSafetyBlock) {
-      const blockReason = liveWarning
-        ? `${liveWarning.areaName || liveSafety?.areaName || ""}${liveWarning.areaName || liveSafety?.areaName ? " " : ""}${liveWarning.warningName || "해상"}${liveWarning.levelName || "특보"} 발효 중`
-        : (nonWarningReason || "해상 위험 요인 감지");
       statusText = "입수 금지";
       chipText = "위험";
       chipClass = "chip-block";
-      captionText = `⚠️ 안전을 위해 입수가 제한됩니다 (${blockReason})`;
+      captionText = window.SNORKYEvaluationResults?.formatSafetyBlockSummary?.(liveSafety?.warnings || liveWarning, v12?.safetyReasons)
+        || "입수 금지 · 기타 안전 위험";
     } else if (isSafetyUnknown) {
       statusText = "확인 필요";
       chipText = "주의";
@@ -1180,7 +1183,7 @@
     // 3. Detailed Metrics Reference Time
     const refTime = document.getElementById("tcMetricsRefTime");
     if (refTime) {
-      refTime.textContent = formatMetricsReferenceTime(row);
+      refTime.textContent = "기상 데이터 출처 및 기준시각";
     }
     renderTideReferenceTime();
 
@@ -1353,7 +1356,7 @@
     const cardsHtml = metrics.map(m => {
       const theme = getMetricGradeTheme(m.grade);
       return `
-        <div class="tc-metric-card" data-metric-id="${m.id}">
+        <div class="tc-metric-card${m.isVisibility ? " tc-metric-card-clickable" : ""}" data-metric-id="${m.id}">
           ${m.isVisibility ? `<button class="tc-metric-info-btn" type="button" data-info-metric="${m.id}" aria-label="${m.title} 정보 확인">
             <span class="material-symbols-outlined">info</span>
           </button>` : ""}
@@ -1390,34 +1393,20 @@
       openTideSheet();
     });
 
-    // Bind info button clicks on each metric card
+    // Bind the visibility detail button
     grid.querySelectorAll("[data-info-metric]").forEach(btn => {
       btn.addEventListener("click", function (e) {
         e.stopPropagation();
-        const metricId = this.dataset.infoMetric;
-        if (metricId === "visibility") {
+        if (this.dataset.infoMetric === "visibility") {
           openVisibilitySheet();
-        } else if (metricId === "current") {
-          openCurrentSheet();
-        } else {
-          openSourceSheet(metricId);
         }
       });
     });
 
-    // Make entire cards interactive to open attribution / sheets
-    grid.querySelectorAll(".tc-metric-card:not(.tc-tide-card)").forEach(card => {
-      card.addEventListener("click", function (e) {
-        if (e.target.closest("[data-info-metric]")) return;
-        const metricId = this.dataset.metricId;
-        if (metricId === "visibility") {
-          openVisibilitySheet();
-        } else if (metricId === "current") {
-          openCurrentSheet();
-        } else {
-          openSourceSheet(metricId);
-        }
-      });
+    // Only the visibility metric card opens a detail sheet.
+    grid.querySelector('[data-metric-id="visibility"]')?.addEventListener("click", function (e) {
+      if (e.target.closest("[data-info-metric]")) return;
+      openVisibilitySheet();
     });
   }
 
@@ -1436,9 +1425,11 @@
     if (safety?.status === "BLOCK") {
       section.hidden = false;
       banner.className = "tc-safety-banner banner-warning";
+      const safetySummary = window.SNORKYEvaluationResults?.formatSafetyBlockSummary?.(safety?.warnings || warning, row?.v12?.safetyReasons)
+        || "입수 금지 · 기타 안전 위험";
       banner.innerHTML = `
         <span class="material-symbols-outlined">warning</span>
-        <span>⚠️ ${safety.areaName || warning?.areaName || "해당 해역"} ${warning?.warningName || "해상"}${warning?.levelName || "특보"} 발효 중 (${warning?.tmEf || "실시간"})</span>
+        <span>${escapeHtml(safetySummary)}</span>
       `;
     } else if (safety?.status === "UNKNOWN") {
       section.hidden = false;
@@ -1455,7 +1446,7 @@
   // ─────────────────────────────────────────────────────────────
   // Bottom Sheet: 예상 수중시야 더보기 (Underwater Visibility Details)
   // ─────────────────────────────────────────────────────────────
-  function openVisibilitySheet() {
+    function openVisibilitySheet() {
     const row = getActiveHourRow();
     if (!row) return;
 
@@ -1465,23 +1456,82 @@
       : (Number.isFinite(row.metrics?.base_visibility_score) ? row.metrics.base_visibility_score : row.visibility_score));
 
     const baseGrade = v12?.baseVisibilityGrade || row.base_visibility_grade || row.metrics?.base_visibility_grade
-      || (Number.isFinite(baseScore) ? (baseScore >= 85 ? "좋음" : baseScore >= 65 ? "양호" : baseScore >= 45 ? "보통 · 회복 중" : "나쁨") : "확인 필요");
+      || (Number.isFinite(baseScore) ? (baseScore >= 85 ? "좋음" : baseScore >= 65 ? "양호" : baseScore >= 45 ? "보통" : "나쁨") : "확인 필요");
 
-    const baseExplanation = v12?.baseVisibilityExplanation || row.metrics?.base_visibility_explanation
-      || (Number.isFinite(baseScore) ? `해양 파고·유속 및 기상 수치예보 모델 기반 수중시야 (${baseGrade})` : "해양 수치예보 데이터 확인 필요");
+    // 1. 최근 파도·강수: 영향 {없음/낮음/보통/큼} + 설명문
+    let marineImpact = "영향 보통";
+    let marineDesc = "최근 파도와 강수가 영향을 줍니다.";
 
+    if (baseGrade === "좋음" || (Number.isFinite(baseScore) && baseScore >= 85)) {
+      marineImpact = "영향 없음";
+      marineDesc = "최근 파도와 강수의 영향이 없습니다.";
+    } else if (baseGrade === "양호" || (Number.isFinite(baseScore) && baseScore >= 65)) {
+      marineImpact = "영향 낮음";
+      marineDesc = "최근 파도와 강수가 조금 영향을 줍니다.";
+    } else if (baseGrade === "보통 · 회복 중" || baseGrade === "보통" || (Number.isFinite(baseScore) && baseScore >= 45)) {
+      marineImpact = "영향 보통";
+      marineDesc = "최근 파도와 강수가 영향을 줍니다.";
+    } else if (baseGrade === "나쁨" || (Number.isFinite(baseScore) && baseScore < 45)) {
+      marineImpact = "영향 큼";
+      marineDesc = "최근 파도와 강수가 크게 영향을 줍니다.";
+    }
+
+    // 2. 현재 날씨: 영향 {없음/낮음/보통/큼} + 설명문
     const visual = v12?.visualCondition || row.metrics?.visual_condition || null;
-    const lightLabel = getVisualLightLabel(visual?.lightState);
-    const weatherLabel = getVisualWeatherLabel(visual?.weatherState);
+    const pType = Number(row.precipitation_type ?? row.metrics?.precipitation_type ?? 0);
+    const precip = Number(row.precipitation ?? row.metrics?.precipitation ?? 0);
+    const sky = Number(row.sky_code ?? row.metrics?.sky_code ?? 1);
     const penalty = Number.isFinite(v12?.visualConditionPenalty) ? v12.visualConditionPenalty
       : (Number.isFinite(row.metrics?.visual_condition_penalty) ? row.metrics.visual_condition_penalty : 0);
 
-    const visualConditionApplied = visual?.lightState === "NIGHT"
-      ? "자연광 부족 · Final 0점 적용"
-      : penalty > 0
-      ? `${weatherLabel} (-${penalty}점)`
-      : "정상 (감점 없음)";
+    const isRain = pType > 0 || precip > 0.5 || visual?.weatherState === "RAIN";
+    const isOvercast = sky === 4 || visual?.weatherState === "OVERCAST";
+    const isCloudy = sky === 3 || visual?.weatherState === "MOSTLY_CLOUDY";
 
+    let weatherImpact = "영향 없음";
+    let weatherDesc = "현재 날씨의 영향이 없습니다.";
+
+    if (isRain || penalty >= 15) {
+      weatherImpact = "영향 큼";
+      weatherDesc = "현재 날씨가 매우 큰 영향을 줍니다.";
+    } else if (isOvercast || isCloudy || penalty > 0) {
+      weatherImpact = "영향 보통";
+      weatherDesc = "현재 날씨가 영향을 줍니다.";
+    } else if (sky === 2) {
+      weatherImpact = "영향 낮음";
+      weatherDesc = "현재 날씨가 조금 영향을 줍니다.";
+    } else {
+      weatherImpact = "영향 없음";
+      weatherDesc = "현재 날씨의 영향이 없습니다.";
+    }
+
+    // 3. 자연광: {낮/약함/밤} + 설명문
+    const h = row.hour != null ? row.hour : 12;
+    const lightState = visual?.lightState;
+    const isNight = lightState === "NIGHT" || (h < 6 || h >= 19);
+    const isSunsetOrDawn = lightState === "SUNSET_EFFECT" || lightState === "DAWN" || ((h >= 6 && h < 8) || (h >= 17 && h < 19));
+
+    let lightStatus = isNight ? "밤" : isSunsetOrDawn ? "약함" : "낮";
+    let lightDesc = "";
+
+    if (isNight) {
+      lightStatus = "밤";
+      lightDesc = "자연광이 거의 없는 시간대입니다.";
+    } else {
+      if (isRain) {
+        lightDesc = "비로 인해 자연광이 매우 낮습니다.";
+      } else if (isOvercast) {
+        lightDesc = "흐린 날씨로 자연광이 낮습니다.";
+      } else if (isCloudy) {
+        lightDesc = "구름이 많아 자연광이 다소 낮습니다.";
+      } else {
+        lightDesc = (lightStatus === "약함")
+          ? "자연광이 다소 부족한 시간대입니다."
+          : "자연광이 충분한 시간대입니다.";
+      }
+    }
+
+    // 4. 최종 예상 수중시야
     const visScore = Number.isFinite(row.visibility_score) ? row.visibility_score
       : (Number.isFinite(v12?.visibilityScore) ? v12.visibilityScore
       : (Number.isFinite(baseScore) ? Math.max(0, baseScore - penalty) : null));
@@ -1489,10 +1539,6 @@
     const visGrade = (row.visibility_grade && row.visibility_grade !== "UNKNOWN") ? row.visibility_grade
       : (v12?.visibilityGrade && v12?.visibilityGrade !== "UNKNOWN") ? v12.visibilityGrade
       : (Number.isFinite(visScore) ? (visScore >= 85 ? "좋음" : visScore >= 65 ? "양호" : visScore >= 45 ? "보통" : "나쁨") : "확인 필요");
-
-    const visExplanation = visual?.lightState === "NIGHT"
-      ? "밤 시간대로 자연광이 부족하여 수중시야 확보가 어렵습니다."
-      : (row.visibility_explanation || (penalty > 0 ? `시각조건 감점(-${penalty}점)이 적용되었습니다.` : baseExplanation));
 
     const titleIcon = document.getElementById("tcSheetIcon");
     const titleText = document.getElementById("tcSheetTitleText");
@@ -1506,46 +1552,42 @@
         <div class="tc-sheet-score-card">
           <div>
             <div class="tc-sheet-score-val">${escapeHtml(visGrade)}</div>
-            <div class="tc-sheet-score-label">최종 예상 수중시야 · ${Number.isFinite(visScore) ? `${Math.round(visScore)}점` : "--"}</div>
+            <div class="tc-sheet-score-label">최종 예상 수중시야</div>
           </div>
           <span class="material-symbols-outlined" style="font-size:36px;color:#059669;">scuba_diving</span>
         </div>
 
         <div class="tc-sheet-factors">
-          <strong style="font-size:13px;color:#1e293b;margin-bottom:4px;">A. 수중 환경 (Base Visibility)</strong>
           <div class="tc-sheet-factor-item">
-            <span class="tc-sheet-factor-title">Base 점수</span>
-            <span class="tc-sheet-factor-val">${Number.isFinite(baseScore) ? `${Math.round(baseScore)}점` : "--"}</span>
+            <div class="tc-sheet-factor-head">
+              <span class="tc-sheet-factor-title">최근 파도·강수</span>
+              <span class="tc-sheet-factor-val">${escapeHtml(marineImpact)}</span>
+            </div>
+            <div class="tc-sheet-factor-desc">${escapeHtml(marineDesc)}</div>
           </div>
-          <div class="tc-sheet-factor-item">
-            <span class="tc-sheet-factor-title">Base 등급</span>
-            <span class="tc-sheet-factor-val">${escapeHtml(baseGrade)}</span>
-          </div>
-          <div class="tc-sheet-factor-item">
-            <span class="tc-sheet-factor-title">Base 설명</span>
-            <span class="tc-sheet-factor-val">${escapeHtml(baseExplanation)}</span>
-          </div>
-        </div>
 
-        <div class="tc-sheet-factors">
-          <strong style="font-size:13px;color:#1e293b;margin-bottom:4px;">B. 시각 조건</strong>
           <div class="tc-sheet-factor-item">
-            <span class="tc-sheet-factor-title">자연광 상태</span>
-            <span class="tc-sheet-factor-val">${escapeHtml(lightLabel)}</span>
+            <div class="tc-sheet-factor-head">
+              <span class="tc-sheet-factor-title">현재 날씨</span>
+              <span class="tc-sheet-factor-val">${escapeHtml(weatherImpact)}</span>
+            </div>
+            <div class="tc-sheet-factor-desc">${escapeHtml(weatherDesc)}</div>
           </div>
-          <div class="tc-sheet-factor-item">
-            <span class="tc-sheet-factor-title">기상 상태</span>
-            <span class="tc-sheet-factor-val">${escapeHtml(weatherLabel)}</span>
-          </div>
-          <div class="tc-sheet-factor-item">
-            <span class="tc-sheet-factor-title">시각조건 상태</span>
-            <span class="tc-sheet-factor-val">${escapeHtml(visualConditionApplied)}</span>
-          </div>
-        </div>
 
-        <div class="tc-sheet-desc-box">
-          💡 <b>C. 최종 예상 수중시야</b>: ${Number.isFinite(visScore) ? `${Math.round(visScore)}점 · ` : ""}${escapeHtml(visGrade)}<br>
-          ${escapeHtml(visExplanation)}
+          <div class="tc-sheet-factor-item">
+            <div class="tc-sheet-factor-head">
+              <span class="tc-sheet-factor-title">자연광</span>
+              <span class="tc-sheet-factor-val">${escapeHtml(lightStatus)}</span>
+            </div>
+            <div class="tc-sheet-factor-desc">${escapeHtml(lightDesc)}</div>
+          </div>
+
+          <div class="tc-sheet-factor-item">
+            <div class="tc-sheet-factor-head">
+              <span class="tc-sheet-factor-title">최종 예상 수중시야</span>
+              <span class="tc-sheet-factor-val tc-sheet-factor-highlight">${escapeHtml(visGrade)}</span>
+            </div>
+          </div>
         </div>
       `;
     }
@@ -1599,16 +1641,7 @@
 
     if (body) {
       body.innerHTML = `
-        <div class="tc-sheet-factors tc-tide-sheet-factors">
-          <div class="tc-sheet-factor-item">
-            <span class="tc-sheet-factor-title">출처</span>
-            <span class="tc-sheet-factor-val">국립해양조사원 조석예보</span>
-          </div>
-          <div class="tc-sheet-factor-item">
-            <span class="tc-sheet-factor-title">예보 시각</span>
-            <span class="tc-sheet-factor-val">${escapeHtml(forecastTime)}</span>
-          </div>
-        </div>
+        <div class="tc-tide-sheet-subinfo">국립해양조사원 · ${escapeHtml(forecastTime)}</div>
 
         <div class="tc-tide-modal-card">
           <div class="tc-tide-modal-graph" aria-label="오늘 조석 변화 확대 그래프">
@@ -1627,57 +1660,6 @@
   }
 
   // ─────────────────────────────────────────────────────────────
-  // Bottom Sheet: 조류/유속 정보 (Ocean Current Details)
-  // ─────────────────────────────────────────────────────────────
-  function openCurrentSheet() {
-    const row = getActiveHourRow();
-    const titleIcon = document.getElementById("tcSheetIcon");
-    const titleText = document.getElementById("tcSheetTitleText");
-    const body = document.getElementById("tcSheetBody");
-
-    if (titleIcon) titleIcon.textContent = "swap_calls";
-    if (titleText) titleText.textContent = "조류/유속 정보";
-
-    const pLat = Number(activePoint?.lat ?? activePoint?.latitude ?? 37.869354);
-    const pLng = Number(activePoint?.lng ?? activePoint?.longitude ?? 128.846296);
-    const curSpeed = Number.isFinite(row?.current_speed) ? `${fmt(row.current_speed, 2)} m/s` : "--";
-
-    if (body) {
-      body.innerHTML = `
-        <div class="tc-sheet-score-card" style="background:#f0fdf4; border:1px solid #bbf7d0;">
-          <div>
-            <div class="tc-sheet-score-val" style="color:#166534;">${curSpeed}</div>
-            <div class="tc-sheet-score-label" style="color:#15803d;">해양 수치예보 모델 예측 유속</div>
-          </div>
-          <span class="material-symbols-outlined" style="font-size:36px;color:#16a34a;">waves</span>
-        </div>
-
-        <div class="tc-sheet-factors">
-          <strong style="font-size:13px;color:#1e293b;margin-bottom:4px;">📊 조류/유속 상세 정보</strong>
-          <div class="tc-sheet-factor-item">
-            <span class="tc-sheet-factor-title">출처 (Source)</span>
-            <span class="tc-sheet-factor-val">Open-Meteo Marine (광역 3~5km 수치모델)</span>
-          </div>
-          <div class="tc-sheet-factor-item">
-            <span class="tc-sheet-factor-title">모델 응답 좌표</span>
-            <span class="tc-sheet-factor-val">${pLat.toFixed(4)}°N, ${pLng.toFixed(4)}°E</span>
-          </div>
-          <div class="tc-sheet-factor-item">
-            <span class="tc-sheet-factor-title">포인트 격자 거리</span>
-            <span class="tc-sheet-factor-val">1.8 km</span>
-          </div>
-          <div class="tc-sheet-factor-item">
-            <span class="tc-sheet-factor-title">유속 수치 / 단위</span>
-            <span class="tc-sheet-factor-val">${curSpeed} (m/s)</span>
-          </div>
-        </div>
-      `;
-    }
-
-    document.getElementById("tcBottomSheetOverlay")?.classList.add("open");
-  }
-
-  // ─────────────────────────────────────────────────────────────
   // Bottom Sheet: 바다수치 / 데이터 출처 더보기 (Data Attribution Details)
   // ─────────────────────────────────────────────────────────────
   function openSourceSheet(metricId = null) {
@@ -1687,26 +1669,51 @@
     const body = document.getElementById("tcSheetBody");
 
     if (titleIcon) titleIcon.textContent = "info";
-    if (titleText) titleText.textContent = "데이터 출처 및 기준 정보";
+    if (titleText) titleText.textContent = "데이터 출처 및 기준시각";
 
-    const lastUpdated = new Date().toLocaleString("ko-KR", { month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit" });
     const pointName = activePoint?.name || (Array.isArray(activePoint) ? activePoint[0] : "선택된 포인트");
-    const hourStr = row ? `${String(row.hour).padStart(2, "0")}:00` : "--:--";
+
+    // 1. 기상청 단기예보 발표시각
+    const kmaFetched = kmaData?.fetchedAt || todayDayData?.kma_fetched_at;
+    const kmaH = kmaData?.forecastData?.header;
+    const kmaBase = kmaH?.baseDate && kmaH?.baseTime
+      ? `${kmaH.baseDate.slice(0, 4)}-${kmaH.baseDate.slice(4, 6)}-${kmaH.baseDate.slice(6, 8)} ${kmaH.baseTime.slice(0, 2)}:${kmaH.baseTime.slice(2, 4)}`
+      : (kmaFetched ? String(kmaFetched).slice(0, 16).replace("T", " ") : null);
+    const kmaTimeText = kmaBase ? `${kmaBase} 발표` : (todayDayData?.date ? `${todayDayData.date} 05:00 발표` : "--");
+
+    // 2. Open-Meteo Marine 기준시각
+    const marineFetched = marineData?.fetchedAt || row?.evaluated_at || todayDayData?.evaluated_at;
+    const marineTimeText = marineFetched ? `${String(marineFetched).slice(0, 16).replace("T", " ")} 기준` : (todayDayData?.date ? `${todayDayData.date} 00:00 기준` : "--");
+
+    // 3. KASI 일출·일몰 기준일
+    const kasiDate = todayDayData?.date || row?.date || getTideForecastDate();
+    const kasiDateText = kasiDate !== "--" ? `${kasiDate} 기준` : "--";
+
+    // 4. KHOA 조석예보 기준시각
+    const khoaTimeText = getTideForecastTimeText();
 
     if (body) {
       body.innerHTML = `
         <div class="tc-sheet-factors" style="background:#ffffff;">
-          <strong style="font-size:14px;color:#003e7a;margin-bottom:2px;">📍 ${escapeHtml(pointName)} 예보 데이터 정보</strong>
+          <strong style="font-size:14px;color:#003e7a;margin-bottom:2px;">📍 ${escapeHtml(pointName)} 데이터 출처 및 기준시각</strong>
           <div style="font-size:13px;color:#475569;line-height:1.55;padding:8px 0 10px;border-bottom:1px dashed #e2e8f0;word-break:keep-all;">
-            KMA·Open-Meteo 데이터 및 해양 예보 데이터를 기반으로 SNORKY가 분석한 정보입니다.
+            기상청·해양 수치예보 모델 및 공공 데이터를 기반으로 분석한 정보입니다.
           </div>
           <div class="tc-sheet-factor-item">
-            <span class="tc-sheet-factor-title">⏱️ 선택 예보 시각</span>
-            <span class="tc-sheet-factor-val">${getKoreanDateText(todayDayData?.date)} ${hourStr}</span>
+            <span class="tc-sheet-factor-title">기상청 단기예보</span>
+            <span class="tc-sheet-factor-val">${escapeHtml(kmaTimeText)}</span>
           </div>
           <div class="tc-sheet-factor-item">
-            <span class="tc-sheet-factor-title">🔄 SNORKY 최종 동기화</span>
-            <span class="tc-sheet-factor-val">${lastUpdated}</span>
+            <span class="tc-sheet-factor-title">Open-Meteo Marine</span>
+            <span class="tc-sheet-factor-val">${escapeHtml(marineTimeText)}</span>
+          </div>
+          <div class="tc-sheet-factor-item">
+            <span class="tc-sheet-factor-title">KASI 일출·일몰</span>
+            <span class="tc-sheet-factor-val">${escapeHtml(kasiDateText)}</span>
+          </div>
+          <div class="tc-sheet-factor-item">
+            <span class="tc-sheet-factor-title">KHOA 조석예보</span>
+            <span class="tc-sheet-factor-val">${escapeHtml(khoaTimeText)}</span>
           </div>
         </div>
 
@@ -1733,7 +1740,6 @@
     syncData,
     onDataReady,
     openVisibilitySheet,
-    openCurrentSheet,
     openTideSheet,
     openSourceSheet
   });

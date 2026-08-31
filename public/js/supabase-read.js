@@ -5,13 +5,14 @@ window.SNORKY_DATA_SOURCE=DATA_SOURCE;
 const list=value=>Array.isArray(value)?value:[];
 const numberOrNull=value=>value===null||value===undefined||value===""?null:Number.isFinite(Number(value))?Number(value):null;
 const internalRegionId=id=>`sb-region-${id}`;
+const isMissingLandWarningColumn=error=>Boolean(error)&&`${error.code||""} ${error.message||""} ${error.details||""}`.includes("land_warning_area_code");
 
 function pointFromRow(row,regionItem){
   const lat=numberOrNull(row.lat),lng=numberOrNull(row.lng),point=[row.name,lat,lng];
   const autoCode=(Number.isFinite(lat)&&Number.isFinite(lng)&&typeof window.SNORKYWarningZones?.resolveWarningAreaCode==="function")?window.SNORKYWarningZones.resolveWarningAreaCode(lat,lng):null;
   return Object.assign(point,{
     id:row.legacy_id||String(row.id),supabaseId:row.id,supabaseRead:true,adminAdded:false,
-    regionId:internalRegionId(row.region_id),region:regionItem.name,name:row.name,lat,lng,warningAreaCode:row.warning_area_code||autoCode||regionItem.warningAreaCode||null,
+    regionId:internalRegionId(row.region_id),region:regionItem.name,name:row.name,lat,lng,warningAreaCode:row.warning_area_code||autoCode||regionItem.warningAreaCode||null,landWarningAreaCode:row.land_warning_area_code||regionItem.landWarningAreaCode||null,
     parkingLat:numberOrNull(row.parking_lat),parkingLng:numberOrNull(row.parking_lng),
     pointFeature:row.point_feature||"",snorkelingInfo:row.snorkeling_info||"",parking:row.parking||"",toilet:row.toilet||"",shower:row.shower||"",camping:row.camping||"",cooking:row.cooking||"",
     facilities:list(row.facilities),notes:list(row.notes),description:row.description||"",accessGuide:row.access_guide||"",accessSteps:list(row.access_steps),
@@ -25,8 +26,8 @@ function imageFromRow(sb,row){
   if(!url)throw new Error(`Storage public URL 생성 실패: ${row.storage_path}`);
   return{id:row.id,url,fileName:row.file_name||"",mimeType:row.mime_type||"",isPrimary:Boolean(row.is_primary),order:Number.isFinite(row.sort_order)?row.sort_order:0,createdAt:row.created_at||null};
 }
-async function loadRegionsFromSupabase(sb){const result=await sb.from("regions").select("id,name,warning_area_code");if(result.error)throw result.error;return(result.data||[]).map(row=>({id:internalRegionId(row.id),supabaseId:row.id,name:row.name,warningAreaCode:row.warning_area_code||null})).sort((a,b)=>a.name.localeCompare(b.name,"ko-KR"))}
-async function loadPointsFromSupabase(sb){const result=await sb.from("points").select("id,legacy_id,region_id,name,lat,lng,warning_area_code,parking_lat,parking_lng,point_feature,snorkeling_info,parking,toilet,shower,camping,cooking,facilities,notes,description,access_guide,access_steps,parking_available,parking_guide,entry_guide,entry_lat,entry_lng,depth_range,difficulty,point_type,warnings,environment,sort_order,created_at,updated_at");if(result.error)throw result.error;return result.data||[]}
+async function loadRegionsFromSupabase(sb){let result=await sb.from("regions").select("id,name,warning_area_code,land_warning_area_code");if(isMissingLandWarningColumn(result.error))result=await sb.from("regions").select("id,name,warning_area_code");if(result.error)throw result.error;return(result.data||[]).map(row=>({id:internalRegionId(row.id),supabaseId:row.id,name:row.name,warningAreaCode:row.warning_area_code||null,landWarningAreaCode:row.land_warning_area_code||null})).sort((a,b)=>a.name.localeCompare(b.name,"ko-KR"))}
+async function loadPointsFromSupabase(sb){const columns="id,legacy_id,region_id,name,lat,lng,warning_area_code,parking_lat,parking_lng,point_feature,snorkeling_info,parking,toilet,shower,camping,cooking,facilities,notes,description,access_guide,access_steps,parking_available,parking_guide,entry_guide,entry_lat,entry_lng,depth_range,difficulty,point_type,warnings,environment,sort_order,created_at,updated_at";let result=await sb.from("points").select(`${columns},land_warning_area_code`);if(isMissingLandWarningColumn(result.error))result=await sb.from("points").select(columns);if(result.error)throw result.error;return result.data||[]}
 async function loadPointImagesFromSupabase(sb){const result=await sb.from("point_images").select("id,point_id,storage_path,file_name,mime_type,is_primary,sort_order,created_at");if(result.error)throw result.error;return result.data||[]}
 function applySupabaseData(sb,regions,pointRows,imageRows){
   const regionBySupabaseId=new Map(regions.map(item=>[String(item.supabaseId),item])),imagesByPoint=new Map();

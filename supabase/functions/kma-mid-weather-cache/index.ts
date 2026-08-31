@@ -125,7 +125,7 @@ export async function fetchAndStoreKmaMid(
   tmFc: string, // YYYYMMDD0600 or YYYYMMDD1800
   apiKey?: string
 ): Promise<{ ok: boolean; count?: number; error?: string }> {
-  if (!apiKey) return { ok: false, error: "MISSING_KMA_API_KEY" };
+  if (!apiKey) return { ok: false, error: "MISSING_DATA_GO_KR_API_KEY" };
 
   const endpoint = source === "KMA_MID_LAND" ? "getMidLandFcst" : "getMidTa";
   const url = `https://apis.data.go.kr/1360000/MidFcstInfoService/${endpoint}?serviceKey=${apiKey}&numOfRows=10&pageNo=1&dataType=JSON&regId=${regId}&tmFc=${tmFc}`;
@@ -175,7 +175,7 @@ if (import.meta.main && typeof (globalThis as any).Deno !== "undefined" && (glob
     // @ts-ignore
     const { createClient } = await import("npm:@supabase/supabase-js@2");
     const client = createClient(url, key);
-    const kmaKey = Deno.env.get("KMA_API_KEY");
+    const dataGoKrKey = Deno.env.get("DATA_GO_KR_API_KEY") || Deno.env.get("KMA_API_KEY");
 
     let body: any = {};
     if (request.method === "POST") {
@@ -189,7 +189,7 @@ if (import.meta.main && typeof (globalThis as any).Deno !== "undefined" && (glob
     const hour = now.getUTCHours();
     const tmFc = body.tm_fc || `${dateCompact}${hour < 18 ? "06" : "18"}00`;
 
-    const result = await fetchAndStoreKmaMid(client, source, regId, tmFc, kmaKey);
+    const result = await fetchAndStoreKmaMid(client, source, regId, tmFc, dataGoKrKey);
     return json(result, result.ok ? 200 : 500);
   });
 }

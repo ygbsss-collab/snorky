@@ -129,7 +129,7 @@ async function selectOrThrow(query){const result=await query;if(result.error)thr
 async function fetchAllPointLocations(sb){
   const rows=[];
   for(let from=0;;from+=POINT_PAGE_SIZE){
-    const page=await selectOrThrow(sb.from("points").select("id,region_id,name,lat,lng,warning_area_code").order("id",{ascending:true}).range(from,from+POINT_PAGE_SIZE-1));
+    const page=await selectOrThrow(sb.from("points").select("id,region_id,name,lat,lng,warning_area_code,land_warning_area_code").order("id",{ascending:true}).range(from,from+POINT_PAGE_SIZE-1));
     rows.push(...page);if(page.length<POINT_PAGE_SIZE)return rows;
   }
 }
@@ -210,11 +210,11 @@ async function runNearbyBest(latitude,longitude,radius){
     console.info("[SNORKY NEARBY BEST] 현재 위치",{latitude,longitude});console.info("[SNORKY NEARBY BEST] 선택 반경",`${radius}km`);setLoading("내 주변 포인트를 확인 중입니다.");
     const sb=await waitForSupabase();
     await window.SNORKYMarineSafety?.ready;
-    const [regions,pointRows]=await Promise.all([selectOrThrow(sb.from("regions").select("id,name,warning_area_code")),fetchAllPointLocations(sb)]);
+    const [regions,pointRows]=await Promise.all([selectOrThrow(sb.from("regions").select("id,name,warning_area_code,land_warning_area_code")),fetchAllPointLocations(sb)]);
     const regionById=new Map(regions.map(region=>[String(region.id),region]));
     const invalidPoints=pointRows.filter(point=>!validPointCoordinates(point));
     invalidPoints.forEach(point=>console.warn("[SNORKY NEARBY BEST] INVALID_COORDINATE",{id:point.id,name:point.name,lat:point.lat,lng:point.lng}));
-    const points=pointRows.filter(point=>isRecommendationActive(point)&&validPointCoordinates(point)).map(point=>{const regionItem=regionById.get(String(point.region_id));return{id:point.id,name:point.name,region:regionItem?.name||"",warningAreaCode:point.warning_area_code||regionItem?.warning_area_code||null,lat:Number(point.lat),lng:Number(point.lng),distance:haversineKm(latitude,longitude,Number(point.lat),Number(point.lng))}});
+    const points=pointRows.filter(point=>isRecommendationActive(point)&&validPointCoordinates(point)).map(point=>{const regionItem=regionById.get(String(point.region_id));return{id:point.id,name:point.name,region:regionItem?.name||"",warningAreaCode:point.warning_area_code||regionItem?.warning_area_code||null,landWarningAreaCode:point.land_warning_area_code||regionItem?.land_warning_area_code||null,lat:Number(point.lat),lng:Number(point.lng),distance:haversineKm(latitude,longitude,Number(point.lat),Number(point.lng))}});
     window.SNORKYMarineSafety?.registerPoints(points);
     console.info("[SNORKY NEARBY BEST] Supabase 전체 Point 수",pointRows.length);
     const resultReader = window.SNORKYEvaluationResults;
@@ -308,7 +308,7 @@ document.addEventListener("keydown",event=>{if(event.key!=="Enter"&&event.key!==
 function openPointDetail(row){const source=row.closest(".nearby-points-section")?"nearbyPoint":"nearbyBest",pointId=row.dataset.supabasePointId;closeDialog();if(typeof window.openPointOnMap==="function"){window.openPointOnMap(pointId,source);}else{const returnState=captureReturnState();if(!window.SNORKYPointDetail?.openBySupabaseId(pointId,source,returnState))console.warn("[SNORKY BEST] Point 상세 진입 실패",{pointId})}}
 document.addEventListener("keydown",event=>{if(event.key==="Escape"&&getDialog().classList.contains("open"))closeDialog()});
 async function evaluatePoints(points){
-  const diagnostics=createDiagnostics(),normalized=points.filter(point=>isRecommendationActive(point)&&validPointCoordinates(point)).map(point=>({id:point.supabaseId||point.id,name:point.name||point[0],region:point.region||"",warningAreaCode:point.warningAreaCode||point.warning_area_code||null,lat:Number(point.lat??point[1]),lng:Number(point.lng??point[2]),environment:point.environment??null}));
+  const diagnostics=createDiagnostics(),normalized=points.filter(point=>isRecommendationActive(point)&&validPointCoordinates(point)).map(point=>({id:point.supabaseId||point.id,name:point.name||point[0],region:point.region||"",warningAreaCode:point.warningAreaCode||point.warning_area_code||null,landWarningAreaCode:point.landWarningAreaCode||point.land_warning_area_code||null,lat:Number(point.lat??point[1]),lng:Number(point.lng??point[2]),environment:point.environment??null}));
   const scored=await mapWithConcurrency(normalized,3,point=>scoreCandidate(point,diagnostics));
   return{scored,diagnostics};
 }

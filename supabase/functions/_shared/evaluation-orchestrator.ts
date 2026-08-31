@@ -38,6 +38,7 @@ export interface OrchestrationResult {
 export interface OrchestrationOptions {
   evaluatedAt?: string;
   dryRun?: boolean; // If true, evaluates without calling DB UPSERT
+  modes?: Array<"TODAY" | "TODAY_HOURLY" | "SHORT" | "MID">;
 }
 
 function getKstDateString(date = new Date()): string {
@@ -339,52 +340,31 @@ export async function evaluateAndStorePoint(
   const todayActiveWarnings: string[] = [];
   const safetyWarnings = kmaSafety?.normalized_warnings || kmaSafety?.warnings || [];
   if (Array.isArray(safetyWarnings)) {
-    const pArea = String(point.warning_area_code || "").trim();
+    const pointAreas = [point.warning_area_code, point.land_warning_area_code]
+      .map(code => String(code || "").trim())
+      .filter(code => /^[LS]\d{7}$/.test(code));
+    const matchedWarnings = new Map<string, any>();
     for (const w of safetyWarnings) {
       const warningRegId = String(w?.regId || "").trim();
       const warningRegUp = String(w?.regUp || "").trim();
-      if (w?.active && pArea && (warningRegId === pArea || warningRegUp === pArea)) {
-        todaySafetyStatus = "BLOCK";
-        todayActiveWarnings.push(`${w.areaName ?? ""} ${w.warningName ?? ""}${w.levelName ?? ""} 발효 중`.trim());
-      }
+      const matchedArea = pointAreas.find(code => warningRegId === code || warningRegUp === code);
+      if (!w?.active || !matchedArea) continue;
+      if (matchedArea.startsWith("L") && !["호우", "강풍", "태풍"].includes(String(w.warningName || ""))) continue;
+      const dedupeKey = `${w.warningName || ""}:${w.levelName || ""}`;
+      if (!matchedWarnings.has(dedupeKey)) matchedWarnings.set(dedupeKey, w);
     }
+    const priority = (w: any) => {
+      const key = `${w?.warningName || ""}${w?.levelName || ""}`;
+      const ranks: Record<string, number> = { 태풍경보: 1, 태풍주의보: 2, 풍랑경보: 3, 풍랑주의보: 4, 호우경보: 6, 호우주의보: 7, 강풍경보: 8, 강풍주의보: 9 };
+      if (ranks[key]) return ranks[key];
+      return w?.warningName === "폭풍해일" || w?.warningName === "지진해일" ? 5 : 99;
+    };
+    const activeWarnings = [...matchedWarnings.values()].sort((a, b) => priority(a) - priority(b));
+    if (activeWarnings.length) todaySafetyStatus = "BLOCK";
+    activeWarnings.forEach(w => todayActiveWarnings.push(`${w.areaName ?? ""} ${w.warningName ?? ""}${w.levelName ?? ""} 발효 중`.trim()));
   }
 
-  const allResults: ServerEvaluationResult[] = [];
-
-  // ─────────────────────────────────────────────────────────────
-  // A. TODAY Evaluation (당일 대표 1시간 슬롯 또는 현재 슬롯)
-  // ─────────────────────────────────────────────────────────────
-  const todaySunDto: KasiSunTimesInput = sunTimesMap.get(todayKst) || {
-    date: todayKst,
-    sunrise: null,
-    sunset: null,
-    source: "KASI",
-  };
-
-  // Representative daylight hour for today slot (KST 현재시각 기준 가장 가까운 유효 주간 예보 슬롯 선택: 06시~18시)
-  const evalDate = evaluatedAt ? new Date(evaluatedAt) : new Date();
-  const currentHourKst = new Date(evalDate.getTime() + 9 * 3600000).getUTCHours();
-  const todayTargetHour = Math.min(18, Math.max(6, currentHourKst));
-  const todaySlotKey = `${todayKst}T${String(todayTargetHour).padStart(2, "0")}`;
-  const todayForecastTime = formatSlotTime(todayKst, todayTargetHour);
-  const todayPeriodStart = `${todayKst}T${String(todayTargetHour).padStart(2, "0")}:00:00+09:00`;
-  const todayPeriodEnd = `${todayKst}T${String(todayTargetHour + 1).padStart(2, "0")}:00:00+09:00`;
-
-  const mIdx = marineIndexMap.get(todaySlotKey);
-  const kmaItem = kmaIndexMap.get(todaySlotKey);
-
-  const todayMarineHourly = mIdx !== undefined ? {
-    wave_height: waveHeights[mIdx],
-    wave_period: wavePeriods[mIdx] ?? null,
-    ocean_current_velocity: currentVelocities[mIdx],
-    sea_surface_temperature: seaTemperatures[mIdx] ?? null,
-  } : {
-    wave_height: (null as unknown) as number,
-    ocean_current_velocity: (null as unknown) as number,
-  };
-
-  function parseKmaPrecipitationMm(item: any): number | null {
+  const parseKmaPrecipitationMm = (item: any): number | null => {
     if (!item || item.precipitation === undefined || item.precipitation === null) return null;
     const p = item.precipitation;
     if (typeof p === "number") return Number.isFinite(p) ? p : null;
@@ -401,24 +381,22 @@ export async function evaluateAndStorePoint(
     const match = rawStr.match(/^([0-9]+(?:\.[0-9]+)?)/);
     if (match) return Number(match[1]);
     return null;
-  }
-
-  const todayPrecipVal = parseKmaPrecipitationMm(kmaItem);
-  const todaySkyCode = kmaItem?.sky?.code ?? kmaItem?.skyCode ?? (typeof kmaItem?.sky === "number" ? kmaItem.sky : null);
-  const todayPtyCode = kmaItem?.precipitationType?.code ?? kmaItem?.pty ?? (typeof kmaItem?.precipitationType === "number" ? kmaItem.precipitationType : null);
-
-  const todayKmaHourly = {
-    temperature: kmaItem?.temperature ?? null,
-    wind_speed: kmaItem?.windSpeed ?? null,
-    wind_direction_degree: kmaItem?.windDirection ?? kmaItem?.windDirectionDegree ?? null,
-    precipitation: todayPrecipVal,
-    precipitation_probability: kmaItem?.precipitationProbability ?? null,
-    cloud_cover: kmaItem?.cloudCover ?? null,
-    sky_code: todaySkyCode !== null && todaySkyCode !== undefined ? String(todaySkyCode) : null,
-    precipitation_type: todayPtyCode !== null && todayPtyCode !== undefined ? Number(todayPtyCode) : null,
   };
 
-  // Build History up to 48h from Marine Cache
+  const allResults: ServerEvaluationResult[] = [];
+  const activeModes = options.modes || ["TODAY", "TODAY_HOURLY", "SHORT", "MID"];
+  let todayCount = 0;
+  let todayHourlyCount = 0;
+  let shortCount = 0;
+  let midCount = 0;
+
+  // Build Marine History up to 48h from Marine Cache
+  const evalDate = evaluatedAt ? new Date(evaluatedAt) : new Date();
+  const currentHourKst = new Date(evalDate.getTime() + 9 * 3600000).getUTCHours();
+  const todayTargetHour = Math.min(18, Math.max(6, currentHourKst));
+  const todaySlotKey = `${todayKst}T${String(todayTargetHour).padStart(2, "0")}`;
+  const mIdx = marineIndexMap.get(todaySlotKey);
+
   const marineHistory: MarineHistoryItem[] = [];
   if (mIdx !== undefined && mIdx > 0) {
     for (let h = 1; h <= Math.min(48, mIdx); h++) {
@@ -431,6 +409,48 @@ export async function evaluateAndStorePoint(
       });
     }
   }
+
+  // ─────────────────────────────────────────────────────────────
+  // A. TODAY Evaluation (당일 대표 1시간 슬롯 또는 현재 슬롯)
+  // ─────────────────────────────────────────────────────────────
+  if (activeModes.includes("TODAY")) {
+    const todaySunDto: KasiSunTimesInput = sunTimesMap.get(todayKst) || {
+      date: todayKst,
+      sunrise: null,
+      sunset: null,
+      source: "KASI",
+    };
+
+    const todayForecastTime = formatSlotTime(todayKst, todayTargetHour);
+    const todayPeriodStart = `${todayKst}T${String(todayTargetHour).padStart(2, "0")}:00:00+09:00`;
+    const todayPeriodEnd = `${todayKst}T${String(todayTargetHour + 1).padStart(2, "0")}:00:00+09:00`;
+
+    const kmaItem = kmaIndexMap.get(todaySlotKey);
+
+    const todayMarineHourly = mIdx !== undefined ? {
+      wave_height: waveHeights[mIdx],
+      wave_period: wavePeriods[mIdx] ?? null,
+      ocean_current_velocity: currentVelocities[mIdx],
+      sea_surface_temperature: seaTemperatures[mIdx] ?? null,
+    } : {
+      wave_height: (null as unknown) as number,
+      ocean_current_velocity: (null as unknown) as number,
+    };
+
+    const todayPrecipVal = parseKmaPrecipitationMm(kmaItem);
+    const todaySkyCode = kmaItem?.sky?.code ?? kmaItem?.skyCode ?? (typeof kmaItem?.sky === "number" ? kmaItem.sky : null);
+    const todayPtyCode = kmaItem?.precipitationType?.code ?? kmaItem?.pty ?? (typeof kmaItem?.precipitationType === "number" ? kmaItem.precipitationType : null);
+
+    const todayKmaHourly = {
+      temperature: kmaItem?.temperature ?? null,
+      wind_speed: kmaItem?.windSpeed ?? null,
+      wind_direction_degree: kmaItem?.windDirection ?? kmaItem?.windDirectionDegree ?? null,
+      precipitation: todayPrecipVal,
+      precipitation_probability: kmaItem?.precipitationProbability ?? null,
+      cloud_cover: kmaItem?.cloudCover ?? null,
+      sky_code: todaySkyCode !== null && todaySkyCode !== undefined ? String(todaySkyCode) : null,
+      precipitation_type: todayPtyCode !== null && todayPtyCode !== undefined ? Number(todayPtyCode) : null,
+    };
 
   const todayDto: TodayEvaluationInputDTO = {
     mode: "TODAY",
@@ -447,6 +467,7 @@ export async function evaluateAndStorePoint(
       status: todaySafetyStatus,
       active_warnings: todayActiveWarnings,
       warning_area_code: point.warning_area_code,
+      land_warning_area_code: point.land_warning_area_code,
     },
     sun_times: todaySunDto,
     marine_history: marineHistory,
@@ -457,33 +478,34 @@ export async function evaluateAndStorePoint(
   todayResult.evaluated_at = evaluatedAt;
   todayResult.point_updated_at = point.updated_at || null;
   allResults.push(todayResult);
-  const todayCount = 1;
+  todayCount = 1;
+}
 
   // ─────────────────────────────────────────────────────────────
   // A-2. TODAY_HOURLY Evaluation (당일 7개 주요 시간별 슬롯: 03, 06, 09, 12, 15, 18, 21시)
   // ─────────────────────────────────────────────────────────────
-  const todayHourlyKeyHours = [3, 6, 9, 12, 15, 18, 21];
-  let todayHourlyCount = 0;
+  if (activeModes.includes("TODAY_HOURLY")) {
+    const todayHourlyKeyHours = [3, 6, 9, 12, 15, 18, 21];
 
-  for (let sIdx = 0; sIdx < todayHourlyKeyHours.length; sIdx++) {
-    const h = todayHourlyKeyHours[sIdx];
-    const slotKey = `${todayKst}T${String(h).padStart(2, "0")}`;
-    const forecastTime = formatSlotTime(todayKst, h);
-    const pStart = `${todayKst}T${String(h).padStart(2, "0")}:00:00+09:00`;
-    const pEnd = `${todayKst}T${String(Math.min(24, h + 3)).padStart(2, "0")}:00:00+09:00`;
+    for (let sIdx = 0; sIdx < todayHourlyKeyHours.length; sIdx++) {
+      const h = todayHourlyKeyHours[sIdx];
+      const slotKey = `${todayKst}T${String(h).padStart(2, "0")}`;
+      const forecastTime = formatSlotTime(todayKst, h);
+      const pStart = `${todayKst}T${String(h).padStart(2, "0")}:00:00+09:00`;
+      const pEnd = `${todayKst}T${String(Math.min(24, h + 3)).padStart(2, "0")}:00:00+09:00`;
 
-    const mHourIdx = marineIndexMap.get(slotKey);
-    const kmaHourItem = kmaIndexMap.get(slotKey);
+      const mHourIdx = marineIndexMap.get(slotKey);
+      const kmaHourItem = kmaIndexMap.get(slotKey);
 
-    const mHourly = mHourIdx !== undefined ? {
-      wave_height: waveHeights[mHourIdx],
-      wave_period: wavePeriods[mHourIdx] ?? null,
-      ocean_current_velocity: currentVelocities[mHourIdx],
-      sea_surface_temperature: seaTemperatures[mHourIdx] ?? null,
-    } : {
-      wave_height: (null as unknown) as number,
-      ocean_current_velocity: (null as unknown) as number,
-    };
+      const mHourly = mHourIdx !== undefined ? {
+        wave_height: waveHeights[mHourIdx],
+        wave_period: wavePeriods[mHourIdx] ?? null,
+        ocean_current_velocity: currentVelocities[mHourIdx],
+        sea_surface_temperature: seaTemperatures[mHourIdx] ?? null,
+      } : {
+        wave_height: (null as unknown) as number,
+        ocean_current_velocity: (null as unknown) as number,
+      };
 
     const hPrecipVal = parseKmaPrecipitationMm(kmaHourItem);
     const hSkyCode = kmaHourItem?.sky?.code ?? kmaHourItem?.skyCode ?? (typeof kmaHourItem?.sky === "number" ? kmaHourItem.sky : null);
@@ -515,8 +537,9 @@ export async function evaluateAndStorePoint(
         status: todaySafetyStatus,
         active_warnings: todayActiveWarnings,
         warning_area_code: point.warning_area_code,
+        land_warning_area_code: point.land_warning_area_code,
       },
-      sun_times: todaySunDto,
+      sun_times: sunTimesMap.get(todayKst) || { date: todayKst, sunrise: null, sunset: null, source: "KASI" },
       marine_history: marineHistory,
       rn1_history: caches.rn1History || [],
     };
@@ -533,141 +556,160 @@ export async function evaluateAndStorePoint(
     allResults.push(hourlyRes);
     todayHourlyCount++;
   }
+}
 
   // ─────────────────────────────────────────────────────────────
-  // B. SHORT Evaluation (+1~+3일, 3시간 슬롯: 06, 09, 12, 15, 18)
+  // B. SHORT Evaluation (+1~+3일, 3시간 슬롯: 03, 06, 09, 12, 15, 18, 21)
   // [CRITICAL] 당일 실시간 특보 혼합 금지 (safety_status: 'PASS')
   // ─────────────────────────────────────────────────────────────
-  const shortSlotHours = [6, 9, 12, 15, 18];
-  let shortCount = 0;
+  if (activeModes.includes("SHORT")) {
+    const shortSlotHours = [3, 6, 9, 12, 15, 18, 21];
 
-  for (let d = 1; d <= 3; d++) {
-    const shortDate = addDays(todayKst, d);
-    const shortSunDto: KasiSunTimesInput = sunTimesMap.get(shortDate) || {
-      date: shortDate,
-      sunrise: null,
-      sunset: null,
-      source: "KASI",
-    };
-
-    shortSlotHours.forEach((hour, slotIndex) => {
-      const slotKey = `${shortDate}T${String(hour).padStart(2, "0")}`;
-      const forecastTime = formatSlotTime(shortDate, hour);
-      const sMIdx = marineIndexMap.get(slotKey);
-      const sKmaItem = kmaIndexMap.get(slotKey);
-
-      const shortMarineSlot = sMIdx !== undefined ? {
-        wave_height: waveHeights[sMIdx],
-        wave_period: wavePeriods[sMIdx] ?? null,
-        ocean_current_velocity: currentVelocities[sMIdx],
-        sea_surface_temperature: seaTemperatures[sMIdx] ?? null,
-      } : {
-        wave_height: (null as unknown) as number,
-        ocean_current_velocity: (null as unknown) as number,
+    for (let d = 1; d <= 3; d++) {
+      const shortDate = addDays(todayKst, d);
+      const shortSunDto: KasiSunTimesInput = sunTimesMap.get(shortDate) || {
+        date: shortDate,
+        sunrise: null,
+        sunset: null,
+        source: "KASI",
       };
 
-      const sPrecipVal = parseKmaPrecipitationMm(sKmaItem);
-      const sSkyCode = sKmaItem?.sky?.code ?? sKmaItem?.skyCode ?? (typeof sKmaItem?.sky === "number" ? sKmaItem.sky : null);
-      const sPtyCode = sKmaItem?.precipitationType?.code ?? sKmaItem?.pty ?? (typeof sKmaItem?.precipitationType === "number" ? sKmaItem.precipitationType : null);
+      for (let sIdx = 0; sIdx < shortSlotHours.length; sIdx++) {
+        const h = shortSlotHours[sIdx];
+        const slotKey = `${shortDate}T${String(h).padStart(2, "0")}`;
+        const forecastTime = formatSlotTime(shortDate, h);
+        const pStart = `${shortDate}T${String(h).padStart(2, "0")}:00:00+09:00`;
+        const pEnd = `${shortDate}T${String(Math.min(24, h + 3)).padStart(2, "0")}:00:00+09:00`;
 
-      const shortKmaSlot = {
-        temperature: sKmaItem?.temperature ?? null,
-        wind_speed: sKmaItem?.windSpeed ?? null,
-        wind_direction_degree: sKmaItem?.windDirection ?? sKmaItem?.windDirectionDegree ?? null,
-        precipitation: sPrecipVal,
-        precipitation_probability: sKmaItem?.precipitationProbability ?? null,
-        cloud_cover: sKmaItem?.cloudCover ?? null,
-        sky_code: sSkyCode !== null && sSkyCode !== undefined ? String(sSkyCode) : null,
-        precipitation_type: sPtyCode !== null && sPtyCode !== undefined ? Number(sPtyCode) : null,
-      };
+        const mHourIdx = marineIndexMap.get(slotKey);
+        const kmaHourItem = kmaIndexMap.get(slotKey);
 
-      const shortDto: ShortEvaluationInputDTO = {
-        mode: "SHORT",
-        point,
-        target_date: shortDate,
-        slot_index: slotIndex,
-        forecast_time: forecastTime,
-        evaluated_at: evaluatedAt,
-        marine_slot: shortMarineSlot,
-        kma_slot: shortKmaSlot,
-        sun_times: shortSunDto,
-        marine_history: [],
-        rn1_history: [],
-        safety_status: "PASS", // No TODAY warning bleed
-      };
+        const mHourly = mHourIdx !== undefined ? {
+          wave_height: waveHeights[mHourIdx],
+          wave_period: wavePeriods[mHourIdx] ?? null,
+          ocean_current_velocity: currentVelocities[mHourIdx],
+          sea_surface_temperature: seaTemperatures[mHourIdx] ?? null,
+        } : {
+          wave_height: (null as unknown) as number,
+          ocean_current_velocity: (null as unknown) as number,
+        };
 
-      const shortResult = evaluateShort(shortDto);
-      shortResult.evaluated_at = evaluatedAt;
-      shortResult.point_updated_at = point.updated_at || null;
-      allResults.push(shortResult);
-      shortCount++;
-    });
+        const hPrecipVal = parseKmaPrecipitationMm(kmaHourItem);
+        const hSkyCode = kmaHourItem?.sky?.code ?? kmaHourItem?.skyCode ?? (typeof kmaHourItem?.sky === "number" ? kmaHourItem.sky : null);
+        const hPtyCode = kmaHourItem?.precipitationType?.code ?? kmaHourItem?.pty ?? (typeof kmaHourItem?.precipitationType === "number" ? kmaHourItem.precipitationType : null);
+
+        const kmaHourly = {
+          temperature: kmaHourItem?.temperature ?? null,
+          wind_speed: kmaHourItem?.windSpeed ?? null,
+          wind_direction_degree: kmaHourItem?.windDirection ?? kmaHourItem?.windDirectionDegree ?? null,
+          precipitation: hPrecipVal,
+          precipitation_probability: kmaHourItem?.precipitationProbability ?? null,
+          cloud_cover: kmaHourItem?.cloudCover ?? null,
+          sky_code: hSkyCode !== null && hSkyCode !== undefined ? String(hSkyCode) : null,
+          precipitation_type: hPtyCode !== null && hPtyCode !== undefined ? Number(hPtyCode) : null,
+        };
+
+        const shortDto: ShortEvaluationInputDTO = {
+          mode: "SHORT",
+          point,
+          target_date: shortDate,
+          slot_index: sIdx,
+          forecast_time: forecastTime,
+          period_start: pStart,
+          period_end: pEnd,
+          evaluated_at: evaluatedAt,
+          marine_hourly: mHourly,
+          kma_slot: kmaHourly,
+          sun_times: shortSunDto,
+          marine_history: marineHistory,
+          rn1_history: caches.rn1History || [],
+        };
+
+        const shortResult = evaluateShort(shortDto);
+        shortResult.evaluated_at = evaluatedAt;
+        shortResult.point_updated_at = point.updated_at || null;
+        allResults.push(shortResult);
+        shortCount++;
+      }
+    }
   }
 
   // ─────────────────────────────────────────────────────────────
   // C. MID Evaluation (+4~+6일, MID_MARINE_ONLY: AM 06~12, PM 12~18)
   // [CRITICAL] 강수 배제, 자연광 감점 미적용, 해양 4종 6시간 시계열 집계
   // ─────────────────────────────────────────────────────────────
-  let midCount = 0;
-
-  for (let d = 4; d <= 6; d++) {
-    const midDate = addDays(todayKst, d);
-    const midSunDto: KasiSunTimesInput = sunTimesMap.get(midDate) || {
-      date: midDate,
-      sunrise: null,
-      sunset: null,
-      source: "KASI",
-    };
-
-    const slotConfigs: Array<{ slotType: "AM" | "PM"; startH: number; endH: number }> = [
-      { slotType: "AM", startH: 6, endH: 12 },
-      { slotType: "PM", startH: 12, endH: 18 },
-    ];
-
-    slotConfigs.forEach(({ slotType, startH, endH }) => {
-      const periodStart = formatSlotTime(midDate, startH);
-      const periodEnd = formatSlotTime(midDate, endH);
-
-      const series: Array<{
-        timestamp: string;
-        wave_height: number;
-        wave_period?: number | null;
-        ocean_current_velocity: number;
-        sea_surface_temperature?: number | null;
-      }> = [];
-
-      for (let h = startH; h < endH; h++) {
-        const slotKey = `${midDate}T${String(h).padStart(2, "0")}`;
-        const sIdx = marineIndexMap.get(slotKey);
-        if (sIdx !== undefined && Number.isFinite(waveHeights[sIdx]) && Number.isFinite(currentVelocities[sIdx])) {
-          series.push({
-            timestamp: formatSlotTime(midDate, h),
-            wave_height: waveHeights[sIdx],
-            wave_period: wavePeriods[sIdx] ?? null,
-            ocean_current_velocity: currentVelocities[sIdx],
-            sea_surface_temperature: seaTemperatures[sIdx] ?? null,
-          });
-        }
-      }
-
-      const midDto: MidEvaluationInputDTO = {
-        mode: "MID_MARINE_ONLY",
-        point,
-        target_date: midDate,
-        slot_type: slotType,
-        period_start: periodStart,
-        period_end: periodEnd,
-        evaluated_at: evaluatedAt,
-        marine_6h_series: series,
-        sun_times: midSunDto,
+  if (activeModes.includes("MID")) {
+    for (let d = 4; d <= 6; d++) {
+      const midDate = addDays(todayKst, d);
+      const midSunDto: KasiSunTimesInput = sunTimesMap.get(midDate) || {
+        date: midDate,
+        sunrise: null,
+        sunset: null,
+        source: "KASI",
       };
 
-      const midResult = evaluateMid(midDto);
-      midResult.evaluated_at = evaluatedAt;
-      midResult.point_updated_at = point.updated_at || null;
-      allResults.push(midResult);
-      midCount++;
-    });
+      const slotConfigs: Array<{ slotType: "AM" | "PM"; startH: number; endH: number }> = [
+        { slotType: "AM", startH: 6, endH: 12 },
+        { slotType: "PM", startH: 12, endH: 18 },
+      ];
+
+      slotConfigs.forEach(({ slotType, startH, endH }) => {
+        const periodStart = formatSlotTime(midDate, startH);
+        const periodEnd = formatSlotTime(midDate, endH);
+
+        const series: Array<{
+          timestamp: string;
+          wave_height: number;
+          wave_period?: number | null;
+          ocean_current_velocity: number;
+          sea_surface_temperature?: number | null;
+        }> = [];
+
+        for (let h = startH; h < endH; h++) {
+          const slotKey = `${midDate}T${String(h).padStart(2, "0")}`;
+          const sIdx = marineIndexMap.get(slotKey);
+          if (sIdx !== undefined && Number.isFinite(waveHeights[sIdx]) && Number.isFinite(currentVelocities[sIdx])) {
+            series.push({
+              timestamp: formatSlotTime(midDate, h),
+              wave_height: waveHeights[sIdx],
+              wave_period: wavePeriods[sIdx] ?? null,
+              ocean_current_velocity: currentVelocities[sIdx],
+              sea_surface_temperature: seaTemperatures[sIdx] ?? null,
+            });
+          }
+        }
+
+        const midSlotData = caches.midWeather?.slots?.[midDate];
+        const weatherText = slotType === "AM" ? (midSlotData?.weather_am ?? null) : (midSlotData?.weather_pm ?? null);
+        const pop = slotType === "AM" ? (midSlotData?.pop_am ?? null) : (midSlotData?.pop_pm ?? null);
+
+        const midDto: MidEvaluationInputDTO = {
+          mode: "MID_MARINE_ONLY",
+          point,
+          target_date: midDate,
+          slot_type: slotType,
+          period_start: periodStart,
+          period_end: periodEnd,
+          evaluated_at: evaluatedAt,
+          marine_6h_series: series,
+          kma_mid_land: {
+            weather: weatherText,
+            precipitation_probability: pop,
+          },
+          kma_mid_temp: {
+            temp_min: midSlotData?.temp_min ?? null,
+            temp_max: midSlotData?.temp_max ?? null,
+          },
+          sun_times: midSunDto,
+        };
+
+        const midResult = evaluateMid(midDto);
+        midResult.evaluated_at = evaluatedAt;
+        midResult.point_updated_at = point.updated_at || null;
+        allResults.push(midResult);
+        midCount++;
+      });
+    }
   }
 
   // ─────────────────────────────────────────────────────────────

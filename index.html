@@ -677,7 +677,29 @@ function closePointModal(restore=true){
   if(pointDetailHistoryActive){pointDetailPendingRestore=restore;pointDetailHistoryActive=false;history.back();return}
   finishClosePointModal(restore);
 }
-window.addEventListener('popstate',event=>{if(window.SNORKYTodayConditionDetail?.isOpen?.()){window.SNORKYTodayConditionDetail.close(false);return}if(window.SNORKYDailyForecast?.isOpen?.()){window.SNORKYDailyForecast.close(false);return}if(event.state?.snorkyPointDetail&&!$('#pointModal').classList.contains('open'))return;if(!$('#pointModal').classList.contains('open'))return;pointDetailHistoryActive=false;const restore=pointDetailPendingRestore;pointDetailPendingRestore=true;finishClosePointModal(restore)});
+window.addEventListener('popstate',event=>{
+  if(window.SNORKYTodayConditionDetail?.isOpen?.()){
+    window.SNORKYTodayConditionDetail.close(false);
+    return;
+  }
+  if(window.SNORKYDailyForecast?.isOpen?.()){
+    window.SNORKYDailyForecast.close(false);
+    return;
+  }
+  if(event.state?.snorkyPointDetail){
+    const pm=document.getElementById('pointModal');
+    if(pm&&pm.classList.contains('open')){
+      pm.style.visibility='visible';
+      document.body.style.overflow='hidden';
+    }
+    return;
+  }
+  if(!$('#pointModal').classList.contains('open'))return;
+  pointDetailHistoryActive=false;
+  const restore=pointDetailPendingRestore;
+  pointDetailPendingRestore=true;
+  finishClosePointModal(restore);
+});
 let map=null,kakaoMapReady=false,kakaoMarkers=[],mapResizeObserver=null,mapInitialViewportApplied=false,coordinateEditPoint=null,coordinateEditRegion=null,editPinMode=null,tempLat=null,tempLng=null,tempCoordinateMarker=null;
 const todayHourlyScrollPositions=new Map();
 function ensureCoordinateEditor(){let editor=$('#coordinateEditor');if(editor)return editor;editor=document.createElement('div');editor.id='coordinateEditor';editor.className='coordinate-editor';editor.hidden=true;editor.innerHTML='<strong id="coordinateEditorTitle">핀 위치 수정</strong><p id="coordinateEditorDescription">지도를 클릭하여 원하는 위치를 지정하세요.</p><div class="coordinate-values"><div>위도: <b id="tempLatitude">--</b></div><div>경도: <b id="tempLongitude">--</b></div></div><div class="coordinate-actions"><button id="savePointCoordinate" class="coordinate-save" type="button" disabled>저장</button><button id="cancelPointCoordinate" class="coordinate-cancel" type="button">취소</button></div>';($('#mapSection')||document.body).appendChild(editor);const saveBtn=$('#savePointCoordinate'),cancelBtn=$('#cancelPointCoordinate');if(saveBtn)saveBtn.onclick=saveCoordinateEdit;if(cancelBtn)cancelBtn.onclick=cancelCoordinateEdit;return editor}
@@ -991,7 +1013,7 @@ $('#selectNewSnorkelingLocation').addEventListener('click',()=>openLocationPicke
 $('#locationPickerSearchForm').addEventListener('submit',event=>{event.preventDefault();searchPinPlace()});$('#pickerRoadmap').addEventListener('click',()=>setPickerMapType('roadmap'));$('#pickerSkyview').addEventListener('click',()=>setPickerMapType('skyview'));
 document.querySelectorAll('[data-close-point-edit]').forEach(button=>button.addEventListener('click',closePointEditModal));$('#pointEditModal').addEventListener('click',event=>{if(event.target===$('#pointEditModal'))closePointEditModal()});$('#pointEditForm').addEventListener('submit',event=>{event.preventDefault();savePointDetailOverride()});
 $('#addFacilityTag').addEventListener('click',()=>{const input=$('#facilityEditorInput'),value=input.value.trim();if(!value)return;adminEditFacilities.push(value);input.value='';renderTagEditor('#facilityEditor',adminEditFacilities,'facility')});$('#addNoteTag').addEventListener('click',()=>{const input=$('#notesEditorInput'),value=input.value.trim();if(!value)return;adminEditNotes.push(value);input.value='';renderTagEditor('#notesEditor',adminEditNotes,'note')});
-document.addEventListener('keydown',event=>{if(event.key!=='Escape')return;if(window.SNORKYTodayConditionDetail?.isOpen?.()){window.SNORKYTodayConditionDetail.close(true);return;}if($('#photoLightbox').classList.contains('open'))closePhotoLightbox();else if($('#locationPickerModal').classList.contains('open'))closeLocationPicker();else if($('#newPointModal').classList.contains('open'))closeNewPointModal();else if($('#pointManagerModal').classList.contains('open'))closePointManager();else if($('#regionManagerModal').classList.contains('open'))closeRegionManager();else if($('#pointEditModal').classList.contains('open'))closePointEditModal();else if($('#adminLoginModal').classList.contains('open'))closeAdminLogin();else if($('#pointModal').classList.contains('open'))closePointModal()});
+document.addEventListener('keydown',event=>{if(event.key!=='Escape')return;if(window.SNORKYDailyForecast?.isOpen?.()){window.SNORKYDailyForecast.close(true);return;}if(window.SNORKYTodayConditionDetail?.isOpen?.()){window.SNORKYTodayConditionDetail.close(true);return;}if($('#photoLightbox').classList.contains('open'))closePhotoLightbox();else if($('#locationPickerModal').classList.contains('open'))closeLocationPicker();else if($('#newPointModal').classList.contains('open'))closeNewPointModal();else if($('#pointManagerModal').classList.contains('open'))closePointManager();else if($('#regionManagerModal').classList.contains('open'))closeRegionManager();else if($('#pointEditModal').classList.contains('open'))closePointEditModal();else if($('#adminLoginModal').classList.contains('open'))closeAdminLogin();else if($('#pointModal').classList.contains('open'))closePointModal()});
 setAdminMode(false);renderNav();load();loadKakaoMapsSdk();
 </script>
 <script src="./public/js/supabase-client.js?v=20260820_stitch_v76"></script>
