@@ -35,6 +35,7 @@
   let _selectedDate  = null; // YYYY-MM-DD
   let _selectedSlot  = null; // 현재 선택된 row 객체
   let _tideCache     = {};   // { [YYYY-MM-DD]: tideEvents[] | null }
+  let _analysisTransition = null;
 
   const DAY_NAMES        = ["일", "월", "화", "수", "목", "금", "토"];
   const SHORT_VALID_HOURS = new Set([3, 6, 9, 12, 15, 18, 21]);
@@ -908,13 +909,13 @@
           <button class="tc-icon-btn" id="dfBack" aria-label="뒤로가기">
             <span class="material-symbols-outlined">arrow_back</span>
           </button>
-          <h1 class="tc-app-title" id="dfTitle">6일 예보</h1>
+          <h1 class="tc-app-title" id="dfTitle">SNORKY 예보</h1>
           <div class="tc-top-app-bar-spacer" aria-hidden="true"></div>
         </header>
         <main class="df-content tc-body">
           <div class="df-title-section">
             <div>
-              <h2>6일 컨디션</h2>
+              <h2>SNORKY 예보</h2>
               <p>날짜별 바다 컨디션을 비교해보세요</p>
             </div>
             <div class="df-title-date-range">
@@ -1658,11 +1659,16 @@
     _point = point || window.spot;
     if (!_point) return;
 
-    _modal.querySelector("#dfTitle").textContent = _point.name || "6일 예보";
+    _modal.querySelector("#dfTitle").textContent = _point.name || "SNORKY 예보";
 
     _modal.style.display = "flex";
     _modal.classList.add("open");
     document.body.style.overflow = "hidden";
+    _analysisTransition?.cancel();
+    const entryAnalysis = window.SNORKYConditionAnalysis?.start(
+      _modal.querySelector(".today-condition-sheet")
+    ) || null;
+    _analysisTransition = entryAnalysis;
 
     const pm = document.getElementById("pointModal");
     if (pm?.classList.contains("open")) pm.style.visibility = "hidden";
@@ -1690,6 +1696,7 @@
     const id = String(_point.supabaseId || _point.id || "");
 
     // SHORT, MID 로드 — Today/TODAY_HOURLY 호출 없음
+    let loadFailed = false;
     try {
       const [short, mid] = await Promise.all([
         reader?.loadShortResultsForPoint ? reader.loadShortResultsForPoint(id) : Promise.resolve([]),
@@ -1699,6 +1706,7 @@
       _midRows   = Array.isArray(mid)   ? mid   : [];
     } catch (err) {
       console.warn("[SNORKYDailyForecast] 데이터 로드 오류:", err);
+      loadFailed = true;
       _shortRows = [];
       _midRows   = [];
     }
@@ -1709,6 +1717,8 @@
     _selectedSlot = null;
 
     render();
+    if (loadFailed || (!_shortRows.length && !_midRows.length)) entryAnalysis?.fail();
+    else entryAnalysis?.complete();
 
     // 선택 날짜 조석 비동기 로드 (로드 후 그래프 자동 업데이트)
     if (_selectedDate) {
@@ -1726,6 +1736,8 @@
   ────────────────────────────────────────────────────────── */
   function close(back) {
     if (!_modal) return;
+    _analysisTransition?.cancel();
+    _analysisTransition = null;
     _modal.classList.remove("open");
     _modal.style.display = "none";
 

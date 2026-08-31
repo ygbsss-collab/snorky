@@ -1,11 +1,11 @@
 const CACHE_PREFIX = 'snorky-static-';
-const CACHE_NAME = `${CACHE_PREFIX}v80`;
+const CACHE_NAME = `${CACHE_PREFIX}v81`;
 const APP_SHELL = [
   './',
   './index.html',
   './manifest.webmanifest',
   './public/css/today-condition-detail.css',
-  './public/images/snorky-app-icon.png',
+  './public/images/snorky-symbol.png',
   './public/images/snorky-home-hero-v3.jpg',
   './public/images/snorky-home-hero-v2.png',
   './public/images/pwa/icon-192.png',

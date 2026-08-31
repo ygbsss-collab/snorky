@@ -16,6 +16,7 @@
   let marineData = null;
   let kmaData = null;
   let historyActive = false;
+  let analysisTransition = null;
 
   // ─────────────────────────────────────────────────────────────
   // Helper Utilities
@@ -755,6 +756,11 @@
 
     modalEl.classList.add("open");
     document.body.style.overflow = "hidden";
+    analysisTransition?.cancel();
+    const entryAnalysis = window.SNORKYConditionAnalysis?.start(
+      modalEl.querySelector(".today-condition-sheet")
+    ) || null;
+    analysisTransition = entryAnalysis;
 
     // History state for smooth back navigation
     if (!historyActive) {
@@ -779,6 +785,7 @@
       ]);
 
       if (!hourlyResultRows || !hourlyResultRows.length) {
+        entryAnalysis?.fail();
         renderErrorState("시간별 예보 데이터가 아직 준비되지 않았습니다.");
         return;
       }
@@ -787,9 +794,15 @@
       todayTopRow = rawToday ? mapResultRowToScrubberRow(rawToday) : null;
 
       const mappedRows = hourlyResultRows.map(mapResultRowToScrubberRow);
-      syncData({ spot: activePoint, days: [{ date: hourlyResultRows[0].target_date, rows: mappedRows }] }, mappedRows);
+      const rendered = syncData(
+        { spot: activePoint, days: [{ date: hourlyResultRows[0].target_date, rows: mappedRows }] },
+        mappedRows
+      );
+      if (rendered) entryAnalysis?.complete();
+      else entryAnalysis?.fail();
     } catch (err) {
       console.warn("[SNORKY Today Detail] loadTodayHourly error:", err);
+      entryAnalysis?.fail();
       renderErrorState("시간별 예보 데이터를 불러오지 못했습니다.");
     }
   }
@@ -814,6 +827,8 @@
   function close(triggerBack = true) {
     if (!modalEl || !modalEl.classList.contains("open")) return;
 
+    analysisTransition?.cancel();
+    analysisTransition = null;
     closeBottomSheet();
     modalEl.classList.remove("open");
 
