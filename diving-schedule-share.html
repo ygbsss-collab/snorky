@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>다이빙 스케줄 공유 - SNORKY</title>
+  <link rel="icon" href="./public/images/snorky-symbol.png" type="image/png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Pretendard:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="./public/css/diving-schedule-share.css?v=20260901_share_v1">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="./public/js/supabase-client.js"></script>
+</head>
+<body>
+  <div class="share-app">
+    <!-- 상단 헤더 -->
+    <header class="share-header">
+      <a href="./index.html" class="share-home-btn" aria-label="홈으로">
+        <span class="material-symbols-outlined">home</span>
+      </a>
+      <h1>다이빙 스케줄 초대</h1>
+      <div style="width:36px;"></div>
+    </header>
+
+    <main class="share-content" id="shareContent">
+      <!-- 로딩 중 -->
+      <div id="shareLoading" class="share-state-card">
+        <span class="material-symbols-outlined share-spinner">progress_activity</span>
+        <p>스케줄 정보를 불러오는 중입니다...</p>
+      </div>
+
+      <!-- 에러/찾을 수 없음 -->
+      <div id="shareError" class="share-state-card" hidden>
+        <span class="material-symbols-outlined share-warn-icon">error</span>
+        <h2>스케줄을 찾을 수 없습니다</h2>
+        <p id="shareErrorMessage">유효하지 않거나 만료된 공유 링크입니다.</p>
+        <a href="./index.html" class="share-action-btn primary">SNORKY 홈으로 이동</a>
+      </div>
+
+      <!-- 정상 스케줄 상세 -->
+      <div id="shareDetail" hidden>
+        <div class="share-card">
+          <div class="share-badge-row">
+            <span class="share-invite-pill">🤿 다이빙 스케줄</span>
+            <span id="shareTypeTag" class="share-type-tag">SNORKY 포인트</span>
+          </div>
+
+          <h2 id="sharePointName" class="share-point-title">포인트명</h2>
+
+          <div class="share-info-list">
+            <div class="share-info-item">
+              <span class="material-symbols-outlined">calendar_month</span>
+              <div>
+                <span class="share-info-label">날짜</span>
+                <strong id="shareDateText" class="share-info-val">2026년 9월 4일</strong>
+              </div>
+            </div>
+
+            <div class="share-info-item" id="shareTimeRow">
+              <span class="material-symbols-outlined">schedule</span>
+              <div>
+                <span class="share-info-label">입수 예정시간</span>
+                <strong id="shareTimeText" class="share-info-val">14:30</strong>
+              </div>
+            </div>
+
+            <div class="share-info-item" id="shareMemoRow">
+              <span class="material-symbols-outlined">edit_note</span>
+              <div>
+                <span class="share-info-label">메모</span>
+                <p id="shareMemoText" class="share-memo-val">동행 버디 메모</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 바다 컨디션 요약 카드 -->
+        <div class="share-condition-card" id="shareConditionSec">
+          <div class="share-condition-head">
+            <span class="material-symbols-outlined">water</span>
+            <h3>해당 날짜 바다 컨디션</h3>
+          </div>
+          <div id="shareConditionBody">
+            <p class="share-condition-hint">컨디션 정보를 확인하는 중...</p>
+          </div>
+        </div>
+
+        <!-- 액션 버튼 -->
+        <div class="share-actions">
+          <button id="viewPointDetailBtn" class="share-action-btn primary" type="button">
+            <span class="material-symbols-outlined">map</span>
+            <span>포인트 상세보기</span>
+          </button>
+          <a href="./index.html" class="share-action-btn secondary">
+            <span>SNORKY 홈으로 이동</span>
+          </a>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <script src="./public/js/diving-schedule-share.js?v=20260901_share_v1"></script>
+</body>
+</html>

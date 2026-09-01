@@ -34,6 +34,7 @@
   let _midRows       = [];   // mode='MID' rows
   let _selectedDate  = null; // YYYY-MM-DD
   let _selectedSlot  = null; // 현재 선택된 row 객체
+  let _targetTime    = null; // HH:MM 입수 예정시간
   let _tideCache     = {};   // { [YYYY-MM-DD]: tideEvents[] | null }
   let _analysisTransition = null;
 
@@ -1088,6 +1089,14 @@
     const initRows   = initOffset <= 3 ? (shortGroups[selDate] || []) : (midGroups[selDate] || []);
     _selectedSlot = null;
     renderDetail(selDate, initRows, initOffset, initOffset <= 3 ? "short" : "mid");
+
+    // 초기 렌더 시 선택된 날짜 카드가 화면에 보이도록 스크롤 이동
+    const selectedBtn = daysEl.querySelector(`.df-day-card[data-date="${selDate}"]`);
+    if (selectedBtn) {
+      setTimeout(() => {
+        selectedBtn.scrollIntoView({ behavior: "smooth", block: "nearest", inline: "center" });
+      }, 50);
+    }
   }
 
   /* ──────────────────────────────────────────────────────────
@@ -1120,9 +1129,18 @@
     // 슬롯 없으면 전체 row 사용 (데이터는 있으나 슬롯 매핑 실패한 경우 방어)
     const display = slots.length ? slots : rows;
 
-    const defSlot = (_selectedSlot && display.includes(_selectedSlot))
-      ? _selectedSlot
-      : (display.find(r => kstHour(r) === 12) || display[0]);
+    let defSlot = null;
+    if (_selectedSlot && display.includes(_selectedSlot)) {
+      defSlot = _selectedSlot;
+    } else if (_targetTime) {
+      const tHour = Number(String(_targetTime).split(":")[0]);
+      if (Number.isFinite(tHour)) {
+        defSlot = [...display].sort((a, b) => Math.abs(kstHour(a) - tHour) - Math.abs(kstHour(b) - tHour))[0];
+      }
+    }
+    if (!defSlot) {
+      defSlot = display.find(r => kstHour(r) === 12) || display[0];
+    }
     _selectedSlot = defSlot;
 
     const slotsHtml = display.map(r => {
@@ -1211,6 +1229,16 @@
         updateWeatherAndMetrics(container, _selectedSlot, false, date);
       };
     });
+
+    // 초기 선택된 시간 카드가 화면에 보이도록 스크롤 이동
+    if (_selectedSlot) {
+      const initCard = container.querySelector(`.df-time-card[data-hour="${kstHour(_selectedSlot)}"]`);
+      if (initCard) {
+        setTimeout(() => {
+          initCard.scrollIntoView({ behavior: "smooth", block: "nearest", inline: "center" });
+        }, 50);
+      }
+    }
   }
 
   /* ──────────────────────────────────────────────────────────
@@ -1262,7 +1290,16 @@
     const repPM  = pmRows[0] || null;
 
     if (!_selectedSlot || (!amRows.includes(_selectedSlot) && !pmRows.includes(_selectedSlot))) {
-      _selectedSlot = repAM || repPM;
+      if (_targetTime) {
+        const tHour = Number(String(_targetTime).split(":")[0]);
+        if (Number.isFinite(tHour)) {
+          _selectedSlot = tHour < 12 ? (repAM || repPM) : (repPM || repAM);
+        } else {
+          _selectedSlot = repAM || repPM;
+        }
+      } else {
+        _selectedSlot = repAM || repPM;
+      }
     }
     const isAMSel = amRows.includes(_selectedSlot) || (!repPM && repAM);
 
@@ -1675,9 +1712,9 @@
   }
 
   /* ──────────────────────────────────────────────────────────
-     open(point)
+     open(point, targetDate, targetTime)
   ────────────────────────────────────────────────────────── */
-  async function open(point) {
+  async function open(point, targetDate = null, targetTime = null) {
     ensure();
     _point = point || window.spot;
     if (!_point) return;
@@ -1736,8 +1773,9 @@
 
     // 조석 캐시 초기화 (새 포인트 열람마다 재조회)
     _tideCache = {};
-    _selectedDate = null;
+    _selectedDate = targetDate || null;
     _selectedSlot = null;
+    _targetTime = targetTime || null;
 
     render();
     if (loadFailed || (!_shortRows.length && !_midRows.length)) entryAnalysis?.fail();

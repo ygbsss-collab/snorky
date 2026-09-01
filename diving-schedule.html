@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>다이빙 스케줄 - SNORKY</title>
+  <link rel="icon" href="./public/images/snorky-symbol.png" type="image/png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Pretendard:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="./public/css/condition-analysis-overlay.css?v=20260901_schedule_v1">
+  <link rel="stylesheet" href="./public/css/today-condition-detail.css?v=20260901_schedule_v1">
+  <link rel="stylesheet" href="./public/css/daily-forecast-detail.css?v=20260901_schedule_v1">
+  <link rel="stylesheet" href="./public/css/diving-schedule.css?v=20260901_schedule_v1">
+  <script src="https://t1.kakaocdn.net/kakao_js_sdk/2.8.2/kakao.min.js" crossorigin="anonymous"></script>
+</head>
+<body>
+  <div class="schedule-app">
+    <!-- 1. 상단 헤더 -->
+    <header class="schedule-header">
+      <a href="./mypage.html" class="schedule-back" aria-label="마이페이지로 돌아가기">‹</a>
+      <h1>다이빙 스케줄</h1>
+      <button id="addScheduleBtn" class="schedule-add-btn" type="button">＋ 추가</button>
+    </header>
+
+    <main class="schedule-content">
+      <!-- 2. 월간 캘린더 네비게이션 및 카드 -->
+      <section class="calendar-card">
+        <div class="calendar-nav-bar">
+          <h2 id="calendarMonthTitle" class="calendar-month-title">2026년 9월</h2>
+          <div class="calendar-nav-btns">
+            <button id="todayNavBtn" class="calendar-today-btn" type="button">오늘</button>
+            <button id="prevMonthBtn" class="calendar-nav-btn" type="button" aria-label="이전달">‹</button>
+            <button id="nextMonthBtn" class="calendar-nav-btn" type="button" aria-label="다음달">›</button>
+          </div>
+        </div>
+
+        <div class="calendar-week-header" aria-hidden="true">
+          <span class="calendar-week-day sun">일</span>
+          <span class="calendar-week-day">월</span>
+          <span class="calendar-week-day">화</span>
+          <span class="calendar-week-day">수</span>
+          <span class="calendar-week-day">목</span>
+          <span class="calendar-week-day">금</span>
+          <span class="calendar-week-day sat">토</span>
+        </div>
+
+        <div id="calendarDaysGrid" class="calendar-days-grid" role="grid" aria-label="다이빙 스케줄 달력"></div>
+      </section>
+
+      <!-- 3. 선택된 날짜 상세 스케줄 목록 -->
+      <section class="day-schedule-section">
+        <header class="day-schedule-head">
+          <h3 id="dayScheduleTitle" class="day-schedule-title">스케줄</h3>
+        </header>
+
+        <div id="dayScheduleList" class="schedule-list" aria-live="polite"></div>
+      </section>
+    </main>
+  </div>
+
+  <!-- 4. 스케줄 추가/수정 모달 -->
+  <section id="scheduleModal" class="schedule-modal" role="dialog" aria-modal="true" aria-labelledby="scheduleModalTitle" hidden>
+    <div class="schedule-modal-backdrop" id="scheduleModalBackdrop"></div>
+    <div class="schedule-modal-card">
+      <header class="schedule-modal-head">
+        <h2 id="scheduleModalTitle">스케줄 추가</h2>
+        <button id="closeScheduleModalBtn" class="schedule-modal-close" type="button" aria-label="닫기">×</button>
+      </header>
+
+      <form id="scheduleForm">
+        <!-- 날짜 선택 -->
+        <div class="schedule-field">
+          <label for="scheduleDateInput">날짜</label>
+          <input id="scheduleDateInput" class="schedule-input" type="date" required>
+        </div>
+
+        <!-- 포인트 구분 (SNORKY 포인트 vs 즐겨찾기 vs 나만의 스팟) -->
+        <div class="schedule-field">
+          <label>스팟 선택</label>
+          <div class="point-type-tabs">
+            <button type="button" id="tabOfficial" class="point-type-tab active">SNORKY 포인트</button>
+            <button type="button" id="tabFavorite" class="point-type-tab">즐겨찾기</button>
+            <button type="button" id="tabCustom" class="point-type-tab">나만의 스팟</button>
+          </div>
+
+          <div id="officialPointSec">
+            <div class="schedule-search-row">
+              <input id="pointSearchInput" class="schedule-input" type="text" placeholder="포인트명 또는 지역명 검색 (예: 강릉, 안목)" autocomplete="off">
+              <button id="pointSearchBtn" class="schedule-search-btn" type="button">검색</button>
+            </div>
+            <div id="pointSearchResults" class="schedule-search-results">
+              <div class="schedule-search-hint">포인트명 또는 지역명을 검색해 주세요.</div>
+            </div>
+            <input type="hidden" id="selectedOfficialPointId" value="">
+            <input type="hidden" id="selectedOfficialPointName" value="">
+          </div>
+
+          <div id="favoritePointSec" hidden>
+            <div id="favoritePointResults" class="schedule-search-results">
+              <div class="schedule-search-hint">등록된 즐겨찾기 포인트가 없습니다.</div>
+            </div>
+          </div>
+
+          <div id="customPointSec" hidden>
+            <select id="customSpotSelect" class="schedule-select">
+              <option value="">나만의 스팟을 선택하세요</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- 입수 예정시간 -->
+        <div class="schedule-field">
+          <label for="schedulePlannedTimeInput">입수 예정시간 (선택)</label>
+          <input id="schedulePlannedTimeInput" class="schedule-input" type="time">
+        </div>
+
+        <!-- 메모 -->
+        <div class="schedule-field">
+          <label for="scheduleMemoInput">메모 (선택)</label>
+          <textarea id="scheduleMemoInput" class="schedule-textarea" placeholder="동행 버디, 장비, 준비물 등을 자유롭게 기록하세요." maxlength="200"></textarea>
+        </div>
+
+        <p id="scheduleModalStatus" class="schedule-modal-status" aria-live="polite"></p>
+
+        <div class="schedule-modal-actions">
+          <button id="cancelScheduleModalBtn" class="schedule-btn-cancel" type="button">취소</button>
+          <button id="saveScheduleBtn" class="schedule-btn-save" type="submit">저장</button>
+        </div>
+      </form>
+    </div>
+  </section>
+
+  <!-- 스크립트 -->
+  <script src="./public/js/supabase-client.js?v=20260901_schedule_v1"></script>
+  <script async src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" onload="window.dispatchEvent(new Event('snorky:supabase-ready'))"></script>
+  <script src="./public/js/auth-session.js?v=20260901_schedule_v1"></script>
+  <script src="./public/js/kma-warning-zones.js?v=20260820_stitch_v76"></script>
+  <script src="./public/js/kma-safety.js?v=20260820_stitch_v76"></script>
+  <script src="./public/js/evaluation-result-reader.js?v=20260901_schedule_v1"></script>
+  <script src="./public/js/condition-analysis-overlay.js?v=20260901_schedule_v1"></script>
+  <script src="./public/js/today-condition-detail.js?v=20260901_schedule_v1"></script>
+  <script src="./public/js/daily-forecast-detail.js?v=20260901_schedule_v1"></script>
+  <script src="./public/js/diving-schedule.js?v=20260901_schedule_v1"></script>
+</body>
+</html>

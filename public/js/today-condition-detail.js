@@ -547,6 +547,9 @@
   }
 
   // ─────────────────────────────────────────────────────────────
+  let requestedTargetTime = null;
+
+  // ─────────────────────────────────────────────────────────────
   // Data Synchronization from loaded dataset
   // ─────────────────────────────────────────────────────────────
   function syncData(data, customRows = null, customDay = null) {
@@ -567,7 +570,18 @@
       ? todayRows.filter(r => keyHours.includes(r.hour))
       : todayRows;
     const latestPast = [...slots].filter(r => r.hour < nowHour).sort((a, b) => b.hour - a.hour)[0];
-    if (!selectedHour || !todayRows.some(r => r.hour === selectedHour) || (latestPast && selectedHour < latestPast.hour)) {
+    
+    if (requestedTargetTime) {
+      const th = Number(String(requestedTargetTime).split(":")[0]);
+      if (Number.isFinite(th)) {
+        const closest = [...slots].sort((a, b) => Math.abs(a.hour - th) - Math.abs(b.hour - th))[0];
+        if (closest) {
+          selectedHour = closest.hour;
+        }
+      }
+    }
+    
+    if (!selectedHour || !todayRows.some(r => r.hour === selectedHour) || (!requestedTargetTime && latestPast && selectedHour < latestPast.hour)) {
       const nearestFuture = [...slots].filter(r => r.hour >= nowHour).sort((a, b) => a.hour - b.hour)[0];
       const initial = window.SNORKYEvaluationResults?.selectCurrentTodayHourlySlot?.(slots, now)
         || (!latestPast ? nearestFuture : !nearestFuture ? latestPast
@@ -743,6 +757,7 @@
 
     activePoint = point || (typeof spot !== "undefined" ? spot : null);
     if (!activePoint) return;
+    requestedTargetTime = (typeof options === "string" ? options : options?.targetTime) || null;
     selectedHour = null;
     currentHour = null;
 

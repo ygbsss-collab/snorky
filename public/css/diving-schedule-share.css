@@ -1,0 +1,331 @@
+@charset "utf-8";
+
+*, *::before, *::after {
+  box-sizing: border-box;
+}
+
+[hidden] {
+  display: none !important;
+}
+
+html, body {
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  min-height: 100%;
+  font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, Roboto, sans-serif;
+  background: #f4f7f9;
+  color: #102a3a;
+  -webkit-font-smoothing: antialiased;
+}
+
+body {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 0 0 calc(40px + env(safe-area-inset-bottom, 0px));
+}
+
+.share-app {
+  width: 100%;
+  max-width: 520px;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background: #fff;
+  box-shadow: 0 0 30px rgba(10, 35, 48, .04);
+}
+
+.share-header {
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 56px;
+  padding: calc(env(safe-area-inset-top, 0px) + 8px) 16px 8px;
+  background: rgba(255, 255, 255, .94);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border-bottom: 1px solid #edf2f5;
+}
+
+.share-home-btn {
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  border: 1px solid #e2eaed;
+  border-radius: 50%;
+  background: #f8fafb;
+  color: #183048;
+  text-decoration: none;
+  transition: background .15s;
+}
+
+.share-home-btn:hover {
+  background: #edf3f6;
+}
+
+.share-header h1 {
+  margin: 0;
+  font-size: 17px;
+  font-weight: 800;
+  color: #0e2032;
+}
+
+.share-content {
+  flex: 1;
+  padding: 20px 16px;
+}
+
+.share-state-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 60px 20px;
+  color: #64748b;
+}
+
+.share-spinner {
+  font-size: 32px;
+  color: #087ca7;
+  animation: spin 1s linear infinite;
+  margin-bottom: 12px;
+}
+
+@keyframes spin {
+  100% { transform: rotate(360deg); }
+}
+
+.share-warn-icon {
+  font-size: 48px;
+  color: #e54d42;
+  margin-bottom: 12px;
+}
+
+.share-card {
+  background: #fbfdfe;
+  border: 1px solid #e1ebf0;
+  border-radius: 20px;
+  padding: 20px;
+  margin-bottom: 16px;
+  box-shadow: 0 4px 16px rgba(10, 35, 48, .03);
+}
+
+.share-badge-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 12px;
+}
+
+.share-invite-pill {
+  font-size: 11.5px;
+  font-weight: 800;
+  background: #e1f1f7;
+  color: #076284;
+  padding: 3px 8px;
+  border-radius: 6px;
+}
+
+.share-type-tag {
+  font-size: 11.5px;
+  font-weight: 800;
+  background: #eef2f5;
+  color: #5a7585;
+  padding: 3px 8px;
+  border-radius: 6px;
+}
+
+.share-type-tag.custom {
+  background: #edf1f9;
+  color: #3b578c;
+}
+
+.share-point-title {
+  margin: 0 0 18px;
+  font-size: 22px;
+  font-weight: 900;
+  color: #092334;
+  letter-spacing: -.02em;
+}
+
+.share-info-list {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.share-info-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.share-info-item .material-symbols-outlined {
+  font-size: 20px;
+  color: #087ca7;
+  margin-top: 2px;
+}
+
+.share-info-label {
+  display: block;
+  font-size: 11px;
+  font-weight: 700;
+  color: #7b94a2;
+  margin-bottom: 2px;
+}
+
+.share-info-val {
+  font-size: 15px;
+  font-weight: 800;
+  color: #123042;
+}
+
+.share-memo-val {
+  margin: 0;
+  font-size: 13.5px;
+  line-height: 1.5;
+  color: #3d5968;
+  background: #f4f8fb;
+  padding: 10px 12px;
+  border-radius: 10px;
+  word-break: break-word;
+}
+
+/* 컨디션 요약 카드 */
+.share-condition-card {
+  background: #ffffff;
+  border: 1px solid #e3edf2;
+  border-radius: 20px;
+  padding: 18px;
+  margin-bottom: 24px;
+}
+
+.share-condition-head {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 12px;
+}
+
+.share-condition-head .material-symbols-outlined {
+  color: #087ca7;
+  font-size: 20px;
+}
+
+.share-condition-head h3 {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 800;
+  color: #0f2c3e;
+}
+
+.share-condition-hint {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 600;
+  color: #7b94a2;
+}
+
+.share-condition-summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: linear-gradient(135deg, #0a4d68, #087ca7);
+  color: #fff;
+  padding: 14px 16px;
+  border-radius: 14px;
+  margin-bottom: 10px;
+}
+
+.share-condition-score-wrap {
+  display: flex;
+  flex-direction: column;
+}
+
+.share-condition-status-label {
+  font-size: 13px;
+  font-weight: 700;
+  opacity: .9;
+}
+
+.share-condition-score {
+  font-size: 26px;
+  font-weight: 900;
+  line-height: 1.1;
+}
+
+.share-condition-recom {
+  font-size: 13px;
+  font-weight: 800;
+  padding: 4px 10px;
+  background: rgba(255, 255, 255, .2);
+  border-radius: 20px;
+}
+
+.share-condition-metrics {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.share-metric-box {
+  background: #f8fafc;
+  border: 1px solid #eaf0f4;
+  border-radius: 10px;
+  padding: 8px 12px;
+  font-size: 12.5px;
+  color: #4b6676;
+}
+
+.share-metric-box strong {
+  color: #0d2838;
+  margin-left: 4px;
+}
+
+/* 액션 버튼 */
+.share-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.share-action-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  width: 100%;
+  height: 48px;
+  border-radius: 14px;
+  font-size: 15px;
+  font-weight: 800;
+  text-decoration: none;
+  cursor: pointer;
+  border: 0;
+  transition: all .15s;
+}
+
+.share-action-btn.primary {
+  background: linear-gradient(135deg, #087ca7, #07506e);
+  color: #fff;
+  box-shadow: 0 4px 14px rgba(8, 124, 167, .24);
+}
+
+.share-action-btn.primary:hover {
+  filter: brightness(1.06);
+}
+
+.share-action-btn.secondary {
+  background: #f0f4f6;
+  color: #3b5768;
+}
+
+.share-action-btn.secondary:hover {
+  background: #e3ebef;
+}
