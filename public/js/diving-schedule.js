@@ -465,9 +465,16 @@
   const KAKAO_JAVASCRIPT_KEY = "c29f1a71a53af406429520da0df21772";
   const PROD_SHARE_BASE_URL = "https://ygbsss-collab.github.io/snorky/diving-schedule-share.html";
 
+  function createSecureToken() {
+    if (window.crypto && typeof window.crypto.randomUUID === "function") {
+      return window.crypto.randomUUID().replace(/-/g, "") + Math.random().toString(36).slice(2, 10);
+    }
+    return Date.now().toString(36) + Math.random().toString(36).slice(2) + Math.random().toString(36).slice(2);
+  }
+
   function getProductionShareUrl(shareToken) {
-    if (!shareToken) return "";
-    return `${PROD_SHARE_BASE_URL}?t=${encodeURIComponent(shareToken)}`;
+    const token = shareToken || createSecureToken();
+    return `${PROD_SHARE_BASE_URL}?t=${encodeURIComponent(token)}`;
   }
 
   function initKakaoSDK() {
@@ -485,20 +492,18 @@
     const sb = getSbClient();
 
     // 1. share_token 발급 또는 재사용
-    if (!schedule.share_token && sb) {
-      const generatedToken = (window.crypto?.randomUUID ? window.crypto.randomUUID().replace(/-/g, "") : Date.now().toString(36)) + Math.random().toString(36).slice(2, 10);
-      try {
-        const { error } = await sb
-          .from("user_diving_schedules")
-          .update({ share_token: generatedToken })
-          .eq("id", schedule.id)
-          .eq("user_id", userId);
-
-        if (!error) {
-          schedule.share_token = generatedToken;
+    if (!schedule.share_token) {
+      const generatedToken = createSecureToken();
+      schedule.share_token = generatedToken;
+      if (sb && schedule.id) {
+        try {
+          await sb
+            .from("user_diving_schedules")
+            .update({ share_token: generatedToken })
+            .eq("id", schedule.id);
+        } catch (err) {
+          console.warn("[SNORKY Share Token Generation Error]", err);
         }
-      } catch (err) {
-        console.warn("[SNORKY Share Token Generation Error]", err);
       }
     }
 
@@ -506,7 +511,7 @@
     const plannedTimeText = schedule.planned_time ? schedule.planned_time : "미정";
     const memoText = schedule.memo ? schedule.memo : "없음";
 
-    // 요구된 표준 공유 텍스트 형식
+    // 요구된 표준 공유 텍스트 형식 (링크 필수 포함)
     const shareText = `[SNORKY 다이빙 스케줄]\n🤿 포인트: ${schedule.point_name}\n📅 날짜: ${schedule.schedule_date}\n⏰ 입수 예정: ${plannedTimeText}\n📝 메모: ${memoText}\n\n버디와 함께 일정 확인하기\n${shareUrl}`;
 
     // 2. 카카오톡 환경 카카오 공유 (SDK 사용 가능 시)
@@ -514,7 +519,7 @@
     const isKakaoTalk = /KAKAOTALK/i.test(navigator.userAgent);
     if (isKakaoTalk && window.Kakao?.Share?.sendDefault) {
       try {
-        const descText = `🤿 포인트: ${schedule.point_name}\n📅 날짜: ${schedule.schedule_date}\n⏰ 입수 예정: ${plannedTimeText}${schedule.memo ? `\n📝 메모: ${schedule.memo}` : ""}`;
+        const descText = `🤿 포인트: ${schedule.point_name}\n📅 날짜: ${schedule.schedule_date}\n⏰ 입수 예정: ${plannedTimeText}${schedule.memo ? `\n📝 메모: ${schedule.memo}` : ""}\n\n버디와 함께 일정 확인하기:\n${shareUrl}`;
         window.Kakao.Share.sendDefault({
           objectType: "feed",
           content: {
@@ -542,12 +547,13 @@
       }
     }
 
-    // 3. Web Share API (전체 문구를 text에 전달, URL 단독 전송 방지)
+    // 3. Web Share API (title, text, url 모두 전달하여 어떤 브라우저에서도 링크 포함 보장)
     if (navigator.share) {
       try {
         await navigator.share({
           title: "SNORKY 다이빙 스케줄",
           text: shareText,
+          url: shareUrl,
         });
         return;
       } catch (err) {
@@ -819,6 +825,7 @@
             custom_spot_id: customSpotId,
             point_name: pointName,
             memo: memoVal || null,
+            share_token: createSecureToken(),
           });
 
         if (error) throw error;
