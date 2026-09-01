@@ -520,10 +520,6 @@
     if (isKakaoTalk && window.Kakao?.Share?.sendDefault) {
       try {
         const descText = `🤿 포인트: ${schedule.point_name}\n📅 날짜: ${schedule.schedule_date}\n⏰ 입수 예정: ${plannedTimeText}${schedule.memo ? `\n📝 메모: ${schedule.memo}` : ""}\n\n👉 아래 버튼을 눌러 스케줄을 확인하세요.`;
-        const pointUrl = (schedule.point_type !== "custom" && schedule.point_id)
-          ? `https://ygbsss-collab.github.io/snorky/index.html?point=${encodeURIComponent(schedule.point_id)}`
-          : "https://ygbsss-collab.github.io/snorky/index.html";
-
         const buttons = [
           {
             title: "스케줄 보기",
@@ -532,14 +528,17 @@
               webUrl: shareUrl,
             },
           },
-          {
+        ];
+
+        if (schedule.point_type !== "custom" && schedule.point_id) {
+          buttons.push({
             title: "포인트 상세보기",
             link: {
-              mobileWebUrl: pointUrl,
-              webUrl: pointUrl,
+              mobileWebUrl: `https://ygbsss-collab.github.io/snorky/index.html?point=${encodeURIComponent(schedule.point_id)}`,
+              webUrl: `https://ygbsss-collab.github.io/snorky/index.html?point=${encodeURIComponent(schedule.point_id)}`,
             },
-          },
-        ];
+          });
+        }
 
         window.Kakao.Share.sendDefault({
           objectType: "feed",

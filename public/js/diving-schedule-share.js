@@ -146,22 +146,71 @@
     }
 
     try {
-      // 기존 평가 결과 테이블에서 해당 포인트 및 날짜의 저장된 결과 1건 조회
-      const { data } = await sb
-        .from("point_evaluation_results")
-        .select("condition_score, condition_status, recommendation, water_temperature, wave_height, target_date")
-        .or(`legacy_id.eq.${schedule.point_id},point_id.eq.${schedule.point_id}`)
-        .eq("target_date", schedule.schedule_date)
-        .order("created_at", { ascending: false })
-        .limit(1);
+      let numericPointId = null;
+      if (/^\d+$/.test(String(schedule.point_id))) {
+        numericPointId = Number(schedule.point_id);
+      } else {
+        const { data: pData } = await sb
+          .from("points")
+          .select("id")
+          .eq("legacy_id", schedule.point_id)
+          .maybeSingle();
+        if (pData?.id) {
+          numericPointId = pData.id;
+        }
+      }
 
-      if (data && data.length > 0) {
-        const evalRow = data[0];
-        const score = evalRow.condition_score !== null ? Math.round(evalRow.condition_score) : "--";
+      if (!numericPointId) {
+        shareConditionBody.innerHTML = '<p class="share-condition-hint">컨디션 정보가 아직 준비되지 않았습니다.</p>';
+        return;
+      }
+
+      // 기존 평가 결과 테이블에서 해당 포인트 및 날짜의 저장된 결과 조회
+      const { data, error } = await sb
+        .from("point_evaluation_results")
+        .select("condition_score, condition_status, recommendation, metrics, period_start, forecast_time, target_date")
+        .eq("point_id", numericPointId)
+        .eq("target_date", schedule.schedule_date)
+        .order("period_start", { ascending: true });
+
+      if (!error && Array.isArray(data) && data.length > 0) {
+        // 입수 예정시간과 가장 가까운 슬롯 선택 (없으면 주간/대표 슬롯)
+        let evalRow = data[0];
+        if (schedule.planned_time && data.length > 1) {
+          const planHour = Number(schedule.planned_time.split(":")[0]);
+          let minDiff = 999;
+          data.forEach(r => {
+            const timeStr = r.period_start || r.forecast_time;
+            if (timeStr) {
+              const d = new Date(timeStr);
+              const kstHour = (d.getUTCHours() + 9) % 24;
+              const diff = Math.abs(kstHour - planHour);
+              if (diff < minDiff) {
+                minDiff = diff;
+                evalRow = r;
+              }
+            }
+          });
+        } else if (data.length > 1) {
+          // 09:00~15:00 주간 슬롯 선호
+          const daySlot = data.find(r => {
+            const timeStr = r.period_start || r.forecast_time;
+            if (!timeStr) return false;
+            const kstHour = (new Date(timeStr).getUTCHours() + 9) % 24;
+            return kstHour >= 9 && kstHour <= 15;
+          });
+          if (daySlot) evalRow = daySlot;
+        }
+
+        const score = evalRow.condition_score !== null && evalRow.condition_score !== undefined
+          ? Math.round(evalRow.condition_score)
+          : (evalRow.condition_status || "--");
         const status = evalRow.condition_status || "보통";
         const recom = evalRow.recommendation || "컨디션 확인 필요";
-        const temp = evalRow.water_temperature !== null ? `${evalRow.water_temperature}°C` : "--";
-        const wave = evalRow.wave_height !== null ? `${evalRow.wave_height}m` : "--";
+        const seaTemp = evalRow.metrics?.sea_temperature ?? evalRow.metrics?.temperature ?? null;
+        const waveH = evalRow.metrics?.wave_height ?? null;
+        const temp = seaTemp !== null && seaTemp !== undefined ? `${seaTemp}°C` : "--";
+        const wave = waveH !== null && waveH !== undefined ? `${waveH}m` : "--";
 
         shareConditionBody.innerHTML = `
           <div class="share-condition-summary">

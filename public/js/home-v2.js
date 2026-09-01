@@ -1825,6 +1825,32 @@ document.addEventListener("snorky:favorites-updated",()=>{
 window.SNORKYMarineSafety?.ready?.then(renderWarning);let regionAttempts=0;const regionTimer=setInterval(()=>{if(populateRegions()||++regionAttempts>40)clearInterval(regionTimer)},250);
 const snapshot=window.SNORKYTodayBest?.getSnapshot?.();if(snapshot){state.todayRows=snapshot.homeRows||[];renderToday()}else window.SNORKYTodayBest?.refresh?.();
 renderNearbySection();renderNearestSection();checkInitialPermission();
+
+function checkUrlPointParam(){
+  try{
+    const params=new URLSearchParams(window.location.search);
+    const targetPointId=params.get("point")||params.get("pointId")||params.get("spot");
+    if(targetPointId){
+      let tries=0;
+      const t=setInterval(()=>{
+        tries++;
+        if(typeof window.openPointOnMap==="function"&&window.kakao?.maps){
+          const ok=window.openPointOnMap(targetPointId,"share");
+          if(ok||tries>=20){
+            clearInterval(t);
+            if(!ok&&window.SNORKYPointDetail?.openBySupabaseId){
+              window.SNORKYPointDetail.openBySupabaseId(targetPointId,"share");
+            }
+          }
+        }else if(tries>=20){
+          clearInterval(t);
+        }
+      },150);
+    }
+  }catch(_){}
+}
+checkUrlPointParam();
+
 window.SNORKYHomeV2=Object.freeze({
   formatPointScore,
   formatPointCondition,
