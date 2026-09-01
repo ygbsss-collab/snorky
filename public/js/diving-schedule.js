@@ -519,7 +519,28 @@
     const isKakaoTalk = /KAKAOTALK/i.test(navigator.userAgent);
     if (isKakaoTalk && window.Kakao?.Share?.sendDefault) {
       try {
-        const descText = `🤿 포인트: ${schedule.point_name}\n📅 날짜: ${schedule.schedule_date}\n⏰ 입수 예정: ${plannedTimeText}${schedule.memo ? `\n📝 메모: ${schedule.memo}` : ""}\n\n버디와 함께 일정 확인하기:\n${shareUrl}`;
+        const descText = `🤿 포인트: ${schedule.point_name}\n📅 날짜: ${schedule.schedule_date}\n⏰ 입수 예정: ${plannedTimeText}${schedule.memo ? `\n📝 메모: ${schedule.memo}` : ""}\n\n👉 아래 버튼을 눌러 스케줄을 확인하세요.`;
+        const pointUrl = (schedule.point_type !== "custom" && schedule.point_id)
+          ? `https://ygbsss-collab.github.io/snorky/index.html?point=${encodeURIComponent(schedule.point_id)}`
+          : "https://ygbsss-collab.github.io/snorky/index.html";
+
+        const buttons = [
+          {
+            title: "스케줄 보기",
+            link: {
+              mobileWebUrl: shareUrl,
+              webUrl: shareUrl,
+            },
+          },
+          {
+            title: "포인트 상세보기",
+            link: {
+              mobileWebUrl: pointUrl,
+              webUrl: pointUrl,
+            },
+          },
+        ];
+
         window.Kakao.Share.sendDefault({
           objectType: "feed",
           content: {
@@ -531,15 +552,7 @@
               webUrl: shareUrl,
             },
           },
-          buttons: [
-            {
-              title: "스케줄 보기",
-              link: {
-                mobileWebUrl: shareUrl,
-                webUrl: shareUrl,
-              },
-            },
-          ],
+          buttons,
         });
         return;
       } catch (kErr) {
