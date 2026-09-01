@@ -530,16 +530,6 @@
           },
         ];
 
-        if (schedule.point_type !== "custom" && schedule.point_id) {
-          buttons.push({
-            title: "포인트 상세보기",
-            link: {
-              mobileWebUrl: `https://ygbsss-collab.github.io/snorky/index.html?point=${encodeURIComponent(schedule.point_id)}`,
-              webUrl: `https://ygbsss-collab.github.io/snorky/index.html?point=${encodeURIComponent(schedule.point_id)}`,
-            },
-          });
-        }
-
         window.Kakao.Share.sendDefault({
           objectType: "feed",
           content: {
