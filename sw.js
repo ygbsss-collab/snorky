@@ -1,11 +1,13 @@
 const CACHE_PREFIX = 'snorky-static-';
-const CACHE_NAME = `${CACHE_PREFIX}v81`;
+const CACHE_NAME = `${CACHE_PREFIX}v82`;
 const APP_SHELL = [
   './',
   './index.html',
   './manifest.webmanifest',
   './public/css/today-condition-detail.css',
+  './public/css/point-video.css',
   './public/images/snorky-symbol.png',
+  './public/images/snorky-hero-freediving.jpg',
   './public/images/snorky-home-hero-v3.jpg',
   './public/images/snorky-home-hero-v2.png',
   './public/images/pwa/icon-192.png',
@@ -29,7 +31,8 @@ const APP_SHELL = [
   './public/js/home-v2.js',
   './public/js/point-search.js',
   './public/js/point-gear.js',
-  './public/js/today-condition-detail.js'
+  './public/js/today-condition-detail.js',
+  './public/js/point-video.js'
 ];
 
 self.addEventListener('install', event => {

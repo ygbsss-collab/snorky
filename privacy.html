@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>개인정보처리방침 | SNORKY</title>
+  <link rel="icon" href="./public/images/snorky-symbol.png" type="image/png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Pretendard:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <style>
+    *,*::before,*::after{box-sizing:border-box}
+    html,body{margin:0;padding:0;width:100%;min-height:100%;font-family:'Pretendard',-apple-system,BlinkMacSystemFont,system-ui,Roboto,sans-serif;background:#f8fafc;color:#102a3a;-webkit-font-smoothing:antialiased}
+    body{display:flex;flex-direction:column;align-items:center;padding:0 0 calc(40px + env(safe-area-inset-bottom,0px))}
+    
+    .privacy-container{width:100%;max-width:500px;min-height:100vh;display:flex;flex-direction:column;background:#ffffff;box-shadow:0 0 40px rgba(15,35,55,.05)}
+    
+    /* 상단 고정 헤더 */
+    .privacy-header{position:sticky;top:0;z-index:50;display:flex;align-items:center;justify-content:space-between;height:56px;padding:calc(env(safe-area-inset-top,0px) + 8px) 16px 8px;background:rgba(255,255,255,.94);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border-bottom:1px solid #f0f4f7}
+    .privacy-back{display:grid;place-items:center;width:40px;height:40px;padding:0;border:1px solid #e8eff3;border-radius:50%;background:#f9fbfc;color:#1a3245;font-size:22px;font-weight:900;text-decoration:none;line-height:1;transition:background .15s}
+    .privacy-back:hover{background:#edf4f7}
+    .privacy-header h1{margin:0;font-size:17.5px;font-weight:800;letter-spacing:-.02em;color:#0e2233}
+    .privacy-header-spacer{width:40px}
+    
+    .privacy-content{flex:1;padding:24px 20px 36px}
+    
+    /* 타이틀 및 시행일 */
+    .privacy-top-meta{margin-bottom:20px}
+    .privacy-title{margin:0 0 4px;font-size:22px;font-weight:900;letter-spacing:-.03em;color:#0b1e2e}
+    .privacy-date{font-size:12.5px;color:#8a9ea8;font-weight:600}
+    
+    /* 간결한 소개 박스 */
+    .privacy-intro-box{padding:14px 16px;border-radius:16px;background:#f9fbfc;border:1px solid #edf3f7;margin-bottom:28px}
+    .privacy-intro-box p{margin:0;font-size:13px;line-height:1.6;color:#476171;word-break:keep-all}
+    
+    /* 조항 섹션 */
+    .privacy-section{margin-bottom:26px}
+    .privacy-section-title{margin:0 0 8px;font-size:15.5px;font-weight:800;color:#0c2333;letter-spacing:-.02em}
+    .privacy-section-body{margin:0;font-size:13.5px;line-height:1.68;color:#3d5666;word-break:keep-all}
+    .privacy-section ol, .privacy-section ul{margin:6px 0 0;padding-left:18px;font-size:13.5px;line-height:1.68;color:#3d5666}
+    .privacy-section li{margin-bottom:4px}
+    
+    /* 모바일 친화형 데이터 카드/행 목록 */
+    .privacy-data-list{display:flex;flex-direction:column;gap:10px;margin:10px 0 6px}
+    .privacy-data-card{padding:14px 16px;border-radius:16px;background:#f9fbfc;border:1px solid #edf3f7}
+    .privacy-data-card-title{display:block;margin-bottom:4px;font-size:14px;font-weight:800;color:#102636}
+    .privacy-data-row{display:flex;flex-direction:column;gap:2px;font-size:12.5px;line-height:1.55;color:#556e7e}
+    .privacy-data-row span strong{color:#2a4556}
+    
+    /* 책임자 정보 박스 */
+    .privacy-contact-card{padding:15px 16px;border-radius:16px;background:#f9fbfc;border:1px solid #edf3f7;margin-top:8px}
+    .privacy-contact-card ul{margin:0;padding-left:16px;list-style:disc}
+    .privacy-contact-card li{margin-bottom:3px;font-size:13px;color:#3d5666}
+    
+    /* 하단 링크 */
+    .privacy-bottom-nav{margin-top:36px;padding-top:20px;border-top:1px solid #edf2f6;display:flex;justify-content:space-between;align-items:center;font-size:13px}
+    .privacy-bottom-nav a{color:#0077b6;text-decoration:none;font-weight:700}
+    
+    .privacy-footer{margin-top:20px;text-align:center;font-size:12px;color:#94a5b0}
+  </style>
+</head>
+<body>
+  <div class="privacy-container">
+    <header class="privacy-header">
+      <a href="./index.html" class="privacy-back" onclick="if(window.history.length>1){event.preventDefault();window.history.back();}" aria-label="뒤로가기">‹</a>
+      <h1>개인정보처리방침</h1>
+      <div class="privacy-header-spacer" aria-hidden="true"></div>
+    </header>
+
+    <main class="privacy-content">
+      <div class="privacy-top-meta">
+        <h2 class="privacy-title">개인정보처리방침</h2>
+        <span class="privacy-date">시행일 2026.09.01</span>
+      </div>
+
+      <section class="privacy-intro-box">
+        <p>SNORKY(운영자: 윤교혁)는 정보통신망법 및 개인정보 보호법을 준수하며, 이용자의 개인정보를 소중히 보호하고 관련 고충을 신속하게 처리하기 위해 다음과 같이 개인정보처리방침을 공개합니다.</p>
+      </section>
+
+      <!-- 1. 수집 항목 및 방법 -->
+      <section class="privacy-section">
+        <h3 class="privacy-section-title">1. 개인정보 및 위치정보의 수집 항목 및 방법</h3>
+        <p class="privacy-section-body">SNORKY는 서비스 제공에 필요한 최소한의 정보만을 수집 및 이용합니다.</p>
+        
+        <div class="privacy-data-list">
+          <div class="privacy-data-card">
+            <strong class="privacy-data-card-title">카카오 로그인</strong>
+            <div class="privacy-data-row">
+              <span><strong>수집 항목:</strong> 카카오 사용자 식별값(ID), 닉네임, 프로필 사진(동의 시)</span>
+              <span><strong>수집 방법:</strong> 카카오 OAuth 계정 연동 시 자동 수집</span>
+              <span><strong>보유 위치:</strong> Supabase 보안 클라우드 데이터베이스</span>
+            </div>
+          </div>
+
+          <div class="privacy-data-card">
+            <strong class="privacy-data-card-title">프로필 설정</strong>
+            <div class="privacy-data-row">
+              <span><strong>수집 항목:</strong> SNORKY 커스텀 닉네임, 프로필 사진 이미지</span>
+              <span><strong>수집 방법:</strong> 마이페이지 내 이용자 직접 등록</span>
+              <span><strong>보유 위치:</strong> Supabase 보안 스토리지 및 데이터베이스</span>
+            </div>
+          </div>
+
+          <div class="privacy-data-card">
+            <strong class="privacy-data-card-title">현재 위치정보 (위치기반 서비스)</strong>
+            <div class="privacy-data-row">
+              <span><strong>수집 항목:</strong> 기기 접속 위치 좌표(위도, 경도)</span>
+              <span><strong>이용 목적:</strong> '내 주변 추천' 및 포인트별 실시간 거리(km) 계산</span>
+              <span><strong>저장 방식:</strong> <strong>서버에 전송하거나 저장하지 않으며</strong>, 사용자가 위치 권한을 허용한 시점에 브라우저 메모리에서 일시적으로만 계산 후 즉시 소멸 (상시 위치 추적을 하지 않습니다.)</span>
+            </div>
+          </div>
+
+          <div class="privacy-data-card">
+            <strong class="privacy-data-card-title">나만의 스팟 및 개인화 데이터</strong>
+            <div class="privacy-data-row">
+              <span><strong>수집 항목:</strong> 나만의 스팟 좌표/장소 정보, 즐겨찾기 포인트, 다이빙 스케줄</span>
+              <span><strong>저장 방식:</strong> <strong>이용자 기기의 웹 브라우저 로컬 저장소(localStorage)에만 저장</strong>되며, 서버에 영구 보관되지 않습니다.</span>
+            </div>
+          </div>
+
+          <div class="privacy-data-card">
+            <strong class="privacy-data-card-title">문의하기</strong>
+            <div class="privacy-data-row">
+              <span><strong>수집 항목:</strong> 작성자명/닉네임, 이메일 또는 연락처, 문의 내용</span>
+              <span><strong>수집 방법:</strong> 문의하기 작성 시 이용자 직접 입력</span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 2. 이용 목적 -->
+      <section class="privacy-section">
+        <h3 class="privacy-section-title">2. 개인정보 및 위치정보의 이용 목적</h3>
+        <ul>
+          <li><strong>회원 식별 및 관리:</strong> 카카오 간편 로그인을 통한 본인 식별, 중복 가입 방지, 프로필 관리</li>
+          <li><strong>위치기반 서비스 제공:</strong> 이용자 현재 위치 기준 근거리 스노클링 포인트 추천 및 거리 계산</li>
+          <li><strong>맞춤형 서비스 제공:</strong> 바다 컨디션 추천, 즐겨찾기 및 나만의 스팟 관리, 다이빙 일정 기록</li>
+          <li><strong>고객 문의 응대:</strong> 포인트 정보 수정 제보, 신규 포인트 등록 제보 및 서비스 불편사항 처리</li>
+          <li><strong>목적 외 사용 금지:</strong> 수집된 개인정보 및 위치정보는 명시된 서비스 제공 목적 외 다른 용도로 사용하거나 제3자에게 제공하지 않습니다.</li>
+        </ul>
+      </section>
+
+      <!-- 3. 보유 및 이용 기간 -->
+      <section class="privacy-section">
+        <h3 class="privacy-section-title">3. 개인정보의 보유 및 이용 기간</h3>
+        <p class="privacy-section-body">이용자의 개인정보는 원칙적으로 <strong>회원탈퇴 시까지</strong> 보유 및 이용하며, 탈퇴 시 지체 없이 파기합니다. 단, 관계 법령의 규정에 의하여 보존할 필요가 있는 경우 해당 법령에서 정한 기간 동안 보관합니다.</p>
+        <ul>
+          <li><strong>문의 접수 및 처리 기록:</strong> 전자상거래법에 따라 3년간 보관</li>
+          <li><strong>웹사이트 방문 로그 기록:</strong> 통신비밀보호법에 따라 3개월간 보관</li>
+        </ul>
+      </section>
+
+      <!-- 4. 파기 절차 및 방법 -->
+      <section class="privacy-section">
+        <h3 class="privacy-section-title">4. 개인정보의 파기 절차 및 방법</h3>
+        <ol>
+          <li><strong>파기 절차:</strong> 이용자가 회원탈퇴를 신청하거나 보유 기간이 경과한 개인정보는 즉시 파기 대상이 됩니다.</li>
+          <li><strong>파기 방법:</strong> 전자적 파일 형태로 저장된 개인정보는 기록을 재생할 수 없는 기술적 방법을 사용하여 삭제합니다. (카카오 OAuth 연결 끊기, Supabase 데이터베이스 레코드 및 스토리지 이미지 영구 삭제, 브라우저 로컬 저장값 삭제)</li>
+        </ol>
+      </section>
+
+      <!-- 5. 제3자 제공 -->
+      <section class="privacy-section">
+        <h3 class="privacy-section-title">5. 개인정보의 제3자 제공</h3>
+        <p class="privacy-section-body">SNORKY는 이용자의 사전 동의 없이 개인정보를 외부에 제공하지 않습니다. 단, 법률의 특별한 규정이 있는 경우에 한하여 제공됩니다.</p>
+      </section>
+
+      <!-- 6. 처리 위탁 -->
+      <section class="privacy-section">
+        <h3 class="privacy-section-title">6. 개인정보 처리 위탁</h3>
+        <p class="privacy-section-body">서비스의 안정적인 인프라 운영을 위해 다음과 같이 개인정보 처리 업무를 위탁하고 있습니다.</p>
+        
+        <div class="privacy-data-list">
+          <div class="privacy-data-card">
+            <strong class="privacy-data-card-title">Supabase, Inc.</strong>
+            <div class="privacy-data-row">
+              <span><strong>위탁 업무:</strong> 클라우드 데이터베이스 호스팅 및 파일 스토리지 인프라 운영</span>
+              <span><strong>보유 기간:</strong> 회원탈퇴 시 또는 위탁계약 종료 시까지</span>
+            </div>
+          </div>
+
+          <div class="privacy-data-card">
+            <strong class="privacy-data-card-title">카카오(Kakao Corp.)</strong>
+            <div class="privacy-data-row">
+              <span><strong>위탁 업무:</strong> 카카오 간편 로그인 인증 및 계정 연동 지원</span>
+              <span><strong>보유 기간:</strong> 회원탈퇴 또는 카카오 연결 해제 시까지</span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 7. 이용자의 권리와 행사 방법 -->
+      <section class="privacy-section">
+        <h3 class="privacy-section-title">7. 이용자의 권리와 행사 방법</h3>
+        <ol>
+          <li>이용자는 언제든지 자신의 개인정보를 조회하거나 수정할 수 있으며, 회원탈퇴를 통해 개인정보의 삭제를 요구할 수 있습니다.</li>
+          <li><strong>회원탈퇴 경로:</strong> SNORKY 홈 하단 [회원탈퇴] 메뉴 또는 회원탈퇴 전용 화면(account-delete.html)에서 직접 즉시 탈퇴할 수 있습니다.</li>
+          <li>카카오 계정 관리(카카오톡 > 설정 > 카카오계정 > 연결된 서비스 관리)에서 언제든지 SNORKY 서비스 연결을 끊을 수 있습니다.</li>
+        </ol>
+      </section>
+
+      <!-- 8. 안전성 확보조치 -->
+      <section class="privacy-section">
+        <h3 class="privacy-section-title">8. 개인정보의 안전성 확보조치</h3>
+        <ul>
+          <li><strong>전송 암호화:</strong> HTTPS(SSL/TLS) 암호화 통신을 적용하여 데이터를 전송합니다.</li>
+          <li><strong>접근 제어:</strong> 데이터베이스 Row Level Security(RLS) 정책 및 서비스 롤 키 보안을 통해 인가되지 않은 접근을 차단합니다.</li>
+        </ul>
+      </section>
+
+      <!-- 9. 보호책임자 -->
+      <section class="privacy-section">
+        <h3 class="privacy-section-title">9. 개인정보 보호책임자 및 담당부서</h3>
+        <p class="privacy-section-body">개인정보 처리에 관한 문의, 불만 처리 및 피해구제 등을 위하여 아래와 같이 개인정보 보호책임자를 지정하고 있습니다.</p>
+        <div class="privacy-contact-card">
+          <ul>
+            <li><strong>운영자 및 개인정보 보호책임자:</strong> 윤교혁</li>
+            <li><strong>이메일:</strong> ygbsss@gmail.com</li>
+            <li><strong>연락처:</strong> 010-2248-9434</li>
+          </ul>
+        </div>
+      </section>
+
+      <!-- 10. 고지의 의무 -->
+      <section class="privacy-section">
+        <h3 class="privacy-section-title">10. 고지의 의무</h3>
+        <p class="privacy-section-body">본 개인정보처리방침의 내용 추가, 삭제 및 수정이 있을 경우 개정 최소 7일 전부터 서비스 화면을 통해 공지합니다.</p>
+      </section>
+
+      <div class="privacy-bottom-nav">
+        <a href="./terms.html">이용약관 보기 ›</a>
+        <a href="./account-delete.html">회원탈퇴 안내 ›</a>
+      </div>
+
+      <footer class="privacy-footer">
+        <p>© 2026 SNORKY (운영자: 윤교혁). All rights reserved.</p>
+      </footer>
+    </main>
+  </div>
+</body>
+</html>

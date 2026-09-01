@@ -1,0 +1,440 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>회원탈퇴 | SNORKY</title>
+  <link rel="icon" href="./public/images/snorky-symbol.png" type="image/png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Pretendard:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <script src="https://t1.kakaocdn.net/kakao_js_sdk/2.8.2/kakao.min.js" crossorigin="anonymous" defer></script>
+  <script src="./public/js/supabase-client.js?v=20260820_stitch_v76" defer></script>
+  <script src="./public/js/auth-session.js?v=20260901_v1" defer></script>
+  <script src="./public/js/auth-kakao.js?v=20260901_v1" defer></script>
+  <style>
+    *,*::before,*::after{box-sizing:border-box}
+    html,body{margin:0;padding:0;width:100%;min-height:100%;font-family:'Pretendard',-apple-system,BlinkMacSystemFont,system-ui,Roboto,sans-serif;background:#f8fafc;color:#102a3a;-webkit-font-smoothing:antialiased}
+    body{display:flex;flex-direction:column;align-items:center;padding:0 0 calc(40px + env(safe-area-inset-bottom,0px))}
+    
+    .delete-page-container{width:100%;max-width:500px;min-height:100vh;display:flex;flex-direction:column;background:#ffffff;box-shadow:0 0 40px rgba(15,35,55,.05)}
+    
+    /* 상단 네비게이션 헤더 */
+    .delete-header{position:sticky;top:0;z-index:50;display:flex;align-items:center;justify-content:space-between;height:56px;padding:calc(env(safe-area-inset-top,0px) + 8px) 16px 8px;background:rgba(255,255,255,.94);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border-bottom:1px solid #f0f4f7}
+    .delete-back{display:grid;place-items:center;width:40px;height:40px;padding:0;border:1px solid #e8eff3;border-radius:50%;background:#f9fbfc;color:#1a3245;font-size:22px;font-weight:900;text-decoration:none;line-height:1;transition:background .15s}
+    .delete-back:hover{background:#edf4f7}
+    .delete-header h1{margin:0;font-size:17.5px;font-weight:800;letter-spacing:-.02em;color:#0e2233}
+    .delete-header-spacer{width:40px}
+    
+    .delete-content{flex:1;padding:24px 20px 32px;display:flex;flex-direction:column}
+    
+    /* 1. 상단 안내 헤더 */
+    .delete-intro{margin-bottom:20px}
+    .delete-title{margin:0 0 6px;font-size:22px;font-weight:900;letter-spacing:-.03em;color:#0b1e2e}
+    .delete-subtitle{margin:0;font-size:14px;color:#647987;line-height:1.5;letter-spacing:-.01em}
+    
+    /* 연한 경고 배너 */
+    .delete-notice-banner{display:flex;align-items:flex-start;gap:10px;padding:14px 16px;border-radius:16px;background:#fef7f6;border:1px solid #feece9;margin-bottom:24px}
+    .delete-notice-icon{flex-shrink:0;margin-top:1px;color:#e03b24}
+    .delete-notice-text{margin:0;font-size:13.5px;font-weight:600;line-height:1.55;color:#8c291d;word-break:keep-all}
+    
+    /* 2. 단일 대형 삭제 대상 카드 */
+    .delete-list-card{padding:8px 18px;border-radius:20px;background:#f9fbfc;border:1px solid #edf3f7;margin-bottom:24px}
+    .delete-item{display:flex;align-items:flex-start;gap:14px;padding:15px 0}
+    .delete-item:not(:last-child){border-bottom:1px solid #edf2f6}
+    
+    .delete-item-icon{display:grid;place-items:center;width:36px;height:36px;border-radius:11px;background:#ffffff;border:1px solid #e5edf2;color:#2c4b60;flex-shrink:0;box-shadow:0 1px 3px rgba(0,0,0,.02)}
+    .delete-item-body{flex:1;min-width:0}
+    .delete-item-title{margin:0 0 3px;font-size:14.5px;font-weight:800;color:#102636;letter-spacing:-.02em}
+    .delete-item-desc{margin:0;font-size:12.5px;color:#6f8694;line-height:1.45;letter-spacing:-.01em;word-break:keep-all}
+    
+    /* 3. 하단 경고 및 확인 영역 */
+    .delete-bottom-section{margin-top:auto}
+    
+    .delete-final-warning{display:flex;align-items:center;justify-content:center;gap:6px;padding:12px 14px;border-radius:14px;background:#fcf5f5;border:1px solid #fae6e6;margin-bottom:16px;color:#c92a2a;font-size:13px;font-weight:700;text-align:center;word-break:keep-all}
+    .delete-final-warning svg{flex-shrink:0}
+    
+    .delete-login-notice{margin-bottom:14px;padding:10px;border-radius:12px;background:#fef2f2;font-size:13px;color:#dc2626;font-weight:700;text-align:center;display:none}
+    
+    .delete-agree-label{display:flex;align-items:center;gap:10px;padding:8px 4px 18px;cursor:pointer;user-select:none}
+    .delete-agree-label input[type="checkbox"]{width:20px;height:20px;margin:0;cursor:pointer;accent-color:#d92d20;border-radius:6px}
+    .delete-agree-text{font-size:14.5px;font-weight:700;color:#183244;letter-spacing:-.01em}
+    
+    .delete-btn-stack{display:flex;flex-direction:column;gap:9px}
+    
+    .delete-main-btn{display:flex;align-items:center;justify-content:center;width:100%;height:48px;border-radius:14px;border:0;background:#d92d20;color:#ffffff;font-size:15px;font-weight:800;cursor:pointer;letter-spacing:-.02em;transition:background .15s, opacity .15s}
+    .delete-main-btn:disabled{background:#e2e8ec;color:#94a3b8;cursor:not-allowed;opacity:1}
+    .delete-main-btn:not(:disabled):hover{background:#b92216}
+    .delete-main-btn:not(:disabled):active{transform:scale(.99)}
+    
+    .delete-sub-btn{display:flex;align-items:center;justify-content:center;width:100%;height:46px;border-radius:14px;border:1px solid #e1e9ee;background:#ffffff;color:#456070;font-size:14px;font-weight:700;text-decoration:none;cursor:pointer;letter-spacing:-.01em;transition:background .15s, border-color .15s}
+    .delete-sub-btn:hover{background:#f8fafc;border-color:#d5e0e7}
+    
+    /* 최종 확인 모달 */
+    .delete-modal-overlay{position:fixed;top:0;left:0;right:0;bottom:0;z-index:9999;display:none;justify-content:center;align-items:center;padding:20px;background:rgba(8,20,30,.58);backdrop-filter:blur(5px);-webkit-backdrop-filter:blur(5px)}
+    .delete-modal-overlay.open{display:flex}
+    .delete-modal-card{width:100%;max-width:320px;padding:26px 20px 20px;background:#ffffff;border-radius:22px;box-shadow:0 12px 36px rgba(0,0,0,.18);text-align:center}
+    .delete-modal-icon{display:inline-grid;place-items:center;width:48px;height:48px;border-radius:50%;background:#fef3f2;color:#d92d20;margin-bottom:14px}
+    .delete-modal-title{margin:0 0 8px;font-size:17.5px;font-weight:900;color:#0e2233}
+    .delete-modal-desc{margin:0 0 20px;font-size:13.5px;line-height:1.55;color:#556977;word-break:keep-all}
+    .delete-modal-actions{display:flex;gap:8px}
+    .delete-modal-btn{flex:1;height:44px;border-radius:12px;font-size:14px;font-weight:700;cursor:pointer}
+    .delete-modal-btn.cancel{border:1px solid #d0dbe2;background:#f8fafc;color:#334d5e}
+    .delete-modal-btn.confirm{border:0;background:#d92d20;color:#ffffff;font-weight:800}
+    
+    .delete-footer{margin-top:22px;padding-top:16px;border-top:1px solid #f1f5f8;text-align:center;font-size:12px;color:#94a5b0}
+  </style>
+</head>
+<body>
+  <div class="delete-page-container">
+    <header class="delete-header">
+      <a href="./index.html" class="delete-back" onclick="if(window.history.length>1){event.preventDefault();window.history.back();}" aria-label="뒤로가기">‹</a>
+      <h1>회원탈퇴</h1>
+      <div class="delete-header-spacer" aria-hidden="true"></div>
+    </header>
+
+    <main class="delete-content">
+      <!-- 1. 상단 안내 영역 -->
+      <section class="delete-intro">
+        <h2 class="delete-title">회원탈퇴</h2>
+        <p class="delete-subtitle">계정을 삭제하기 전에 아래 내용을 확인해 주세요.</p>
+      </section>
+
+      <div class="delete-notice-banner">
+        <svg class="delete-notice-icon" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <circle cx="12" cy="12" r="10"></circle>
+          <line x1="12" y1="8" x2="12" y2="12"></line>
+          <line x1="12" y1="16" x2="12.01" y2="16"></line>
+        </svg>
+        <p class="delete-notice-text">탈퇴가 완료되면 계정에 등록된 모든 맞춤 데이터가 삭제되며 다시 복원할 수 없습니다.</p>
+      </div>
+
+      <!-- 2. 단일 대형 삭제 대상 카드 (5개 항목) -->
+      <section class="delete-list-card" aria-label="삭제 대상 데이터 목록">
+        <!-- 1) 카카오 연동 -->
+        <div class="delete-item">
+          <div class="delete-item-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path>
+              <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path>
+            </svg>
+          </div>
+          <div class="delete-item-body">
+            <h3 class="delete-item-title">카카오 계정 연동 정보</h3>
+            <p class="delete-item-desc">카카오 계정 식별값, 닉네임 및 프로필 사진 연동 정보</p>
+          </div>
+        </div>
+
+        <!-- 2) SNORKY 프로필 -->
+        <div class="delete-item">
+          <div class="delete-item-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="8" r="4"></circle>
+              <path d="M6 20v-2a4 4 0 0 1 4-4h4a4 4 0 0 1 4 4v2"></path>
+            </svg>
+          </div>
+          <div class="delete-item-body">
+            <h3 class="delete-item-title">SNORKY 프로필 설정</h3>
+            <p class="delete-item-desc">설정한 커스텀 닉네임 및 사용자 프로필 사진</p>
+          </div>
+        </div>
+
+        <!-- 3) 즐겨찾기 -->
+        <div class="delete-item">
+          <div class="delete-item-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path>
+            </svg>
+          </div>
+          <div class="delete-item-body">
+            <h3 class="delete-item-title">즐겨찾기 포인트</h3>
+            <p class="delete-item-desc">저장된 스노클링 및 프리다이빙 포인트 목록</p>
+          </div>
+        </div>
+
+        <!-- 4) 나만의 스팟 -->
+        <div class="delete-item">
+          <div class="delete-item-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path>
+              <circle cx="12" cy="10" r="3"></circle>
+            </svg>
+          </div>
+          <div class="delete-item-body">
+            <h3 class="delete-item-title">나만의 스팟</h3>
+            <p class="delete-item-desc">저장한 사용자 개인 좌표 및 스팟 정보</p>
+          </div>
+        </div>
+
+        <!-- 5) 다이빙 스케줄 -->
+        <div class="delete-item">
+          <div class="delete-item-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+              <line x1="16" y1="2" x2="16" y2="6"></line>
+              <line x1="8" y1="2" x2="8" y2="6"></line>
+              <line x1="3" y1="10" x2="21" y2="10"></line>
+            </svg>
+          </div>
+          <div class="delete-item-body">
+            <h3 class="delete-item-title">다이빙 스케줄</h3>
+            <p class="delete-item-desc">등록한 다이빙 일정 및 관련 저장 정보</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- 3. 하단 경고 및 확인 영역 -->
+      <section class="delete-bottom-section">
+        <div class="delete-final-warning">
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path>
+            <line x1="12" y1="9" x2="12" y2="13"></line>
+            <line x1="12" y1="17" x2="12.01" y2="17"></line>
+          </svg>
+          <span>탈퇴 후 삭제된 데이터는 복구할 수 없습니다.</span>
+        </div>
+
+        <div id="deleteLoginNotice" class="delete-login-notice">
+          로그인 후 탈퇴를 진행할 수 있습니다.
+        </div>
+
+        <label class="delete-agree-label" for="deleteAgreeCheckbox">
+          <input type="checkbox" id="deleteAgreeCheckbox">
+          <span class="delete-agree-text">삭제되는 내용을 모두 확인했습니다.</span>
+        </label>
+
+        <div class="delete-btn-stack">
+          <button id="deleteSubmitBtn" class="delete-main-btn" type="button" disabled>회원탈퇴</button>
+          <a href="./index.html" class="delete-sub-btn">SNORKY 홈으로 돌아가기</a>
+        </div>
+      </section>
+
+      <footer class="delete-footer">
+        <p>© 2026 SNORKY. All rights reserved.</p>
+      </footer>
+    </main>
+  </div>
+
+  <!-- 최종 확인 모달 -->
+  <div id="deleteFinalModal" class="delete-modal-overlay" role="dialog" aria-modal="true" aria-labelledby="deleteModalTitle">
+    <div class="delete-modal-card">
+      <div class="delete-modal-icon">
+        <svg viewBox="0 0 24 24" aria-hidden="true" width="24" height="24" stroke="currentColor" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path>
+          <line x1="12" y1="9" x2="12" y2="13"></line>
+          <line x1="12" y1="17" x2="12.01" y2="17"></line>
+        </svg>
+      </div>
+      <h3 id="deleteModalTitle" class="delete-modal-title">회원탈퇴</h3>
+      <p class="delete-modal-desc">
+        정말 탈퇴하시겠습니까?<br>계정에 연결된 모든 데이터가 영구 삭제됩니다.
+      </p>
+      <div class="delete-modal-actions">
+        <button id="modalCancelBtn" class="delete-modal-btn cancel" type="button">취소</button>
+        <button id="modalConfirmBtn" class="delete-modal-btn confirm" type="button">탈퇴하기</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="./public/js/auth-session.js"></script>
+  <script>
+    (function(){
+      "use strict";
+      const agreeCheckbox = document.getElementById("deleteAgreeCheckbox");
+      const submitBtn = document.getElementById("deleteSubmitBtn");
+      const loginNotice = document.getElementById("deleteLoginNotice");
+      const modal = document.getElementById("deleteFinalModal");
+      const modalCancelBtn = document.getElementById("modalCancelBtn");
+      const modalConfirmBtn = document.getElementById("modalConfirmBtn");
+
+      function isUserLoggedIn() {
+        try {
+          if (window.SNORKYAuthSession?.isLoggedIn) {
+            return window.SNORKYAuthSession.isLoggedIn();
+          }
+          const s = JSON.parse(localStorage.getItem("snorky_auth_session_v1") || "null");
+          return Boolean(s && s.version === 1 && s.user);
+        } catch (_) {
+          return false;
+        }
+      }
+
+      function updateButtonState() {
+        const loggedIn = isUserLoggedIn();
+        const agreed = Boolean(agreeCheckbox && agreeCheckbox.checked);
+
+        if (!loggedIn) {
+          if (loginNotice) loginNotice.style.display = "block";
+          if (submitBtn) submitBtn.disabled = true;
+          return;
+        }
+
+        if (loginNotice) loginNotice.style.display = "none";
+        if (submitBtn) submitBtn.disabled = !agreed;
+      }
+
+      agreeCheckbox?.addEventListener("change", updateButtonState);
+      updateButtonState();
+
+      // 회원탈퇴 클릭 -> 최종 확인 모달 표시
+      submitBtn?.addEventListener("click", () => {
+        if (!isUserLoggedIn()) {
+          alert("로그인 세션이 없습니다. 먼저 로그인해 주세요.");
+          location.href = "./login.html";
+          return;
+        }
+        if (!agreeCheckbox?.checked) {
+          alert("위 내용을 확인하고 동의 체크를 해 주세요.");
+          return;
+        }
+        modal?.classList.add("open");
+      });
+
+      function closeModal() {
+        modal?.classList.remove("open");
+      }
+
+      modalCancelBtn?.addEventListener("click", closeModal);
+      modal?.addEventListener("click", (e) => {
+        if (e.target === modal) closeModal();
+      });
+
+      function getDeleteRedirectUri() {
+        const redirectUri = new URL(window.location.href);
+        redirectUri.search = "";
+        redirectUri.hash = "";
+        return redirectUri.toString();
+      }
+
+      // 최종 확인 모달 '탈퇴하기' 클릭 시 카카오 재인증 화면으로 진입
+      modalConfirmBtn?.addEventListener("click", () => {
+        modalConfirmBtn.disabled = true;
+        modalConfirmBtn.textContent = "카카오 인증 연결 중...";
+
+        try {
+          const session = (window.SNORKYAuthSession?.get && window.SNORKYAuthSession.get())
+            || JSON.parse(localStorage.getItem("snorky_auth_session_v1") || "null");
+
+          if (!session || !session.user || !session.user.id) {
+            throw new Error("로그인 세션 정보를 확인할 수 없습니다.");
+          }
+
+          if (window.SNORKYAuthKakao && typeof window.SNORKYAuthKakao.requestReauth === "function") {
+            window.SNORKYAuthKakao.requestReauth(getDeleteRedirectUri());
+          } else if (window.Kakao && window.Kakao.Auth && typeof window.Kakao.Auth.authorize === "function") {
+            if (!window.Kakao.isInitialized()) window.Kakao.init("c29f1a71a53af406429520da0df21772");
+            const state = "delete_" + (window.crypto?.randomUUID ? window.crypto.randomUUID() : String(Date.now()));
+            sessionStorage.setItem("snorky_kakao_delete_state", state);
+            window.Kakao.Auth.authorize({ redirectUri: getDeleteRedirectUri(), state });
+          } else {
+            throw new Error("카카오 인증 모듈을 불러오지 못했습니다.");
+          }
+        } catch (err) {
+          alert("회원탈퇴 실패: " + (err.message || "카카오 인증 연결에 실패했습니다."));
+          modalConfirmBtn.disabled = false;
+          modalConfirmBtn.textContent = "탈퇴하기";
+          closeModal();
+        }
+      });
+
+      // 카카오 재인증 후 콜백 처리
+      async function handleDeleteCallback() {
+        const params = new URLSearchParams(window.location.search);
+        const code = params.get("code");
+        const state = params.get("state");
+        const oauthError = params.get("error");
+
+        if (oauthError) {
+          alert("카카오 본인 인증이 취소되었거나 실패했습니다.");
+          window.history.replaceState({}, document.title, window.location.pathname);
+          return;
+        }
+
+        // delete 상태값 여부로 탈퇴 콜백 식별
+        const expectedDeleteState = sessionStorage.getItem("snorky_kakao_oauth_state_reauth")
+          || sessionStorage.getItem("snorky_kakao_delete_state");
+
+        const isDeleteAuth = (state && (state.startsWith("delete_") || state === expectedDeleteState));
+        if (!code || !isDeleteAuth) return;
+
+        sessionStorage.removeItem("snorky_kakao_oauth_state_reauth");
+        sessionStorage.removeItem("snorky_kakao_delete_state");
+
+        // URL 정리
+        window.history.replaceState({}, document.title, window.location.pathname);
+
+        const session = (window.SNORKYAuthSession?.get && window.SNORKYAuthSession.get())
+          || JSON.parse(localStorage.getItem("snorky_auth_session_v1") || "null");
+
+        if (!session || !session.user || !session.user.id) {
+          alert("로그인 세션을 확인할 수 없습니다. 다시 로그인 후 시도해 주세요.");
+          return;
+        }
+
+        // 탈퇴 진행 중 안내 모달 표시
+        if (modal) modal.classList.add("open");
+        if (modalConfirmBtn) {
+          modalConfirmBtn.disabled = true;
+          modalConfirmBtn.textContent = "탈퇴 처리 중...";
+        }
+
+        try {
+          const config = window.SNORKY_SUPABASE_CONFIG || {
+            url: "https://vqpkckonpsnzhuwuybav.supabase.co",
+            publishableKey: "sb_publishable_G5dyFNcFGGsNsrJ2w3rKFg_aeNhWDvT"
+          };
+          const key = config.publishableKey;
+
+          // delete-account Edge Function 호출 (서버에서 인가코드 교환 -> 본인검증 -> Unlink -> DB삭제)
+          const deleteEndpoint = `${config.url.replace(/\/$/, "")}/functions/v1/delete-account`;
+          const deleteRes = await fetch(deleteEndpoint, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              "apikey": key,
+              "Authorization": `Bearer ${key}`,
+            },
+            body: JSON.stringify({
+              code,
+              redirectUri: getDeleteRedirectUri(),
+              providerUserId: String(session.user.id),
+            }),
+          });
+
+          const deleteResult = await deleteRes.json().catch(() => ({}));
+          if (!deleteRes.ok || !deleteResult.ok) {
+            throw new Error(deleteResult.message || `탈퇴 처리에 실패했습니다. (단계: ${deleteResult.step || "unknown"})`);
+          }
+
+          // 로컬 데이터 및 세션 완전 삭제
+          try {
+            localStorage.removeItem("snorky_favorites");
+            localStorage.removeItem("snorky_my_spots");
+            localStorage.removeItem("snorky_my_points");
+            localStorage.removeItem("snorky_diving_schedules");
+            if (window.SNORKYAuthSession?.clear) {
+              window.SNORKYAuthSession.clear();
+            } else {
+              localStorage.removeItem("snorky_auth_session_v1");
+            }
+            window.dispatchEvent(new CustomEvent("snorky:auth-changed"));
+          } catch (_) {}
+
+          closeModal();
+          alert("회원탈퇴 및 데이터 삭제가 정상적으로 완료되었습니다.");
+          window.location.replace("./index.html");
+        } catch (err) {
+          alert("회원탈퇴 실패: " + (err.message || "탈퇴 처리 중 오류가 발생했습니다."));
+          if (modalConfirmBtn) {
+            modalConfirmBtn.disabled = false;
+            modalConfirmBtn.textContent = "탈퇴하기";
+          }
+          closeModal();
+        }
+      }
+
+      handleDeleteCallback();
+    })();
+  </script>
+</body>
+</html>

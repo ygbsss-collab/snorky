@@ -2,7 +2,7 @@ import http from 'http';
 import fs from 'fs';
 import path from 'path';
 
-const PORT = 8089;
+const PORT = 5501;
 const ROOT = 'd:\\SNORK_prototype_v0.1';
 
 const mimeTypes = {

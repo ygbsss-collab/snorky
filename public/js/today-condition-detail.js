@@ -780,7 +780,9 @@
       }
 
       const [todayMap, hourlyResultRows] = await Promise.all([
-        reader.loadTodayResults ? reader.loadTodayResults(true).catch(() => new Map()) : Promise.resolve(new Map()),
+        activePoint?.isCustomSpot === true
+          ? Promise.resolve(new Map([[currentPointId, reader.getDryRunToday?.(currentPointId) || null]]))
+          : (reader.loadTodayResults ? reader.loadTodayResults(true).catch(() => new Map()) : Promise.resolve(new Map())),
         reader.loadTodayHourly(currentPointId)
       ]);
 
@@ -817,6 +819,13 @@
   window.addEventListener("snorky:today-data-ready", function (e) {
     if (isOpen()) {
       syncData(e.detail);
+    }
+  });
+
+  // 나만의 스팟이 Safety 준비 전에 열렸다면 공식 kma-warnings 완료값으로 카드만 갱신한다.
+  document.addEventListener("snorky:kma-safety-updated", function () {
+    if (isOpen() && activePoint?.isCustomSpot === true && todayRows.length) {
+      renderSelectedHourData();
     }
   });
 
@@ -860,6 +869,10 @@
   // ─────────────────────────────────────────────────────────────
   function toggleFavorite() {
     if (!activePoint) return;
+    if (!window.SNORKYAuthSession?.isLoggedIn?.()) {
+      window.SNORKYAuthSession?.showLoginPrompt?.("즐겨찾기는 로그인 후 이용할 수 있어요.");
+      return;
+    }
     const btn = document.getElementById("tcFavoriteBtn");
     const isFav = window.SNORKYEngagement?.toggleFavorite?.(activePoint);
     const currentFav = typeof isFav === "boolean" ? isFav : Boolean(window.SNORKYEngagement?.isFavorite?.(activePoint));
@@ -1037,16 +1050,35 @@
     return todayTopRow;
   }
 
-  // 상단 날씨는 선택 카드와 분리된 "현재 시각 기준 KMA 1시간 예보"이다.
+  function getRepresentativeTemperatureRow() {
+    const selectedRow = getActiveHourRow();
+    if (selectedRow?.temperature != null) return selectedRow;
+
+    const validRows = todayRows.filter(row => row?.temperature != null && Number.isFinite(Number(row.temperature)));
+    if (!validRows.length) return null;
+
+    const now = new Date();
+    const nowHour = now.getHours() + now.getMinutes() / 60;
+    const latestPast = [...validRows].filter(row => row.hour < nowHour).sort((a, b) => b.hour - a.hour)[0];
+    const nearestFuture = [...validRows].filter(row => row.hour >= nowHour).sort((a, b) => a.hour - b.hour)[0];
+    return !latestPast ? nearestFuture : !nearestFuture ? latestPast
+      : nowHour - latestPast.hour <= nearestFuture.hour - nowHour ? latestPast : nearestFuture;
+  }
+
+  // 상단 대표 기온은 선택/최근 유효 TODAY_HOURLY를 사용하고, 나머지 날씨는 TODAY 기준을 유지한다.
   function renderCurrentKmaWeather() {
     const row = getCurrentKmaForecastRow();
+    const tempCur = document.getElementById("tcTempCurrent");
+    const representativeTemperature = getRepresentativeTemperatureRow()?.temperature ?? null;
+    if (tempCur) tempCur.textContent = representativeTemperature === null
+      ? "--°"
+      : `${Math.round(Number(representativeTemperature))}°`;
+
     const liveBadge = document.getElementById("tcWeatherLiveBadge");
     if (liveBadge) liveBadge.hidden = !row;
     if (!row) {
-      const tempCur = document.getElementById("tcTempCurrent");
       const rainAmount = document.getElementById("tcRainAmount");
       const rainProb = document.getElementById("tcRainProb");
-      if (tempCur) tempCur.textContent = "--째";
       if (rainAmount) rainAmount.textContent = "--";
       if (rainProb) rainProb.textContent = "--";
       return;
@@ -1060,9 +1092,6 @@
       weatherIcon.style.color = weather.color;
     }
     if (weatherLabel) weatherLabel.textContent = weather.label;
-
-    const tempCur = document.getElementById("tcTempCurrent");
-    if (tempCur) tempCur.textContent = Number.isFinite(row.temperature) ? `${Math.round(row.temperature)}°` : "--°";
 
     const forecastDate = String(row.timestamp || "").slice(0, 10);
     const daily = kmaData?.forecastData?.daily?.find(item => String(item?.date || "").slice(0, 10) === forecastDate);
@@ -1101,7 +1130,8 @@
     const liveSafety = window.SNORKYMarineSafety?.statusForPoint?.(activePoint);
     const liveWarning = liveSafety?.warning;
     const nonWarningReason = (v12?.safetyReasons || []).find(reason => !String(reason).includes("발효 중"));
-    const isSafetyBlock = liveSafety?.status === "BLOCK" || (v12?.safety === "BLOCK" && Boolean(nonWarningReason));
+    const isSafetyBlock = liveSafety?.status === "BLOCK"
+      || (v12?.safety === "BLOCK" && (Boolean(nonWarningReason) || activePoint?.isCustomSpot === true));
     const isSafetyUnknown = !isSafetyBlock && (v12?.safety === "UNKNOWN" || (!v12 && liveSafety?.status === "UNKNOWN"));
 
     // 1. Hero Score Card Update
@@ -1428,33 +1458,60 @@
   // ─────────────────────────────────────────────────────────────
   // Safety Section Rendering (Omit box if no active warning)
   // ─────────────────────────────────────────────────────────────
+  // ─────────────────────────────────────────────────────────────
+  // Safety Section Rendering (KMA 특보 전용 영역)
+  // ─────────────────────────────────────────────────────────────
   function renderSafetySection(row) {
     const section = document.getElementById("tcSafetySection");
     const banner = document.getElementById("tcSafetyBanner");
     const bannerText = document.getElementById("tcSafetyBannerText");
     if (!section || !banner || !bannerText) return;
 
-    const safety = window.SNORKYMarineSafety?.getPointMarineSafety?.(activePoint);
-    const warning = safety?.warning;
+    // 이미 계산된 row의 평가 결과 재사용 (서버 evaluation 결과)
+    const safetyStatus = row?.safety_status || row?.v12?.safety;
+    const safetyReasons = row?.safety_reasons || row?.v12?.safetyReasons || [];
 
-    if (safety?.status === "BLOCK") {
+    // KMA 실제 특보 문구만 추출 (해양 수치 파고/수온 등 제외)
+    const kmaWarningReasons = (Array.isArray(safetyReasons) ? safetyReasons : []).filter(reason => {
+      const text = String(reason || "").trim();
+      return text.includes("발효 중") || /태풍|풍랑|폭풍해일|지진해일|호우|강풍/.test(text) && !/유의파고|파주기|수온|조류/.test(text);
+    });
+
+    // 클라이언트 실시간 특보 캐시 (있을 경우 보조 참조)
+    const liveSafety = window.SNORKYMarineSafety?.getPointMarineSafety?.(activePoint);
+    const liveWarnings = liveSafety?.warnings || (liveSafety?.warning ? [liveSafety.warning] : []);
+    const liveWarningTexts = liveWarnings
+      .map(w => `${w.areaName || w.regKo || w.regId || ""} ${w.warningName || "해상"}${w.levelName || "특보"} 발효 중`.trim())
+      .filter(Boolean);
+
+    const activeWarningTexts = [...new Set([...kmaWarningReasons, ...liveWarningTexts])];
+
+    // 1. 실제 KMA 특보 발효 중
+    if (activeWarningTexts.length > 0) {
       section.hidden = false;
       banner.className = "tc-safety-banner banner-warning";
-      const safetySummary = window.SNORKYEvaluationResults?.formatSafetyBlockSummary?.(safety?.warnings || warning, row?.v12?.safetyReasons)
-        || "입수 금지 · 기타 안전 위험";
       banner.innerHTML = `
         <span class="material-symbols-outlined">warning</span>
-        <span>${escapeHtml(safetySummary)}</span>
+        <span>${escapeHtml(activeWarningTexts.join(" · "))}</span>
       `;
-    } else if (safety?.status === "UNKNOWN") {
+    }
+    // 2. 실제 특보 코드 누락 또는 조회 실패 (UNKNOWN)
+    else if (safetyStatus === "UNKNOWN" && (!activePoint?.warning_area_code && !activePoint?.warningAreaCode)) {
       section.hidden = false;
       banner.className = "tc-safety-banner banner-warning";
       banner.innerHTML = `
         <span class="material-symbols-outlined">info</span>
-        <span>해상특보 정보를 확인할 수 없습니다. 현장 안내를 확인해 주세요.</span>
+        <span>특보 정보를 확인할 수 없습니다.</span>
       `;
-    } else {
-      section.hidden = true;
+    }
+    // 3. KMA 특보 없음 (PASS 또는 발효 중인 특보 없음)
+    else {
+      section.hidden = false;
+      banner.className = "tc-safety-banner banner-pass";
+      banner.innerHTML = `
+        <span class="material-symbols-outlined" style="color: #10b981;">check_circle</span>
+        <span style="color: #065f46;">현재 발효 중인 기상·해양 특보가 없습니다.</span>
+      `;
     }
   }
 

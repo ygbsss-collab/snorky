@@ -28,17 +28,39 @@ export interface OrchestrationResult {
   point_id: string | number;
   point_name: string;
   today_count: number;
+  today_hourly_count: number;
   short_count: number;
   mid_count: number;
   total_upserted: number;
   results: ServerEvaluationResult[];
   error?: string | null;
+  timings?: OrchestrationTimings;
+}
+
+export interface OrchestrationTimings {
+  point_input_ms?: number;
+  kma_short_cache_ms: number;
+  kma_mid_cache_ms: number;
+  marine_cache_ms: number;
+  kasi_ms: number;
+  safety_cache_ms: number;
+  rn1_cache_ms?: number;
+  cache_total_ms: number;
+  today_ms: number;
+  today_hourly_ms: number;
+  short_ms: number;
+  mid_ms: number;
+  storage_ms: number;
+  total_ms: number;
+  cache_status?: Record<string, "HIT" | "MISS" | "UNAVAILABLE" | "PROVIDED">;
 }
 
 export interface OrchestrationOptions {
   evaluatedAt?: string;
   dryRun?: boolean; // If true, evaluates without calling DB UPSERT
   modes?: Array<"TODAY" | "TODAY_HOURLY" | "SHORT" | "MID">;
+  /** 나만의 스팟은 자연광을 실제 사용하는 Today~+3까지만 KASI를 조회한다. */
+  kasiMaxDayOffset?: number;
 }
 
 function getKstDateString(date = new Date()): string {
@@ -58,7 +80,20 @@ function formatSlotTime(dateStr: string, hour: number): string {
   return `${dateStr}T${h}:00:00+09:00`;
 }
 
-export function getKmaMidRegionCodes(point: SnorkyPoint): { landRegId: string; tempRegId: string } {
+function elapsedMs(startedAt: number): number {
+  return Math.round((performance.now() - startedAt) * 100) / 100;
+}
+
+export function getKmaMidRegionCodes(point: SnorkyPoint): { landRegId: string | null; tempRegId: string | null } {
+  if (point.is_custom_point) {
+    const landRegId = String(point.mid_land_reg_id || "").trim();
+    const tempRegId = String(point.mid_temp_reg_id || "").trim();
+    return {
+      landRegId: /^11[A-Z]\d{5}$/.test(landRegId) ? landRegId : null,
+      tempRegId: /^11[A-Z]\d{5}$/.test(tempRegId) ? tempRegId : null,
+    };
+  }
+
   const regId = Number(point.region_id);
   const name = String(point.name || "");
   const regName = String(point.region || "");
@@ -125,7 +160,7 @@ async function queryMarineDbCache(client: SupabaseClient, cacheKey: string) {
 
     for (const r of rowsRes.data) {
       const norm = r.normalized_data || {};
-      hourly.time.push(r.forecast_at || norm.forecastAt);
+      hourly.time.push(norm.forecastAt || r.forecast_at);
       hourly.wave_height.push(norm.wave_height ?? null);
       hourly.wave_period.push(norm.wave_period ?? null);
       hourly.ocean_current_velocity.push(norm.ocean_current_velocity ?? null);
@@ -177,47 +212,85 @@ export async function loadPointCaches(client: SupabaseClient, point: SnorkyPoint
   const supabaseUrl = envGetter("SUPABASE_URL") || "";
   const serviceKey = envGetter("SUPABASE_SERVICE_ROLE_KEY") || envGetter("SUPABASE_ANON_KEY") || "";
   const kmaKey = envGetter("KMA_API_KEY") || envGetter("DATA_GO_KR_API_KEY") || "";
+  const cacheTimings: Partial<OrchestrationTimings> | null = point.is_custom_point ? {} : null;
+  const timedCache = async <T>(key: keyof OrchestrationTimings, loader: () => Promise<T>): Promise<T> => {
+    if (!cacheTimings) return loader();
+    const startedAt = performance.now();
+    try {
+      return await loader();
+    } finally {
+      const previous = typeof cacheTimings[key] === "number" ? Number(cacheTimings[key]) : 0;
+      (cacheTimings as Record<string, unknown>)[key] = previous + elapsedMs(startedAt);
+    }
+  };
 
-  // 1. Check existing DB caches
-  let [marineCache, kmaWeatherCache, kmaSafetyRes, rn1History, midWeather] = await Promise.all([
-    queryMarineDbCache(client, cacheKey),
-    queryKmaWeatherDbCache(client, gridKey),
-    client.from("kma_safety_cache").select("normalized_warnings, warning_index, fetched_at, status").order("fetched_at", { ascending: false }).limit(1).maybeSingle(),
-    loadRn1History(client, nx, ny, `${todayKst}T18:00:00+09:00`, 48),
-    loadMidWeatherForPoint(client, landRegId, tempRegId, todayKst),
+  // 1. Parallel Cache Query
+  const [
+    marineRes,
+    kmaWeatherRes,
+    kmaSafetyRes,
+    rn1Res,
+    midWeatherRes,
+  ] = await Promise.all([
+    timedCache("marine_cache_ms", () => queryMarineDbCache(client, cacheKey)),
+    timedCache("kma_short_cache_ms", () => queryKmaWeatherDbCache(client, gridKey)),
+    timedCache("safety_cache_ms", async () => await client
+      .from("kma_safety_cache")
+      .select("normalized_warnings, warning_index, fetched_at, status")
+      .order("fetched_at", { ascending: false })
+      .limit(1)
+      .maybeSingle()),
+    timedCache("rn1_cache_ms", () => loadRn1History(client, nx, ny, `${todayKst}T18:00:00+09:00`, 48)),
+    landRegId && tempRegId
+      ? timedCache("kma_mid_cache_ms", () => loadMidWeatherForPoint(client, landRegId, tempRegId, todayKst))
+      : Promise.resolve(null),
   ]);
 
-  // 2. On-demand single bootstrap for MISS sources
-  const bootstrapTasks: Promise<any>[] = [];
+  let marineCache = marineRes;
+  let kmaWeatherCache = kmaWeatherRes;
+  let rn1History = rn1Res || [];
+  let midWeather = midWeatherRes;
+  const cacheStatus = point.is_custom_point ? {
+    marine: marineCache?.hourly?.time?.length ? "HIT" : "MISS",
+    kma_short: kmaWeatherCache?.forecast_data?.hourly?.length ? "HIT" : "MISS",
+    kma_mid: !landRegId || !tempRegId
+      ? "UNAVAILABLE"
+      : Object.keys(midWeather?.slots || {}).length >= 3 ? "HIT" : "MISS",
+    safety: kmaSafetyRes.data ? "HIT" : "MISS",
+    rn1: rn1History.length ? "HIT" : "MISS",
+  } as Record<string, "HIT" | "MISS" | "UNAVAILABLE" | "PROVIDED"> : undefined;
+
+  // 2. On-Demand Bootstrap for MISS caches
+  const bootstrapTasks: Promise<void>[] = [];
 
   // Marine MISS -> single on-demand fetch
   if (!marineCache?.hourly?.time?.length && supabaseUrl) {
-    bootstrapTasks.push((async () => {
+    bootstrapTasks.push(timedCache("marine_cache_ms", async () => {
       try {
         await fetch(`${supabaseUrl}/functions/v1/open-meteo-marine-cache?pointId=${pointId}&latitude=${lat}&longitude=${lng}`, {
           headers: { apikey: serviceKey, Authorization: `Bearer ${serviceKey}` }
         });
         marineCache = await queryMarineDbCache(client, cacheKey);
       } catch (_) {}
-    })());
+    }));
   }
 
   // KMA 단기 MISS -> single on-demand fetch
   if (!kmaWeatherCache?.forecast_data?.hourly?.length && supabaseUrl) {
-    bootstrapTasks.push((async () => {
+    bootstrapTasks.push(timedCache("kma_short_cache_ms", async () => {
       try {
         await fetch(`${supabaseUrl}/functions/v1/kma-weather-cache?nx=${nx}&ny=${ny}`, {
           headers: { apikey: serviceKey, Authorization: `Bearer ${serviceKey}` }
         });
         kmaWeatherCache = await queryKmaWeatherDbCache(client, gridKey);
       } catch (_) {}
-    })());
+    }));
   }
 
   // KMA 중기 MISS -> single on-demand fetch using exact landRegId & tempRegId
   const midSlotCount = Object.keys(midWeather?.slots || {}).length;
-  if (midSlotCount < 3 && supabaseUrl) {
-    bootstrapTasks.push((async () => {
+  if (landRegId && tempRegId && midSlotCount < 3 && supabaseUrl) {
+    bootstrapTasks.push(timedCache("kma_mid_cache_ms", async () => {
       try {
         const nowKst = new Date(Date.now() + 9 * 3600000);
         const dateCompact = nowKst.toISOString().slice(0, 10).replace(/-/g, "");
@@ -236,19 +309,19 @@ export async function loadPointCaches(client: SupabaseClient, point: SnorkyPoint
         ]);
         midWeather = await loadMidWeatherForPoint(client, landRegId, tempRegId, todayKst);
       } catch (_) {}
-    })());
+    }));
   }
 
   // RN1 MISS -> fetch current single observation only (no 48h synthetic generation)
   if (!rn1History.length && supabaseUrl) {
-    bootstrapTasks.push((async () => {
+    bootstrapTasks.push(timedCache("rn1_cache_ms", async () => {
       try {
         await fetch(`${supabaseUrl}/functions/v1/kma-rn1-cache?nx=${nx}&ny=${ny}`, {
           headers: { apikey: serviceKey, Authorization: `Bearer ${serviceKey}` }
         });
         rn1History = await loadRn1History(client, nx, ny, `${todayKst}T18:00:00+09:00`, 48);
       } catch (_) {}
-    })());
+    }));
   }
 
   if (bootstrapTasks.length > 0) {
@@ -264,6 +337,10 @@ export async function loadPointCaches(client: SupabaseClient, point: SnorkyPoint
     grid: { nx, ny },
     landRegId,
     tempRegId,
+    timings: cacheTimings ? {
+      ...cacheTimings,
+      cache_status: cacheStatus,
+    } : undefined,
   };
 }
 
@@ -281,6 +358,22 @@ export async function evaluateAndStorePoint(
   },
   options: OrchestrationOptions = {}
 ): Promise<OrchestrationResult> {
+  const orchestrationStartedAt = performance.now();
+  const timings: OrchestrationTimings | undefined = point.is_custom_point ? {
+    kma_short_cache_ms: 0,
+    kma_mid_cache_ms: 0,
+    marine_cache_ms: 0,
+    kasi_ms: 0,
+    safety_cache_ms: 0,
+    rn1_cache_ms: 0,
+    cache_total_ms: 0,
+    today_ms: 0,
+    today_hourly_ms: 0,
+    short_ms: 0,
+    mid_ms: 0,
+    storage_ms: 0,
+    total_ms: 0,
+  } : undefined;
   const evaluatedAt = options.evaluatedAt || new Date().toISOString();
   const todayKst = getKstDateString();
   const lat = Number(point.lat ?? point.latitude);
@@ -291,14 +384,43 @@ export async function evaluateAndStorePoint(
 
   // Strict KASI SunTimes pre-load (NO calculated formula fallback)
   const sunTimesMap = new Map<string, KasiSunTimesInput>();
-  for (let d = 0; d <= 6; d++) {
-    const dt = addDays(todayKst, d);
-    const st = await loadKasiSunTimes(client, lat, lng, dt, kasiKey);
-    sunTimesMap.set(dt, st);
+  const kasiMaxDayOffset = Number.isInteger(options.kasiMaxDayOffset)
+    ? Math.max(0, Math.min(6, Number(options.kasiMaxDayOffset)))
+    : 6;
+  const kasiStartedAt = performance.now();
+  if (point.is_custom_point) {
+    const sunTimes = await Promise.all(
+      Array.from({ length: kasiMaxDayOffset + 1 }, async (_, dayOffset) => {
+        const date = addDays(todayKst, dayOffset);
+        const value = await loadKasiSunTimes(client, lat, lng, date, kasiKey, { fetchTimeoutMs: 7_000 });
+        return { date, value };
+      })
+    );
+    sunTimes.forEach(({ date, value }) => sunTimesMap.set(date, value));
+  } else {
+    for (let d = 0; d <= kasiMaxDayOffset; d++) {
+      const dt = addDays(todayKst, d);
+      const st = await loadKasiSunTimes(client, lat, lng, dt, kasiKey);
+      sunTimesMap.set(dt, st);
+    }
   }
+  if (timings) timings.kasi_ms = elapsedMs(kasiStartedAt);
 
   // 1. Caches
+  const cachesStartedAt = performance.now();
   const caches = cachedData || (await loadPointCaches(client, point));
+  if (timings) {
+    const cacheTimings = (caches as any)?.timings || {};
+    timings.kma_short_cache_ms = Number(cacheTimings.kma_short_cache_ms) || 0;
+    timings.kma_mid_cache_ms = Number(cacheTimings.kma_mid_cache_ms) || 0;
+    timings.marine_cache_ms = Number(cacheTimings.marine_cache_ms) || 0;
+    timings.safety_cache_ms = Number(cacheTimings.safety_cache_ms) || 0;
+    timings.rn1_cache_ms = Number(cacheTimings.rn1_cache_ms) || 0;
+    timings.cache_total_ms = elapsedMs(cachesStartedAt);
+    timings.cache_status = cachedData
+      ? { marine: "PROVIDED", kma_short: "PROVIDED", kma_mid: "PROVIDED", safety: "PROVIDED", rn1: "PROVIDED" }
+      : cacheTimings.cache_status;
+  }
   const marine = caches.marineCache;
   const kmaWeather = caches.kmaWeatherCache;
   const kmaSafety = caches.kmaSafetyCache;
@@ -323,8 +445,25 @@ export async function evaluateAndStorePoint(
 
   const marineIndexMap = new Map<string, number>();
   marineTimes.forEach((t, i) => {
-    // Normalizes "YYYY-MM-DDTHH:mm" to slot key
-    marineIndexMap.set(t.slice(0, 13), i);
+    // Normalizes to KST slot key "YYYY-MM-DDTHH"
+    let key = "";
+    if (typeof t === "string") {
+      const raw = t.replace(" ", "T");
+      if (raw.includes("+09:00")) {
+        key = raw.slice(0, 13);
+      } else if (raw.includes("Z") || raw.includes("+00:00") || raw.endsWith("+00")) {
+        const dt = new Date(raw);
+        if (!isNaN(dt.getTime())) {
+          const kst = new Date(dt.getTime() + 9 * 3600000);
+          key = kst.toISOString().slice(0, 13);
+        }
+      } else if (raw.length >= 13) {
+        key = raw.slice(0, 13);
+      }
+    }
+    if (key && !marineIndexMap.has(key)) {
+      marineIndexMap.set(key, i);
+    }
   });
 
   const kmaHourlyList: any[] = Array.isArray(kmaWeather?.forecast_data?.hourly)
@@ -332,11 +471,26 @@ export async function evaluateAndStorePoint(
     : [];
   const kmaIndexMap = new Map<string, any>();
   kmaHourlyList.forEach(h => {
-    if (h?.datetime) kmaIndexMap.set(String(h.datetime).replace(" ", "T").slice(0, 13), h);
+    if (h?.datetime) {
+      const raw = String(h.datetime).replace(" ", "T");
+      let key = raw.slice(0, 13);
+      if (raw.includes("Z") || raw.includes("+00:00")) {
+        const dt = new Date(raw);
+        if (!isNaN(dt.getTime())) {
+          const kst = new Date(dt.getTime() + 9 * 3600000);
+          key = kst.toISOString().slice(0, 13);
+        }
+      }
+      if (key && !kmaIndexMap.has(key)) {
+        kmaIndexMap.set(key, h);
+      }
+    }
   });
 
   // Safety Status for Point (TODAY only)
-  let todaySafetyStatus: "PASS" | "BLOCK" | "UNKNOWN" = "PASS";
+  const hasConfirmedSeaCode = /^S\d{7}$/.test(String(point.warning_area_code || "").trim());
+  let todaySafetyStatus: "PASS" | "BLOCK" | "UNKNOWN" =
+    point.is_custom_point && !hasConfirmedSeaCode ? "UNKNOWN" : "PASS";
   const todayActiveWarnings: string[] = [];
   const safetyWarnings = kmaSafety?.normalized_warnings || kmaSafety?.warnings || [];
   if (Array.isArray(safetyWarnings)) {
@@ -413,6 +567,7 @@ export async function evaluateAndStorePoint(
   // ─────────────────────────────────────────────────────────────
   // A. TODAY Evaluation (당일 대표 1시간 슬롯 또는 현재 슬롯)
   // ─────────────────────────────────────────────────────────────
+  const todayStartedAt = performance.now();
   if (activeModes.includes("TODAY")) {
     const todaySunDto: KasiSunTimesInput = sunTimesMap.get(todayKst) || {
       date: todayKst,
@@ -484,6 +639,8 @@ export async function evaluateAndStorePoint(
   // ─────────────────────────────────────────────────────────────
   // A-2. TODAY_HOURLY Evaluation (당일 7개 주요 시간별 슬롯: 03, 06, 09, 12, 15, 18, 21시)
   // ─────────────────────────────────────────────────────────────
+  if (timings) timings.today_ms = elapsedMs(todayStartedAt);
+  const todayHourlyStartedAt = performance.now();
   if (activeModes.includes("TODAY_HOURLY")) {
     const todayHourlyKeyHours = [3, 6, 9, 12, 15, 18, 21];
 
@@ -562,6 +719,8 @@ export async function evaluateAndStorePoint(
   // B. SHORT Evaluation (+1~+3일, 3시간 슬롯: 03, 06, 09, 12, 15, 18, 21)
   // [CRITICAL] 당일 실시간 특보 혼합 금지 (safety_status: 'PASS')
   // ─────────────────────────────────────────────────────────────
+  if (timings) timings.today_hourly_ms = elapsedMs(todayHourlyStartedAt);
+  const shortStartedAt = performance.now();
   if (activeModes.includes("SHORT")) {
     const shortSlotHours = [3, 6, 9, 12, 15, 18, 21];
 
@@ -618,7 +777,7 @@ export async function evaluateAndStorePoint(
           period_start: pStart,
           period_end: pEnd,
           evaluated_at: evaluatedAt,
-          marine_hourly: mHourly,
+          marine_slot: mHourly,
           kma_slot: kmaHourly,
           sun_times: shortSunDto,
           marine_history: marineHistory,
@@ -638,6 +797,8 @@ export async function evaluateAndStorePoint(
   // C. MID Evaluation (+4~+6일, MID_MARINE_ONLY: AM 06~12, PM 12~18)
   // [CRITICAL] 강수 배제, 자연광 감점 미적용, 해양 4종 6시간 시계열 집계
   // ─────────────────────────────────────────────────────────────
+  if (timings) timings.short_ms = elapsedMs(shortStartedAt);
+  const midStartedAt = performance.now();
   if (activeModes.includes("MID")) {
     for (let d = 4; d <= 6; d++) {
       const midDate = addDays(todayKst, d);
@@ -712,27 +873,53 @@ export async function evaluateAndStorePoint(
     }
   }
 
+  // 나만의 스팟은 확정 S코드가 없으면 안전을 추정하지 않는다.
+  // 이미 원천 수치/특보로 BLOCK인 결과는 기존 Worst/특보 우선 기준을 유지한다.
+  if (timings) timings.mid_ms = elapsedMs(midStartedAt);
+  if (point.is_custom_point && !hasConfirmedSeaCode) {
+    for (const result of allResults) {
+      if (result.safety_status === "PASS") {
+        result.safety_status = "UNKNOWN";
+        result.safety_reasons = [
+          ...(Array.isArray(result.safety_reasons) ? result.safety_reasons : []),
+          "해상 특보구역 코드 미확정",
+        ];
+      }
+    }
+  }
+
   // ─────────────────────────────────────────────────────────────
   // D. Result UPSERT
   // ─────────────────────────────────────────────────────────────
+  const storageStartedAt = performance.now();
   let totalUpserted = 0;
   if (!options.dryRun) {
     const { count, error } = await upsertEvaluationResults(client, allResults, sourceIssueTime);
     if (error) {
+      if (timings) {
+        timings.storage_ms = elapsedMs(storageStartedAt);
+        timings.total_ms = elapsedMs(orchestrationStartedAt);
+      }
       return {
         point_id: point.id,
         point_name: point.name,
         today_count: todayCount,
+        today_hourly_count: todayHourlyCount,
         short_count: shortCount,
         mid_count: midCount,
         total_upserted: 0,
         results: allResults,
         error: error.message,
+        timings,
       };
     }
     totalUpserted = count;
   } else {
     totalUpserted = allResults.length;
+  }
+  if (timings) {
+    timings.storage_ms = elapsedMs(storageStartedAt);
+    timings.total_ms = elapsedMs(orchestrationStartedAt);
   }
 
   return {
@@ -745,5 +932,6 @@ export async function evaluateAndStorePoint(
     total_upserted: totalUpserted,
     results: allResults,
     error: null,
+    timings,
   };
 }

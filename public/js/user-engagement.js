@@ -72,9 +72,23 @@ function isFavorite(point){
 function navigationPoints(regionPoints){return favoritesMode?allPoints().filter(isFavorite):(regionPoints||[])}
 function getClientId(){let id=localStorage.getItem(CLIENT_ID_KEY);if(id)return id;id=crypto.randomUUID?crypto.randomUUID():`${Date.now()}-${crypto.getRandomValues(new Uint32Array(4)).join("-")}`;localStorage.setItem(CLIENT_ID_KEY,id);return id}
 function updateFavoriteNav(){document.querySelectorAll(".favorite-nav").forEach(button=>{button.classList.toggle("active",favoritesMode);button.setAttribute("aria-pressed",String(favoritesMode));button.textContent="♥ 즐겨찾기"})}
-function enterFavorites(){favoritesMode=true;updateFavoriteNav();if(typeof window.openFavoritesOnMap==="function"){window.openFavoritesOnMap();}}
+function enterFavorites(){
+  if(!window.SNORKYAuthSession?.isLoggedIn?.()){
+    window.SNORKYAuthSession?.showLoginPrompt?.("즐겨찾기는 로그인 후 이용할 수 있어요.");
+    return;
+  }
+  favoritesMode=true;
+  updateFavoriteNav();
+  if(typeof window.openFavoritesOnMap==="function"){
+    window.openFavoritesOnMap();
+  }
+}
 function exitFavorites(){favoritesMode=false;updateFavoriteNav()}
 function toggleFavorite(point){
+  if(!window.SNORKYAuthSession?.isLoggedIn?.()){
+    window.SNORKYAuthSession?.showLoginPrompt?.("즐겨찾기는 로그인 후 이용할 수 있어요.");
+    return false;
+  }
   const ids=getPointIds(point);
   const primaryId=point?.supabaseId!=null?String(point.supabaseId).trim():(point?.id!=null?String(point.id).trim():(ids[0]||null));
   if(!primaryId)return false;

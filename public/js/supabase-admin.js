@@ -88,7 +88,8 @@ function pointPayload(point,regionId){
     point_feature:point.pointFeature||"",snorkeling_info:point.snorkelingInfo||"",parking:point.parking||"",toilet:point.toilet||"",shower:point.shower||"",camping:point.camping||"",cooking:point.cooking||"",
     facilities:values(point.facilities),notes:values(point.notes),description:point.description||"",access_guide:point.accessGuide||"",access_steps:values(point.accessSteps),
     parking_available:typeof point.parkingAvailable==="boolean"?point.parkingAvailable:null,parking_guide:point.parkingGuide||"",entry_guide:point.entryGuide||"",entry_lat:point.entryLat??null,entry_lng:point.entryLng??null,
-    depth_range:point.depthRange||"",difficulty:point.difficulty||"",point_type:point.pointType||"",warnings:values(point.warnings),environment:point.environment==null?null:normalizePointEnvironment(point.environment),sort_order:Number.isInteger(point.sortOrder)?point.sortOrder:0
+    depth_range:point.depthRange||"",difficulty:point.difficulty||"",point_type:point.pointType||"",warnings:values(point.warnings),environment:point.environment==null?null:normalizePointEnvironment(point.environment),sort_order:Number.isInteger(point.sortOrder)?point.sortOrder:0,
+    youtube_url:point.youtubeUrl||null,youtube_title:point.youtubeTitle||null
   };
 }
 
@@ -97,7 +98,9 @@ async function saveNew(){
   try{
     await requireAdmin();const regionItem=getRegionById(el("newPointRegion").value),name=el("newPointName").value.trim();
     if(!name||!regionItem)throw new Error("포인트명과 지역은 필수입니다.");if(!Number.isFinite(newPointDraft.lat)||!Number.isFinite(newPointDraft.lng))throw new Error("지도에서 스노클링 포인트 위치를 선택해 주세요.");
-    const point={name,lat:newPointDraft.lat,lng:newPointDraft.lng,parkingLat:newPointDraft.parkingLat,parkingLng:newPointDraft.parkingLng,pointFeature:el("newPointFeature").value.trim(),snorkelingInfo:el("newSnorkelingInfo").value.trim(),parking:el("newParking").value.trim(),toilet:el("newToilet").value.trim(),shower:el("newShower").value.trim(),camping:el("newCamping")?.value.trim()||"",cooking:el("newCooking")?.value.trim()||"",accessGuide:el("newAccessGuide").value.trim(),facilities:el("newFacilities").value.split(",").map(v=>v.trim()).filter(Boolean),notes:el("newNotes").value.split(",").map(v=>v.trim()).filter(Boolean),sortOrder:(locations[regionItem.name]||[]).length};
+    const youtubeUrl=el("newPointYoutubeUrl")?.value.trim()||"",youtubeTitle=el("newPointYoutubeTitle")?.value.trim()||"";
+    if(youtubeUrl&&!window.SNORKYPointVideo?.parseYouTubeUrl(youtubeUrl))throw new Error("올바른 YouTube 영상 URL을 입력해 주세요.");
+    const point={name,lat:newPointDraft.lat,lng:newPointDraft.lng,parkingLat:newPointDraft.parkingLat,parkingLng:newPointDraft.parkingLng,pointFeature:el("newPointFeature").value.trim(),snorkelingInfo:el("newSnorkelingInfo").value.trim(),parking:el("newParking").value.trim(),toilet:el("newToilet").value.trim(),shower:el("newShower").value.trim(),camping:el("newCamping")?.value.trim()||"",cooking:el("newCooking")?.value.trim()||"",youtubeUrl,youtubeTitle,accessGuide:el("newAccessGuide").value.trim(),facilities:el("newFacilities").value.split(",").map(v=>v.trim()).filter(Boolean),notes:el("newNotes").value.split(",").map(v=>v.trim()).filter(Boolean),sortOrder:(locations[regionItem.name]||[]).length};
     const payload={...pointPayload(point,regionItem.supabaseId),legacy_id:crypto.randomUUID()};const result=await sb().from("points").insert(payload).select("id").single();if(result.error)throw result.error;
     const newPointId=result.data.id;
     try{
@@ -133,7 +136,9 @@ async function saveDetail(){
   if(!adminMode||!spot)return;el("pointEditError").textContent="";
   try{
     await requireAdmin();
-    const target=getRegionById(el("editPointRegion").value),point={...spot,name:el("editPointName").value.trim(),pointFeature:el("editPointFeature").value.trim(),snorkelingInfo:el("editSnorkelingInfo").value.trim(),parking:el("editParking").value.trim(),toilet:el("editToilet").value.trim(),shower:el("editShower").value.trim(),camping:el("editCamping")?.value.trim()||"",cooking:el("editCooking")?.value.trim()||"",accessGuide:el("editAccessGuide").value.trim(),facilities:[...adminEditFacilities],notes:[...adminEditNotes],environment:readEnvironmentEditor()};
+    const youtubeUrl=el("editPointYoutubeUrl")?.value.trim()||"",youtubeTitle=el("editPointYoutubeTitle")?.value.trim()||"";
+    if(youtubeUrl&&!window.SNORKYPointVideo?.parseYouTubeUrl(youtubeUrl))throw new Error("올바른 YouTube 영상 URL을 입력해 주세요.");
+    const target=getRegionById(el("editPointRegion").value),point={...spot,name:el("editPointName").value.trim(),pointFeature:el("editPointFeature").value.trim(),snorkelingInfo:el("editSnorkelingInfo").value.trim(),parking:el("editParking").value.trim(),toilet:el("editToilet").value.trim(),shower:el("editShower").value.trim(),camping:el("editCamping")?.value.trim()||"",cooking:el("editCooking")?.value.trim()||"",youtubeUrl,youtubeTitle,accessGuide:el("editAccessGuide").value.trim(),facilities:[...adminEditFacilities],notes:[...adminEditNotes],environment:readEnvironmentEditor()};
     if(!target)throw new Error("지역을 찾을 수 없습니다.");
     const result=await sb().from("points").update(pointPayload(point,target.supabaseId)).eq("id",spot.supabaseId);
     if(result.error)throw result.error;

@@ -1,0 +1,308 @@
+:root {
+  color-scheme: light;
+  font-family: Inter, Pretendard, "Noto Sans KR", Arial, sans-serif;
+  color: #fff;
+  background: #06385b;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  width: 100%;
+  min-width: 0;
+  min-height: 100%;
+  margin: 0;
+  background: #06385b;
+}
+
+body {
+  position: relative;
+  overflow-x: hidden;
+}
+
+body::before {
+  position: fixed;
+  z-index: 0;
+  inset: 0;
+  background:
+    linear-gradient(180deg, rgba(4, 71, 112, .56) 0%, rgba(2, 43, 76, .7) 48%, rgba(2, 25, 49, .9) 100%),
+    url("../images/snorky-hero-freediving.jpg") center / cover no-repeat;
+  content: "";
+}
+
+button,
+a {
+  font: inherit;
+}
+
+.login-page {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  width: min(100%, 520px);
+  min-height: 100vh;
+  min-height: 100dvh;
+  margin: 0 auto;
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  padding: 0 16px max(18px, env(safe-area-inset-bottom));
+  background: linear-gradient(180deg, rgba(7, 74, 115, .16), rgba(1, 29, 55, .4));
+}
+
+.login-header {
+  display: grid;
+  min-width: 0;
+  min-height: 62px;
+  grid-template-columns: 44px minmax(0, 1fr) 44px;
+  align-items: center;
+  padding-top: env(safe-area-inset-top);
+  border-bottom: 1px solid rgba(208, 235, 248, .2);
+}
+
+.login-header h1 {
+  min-width: 0;
+  margin: 0;
+  overflow: hidden;
+  color: #fff;
+  font-size: 18px;
+  font-weight: 900;
+  letter-spacing: -.02em;
+  text-align: center;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.login-back {
+  display: grid;
+  width: 44px;
+  height: 44px;
+  place-items: center;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, .08);
+  color: #fff;
+  font-size: 30px;
+  font-weight: 400;
+  line-height: 1;
+  text-decoration: none;
+}
+
+.login-back:focus-visible,
+.login-kakao:focus-visible,
+.login-browse:focus-visible,
+.login-footer button:focus-visible {
+  outline: 3px solid rgba(117, 210, 255, .55);
+  outline-offset: 2px;
+}
+
+.login-main {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  justify-content: center;
+  padding: clamp(28px, 6vh, 58px) 0 24px;
+}
+
+.login-intro {
+  min-width: 0;
+  text-align: center;
+}
+
+.login-symbol {
+  display: block;
+  width: clamp(88px, 26vw, 112px);
+  height: clamp(88px, 26vw, 112px);
+  margin: 0 auto;
+  object-fit: contain;
+  filter: drop-shadow(0 7px 16px rgba(0, 28, 53, .24));
+}
+
+.login-brand {
+  margin: 14px 0 0;
+  color: #fff;
+  font-size: 19px;
+  font-weight: 900;
+  letter-spacing: .16em;
+  text-shadow: 0 2px 8px rgba(0, 24, 47, .28);
+}
+
+.login-intro h2 {
+  margin: 24px 0 0;
+  color: #fff;
+  font-size: clamp(25px, 7vw, 31px);
+  font-weight: 900;
+  letter-spacing: -.045em;
+  line-height: 1.28;
+  word-break: keep-all;
+  overflow-wrap: anywhere;
+}
+
+.login-description {
+  max-width: 390px;
+  margin: 12px auto 0;
+  color: rgba(224, 240, 248, .84);
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 1.6;
+  word-break: keep-all;
+  overflow-wrap: anywhere;
+}
+
+.login-actions {
+  width: 100%;
+  min-width: 0;
+  margin: clamp(24px, 5vh, 40px) auto 0;
+  padding: 18px;
+  border: 1px solid rgba(121, 197, 234, .28);
+  border-radius: 24px;
+  background: rgba(3, 46, 80, .82);
+  box-shadow: 0 10px 24px rgba(0, 20, 38, .16);
+}
+
+.login-kakao {
+  display: flex;
+  width: 100%;
+  min-width: 0;
+  min-height: 52px;
+  align-items: center;
+  justify-content: center;
+  padding: 0 18px;
+  border: 0;
+  border-radius: 16px;
+  background: #fee500;
+  color: #191919;
+  font-size: 15px;
+  font-weight: 900;
+  opacity: 1;
+  cursor: pointer;
+  box-shadow: 0 5px 14px rgba(0, 20, 35, .16);
+  transition: opacity .2s, transform .1s, background .15s;
+}
+
+.login-kakao:disabled {
+  opacity: .58;
+  cursor: wait;
+}
+
+.login-terms-notice {
+  margin: 14px 4px 0;
+  font-size: 11.5px;
+  font-weight: 500;
+  line-height: 1.55;
+  color: rgba(220, 240, 255, .7);
+  text-align: center;
+  word-break: keep-all;
+}
+
+.login-terms-link {
+  color: #e0f2fe;
+  font-weight: 700;
+  text-decoration: underline;
+  text-underline-offset: 2.5px;
+  transition: color .15s;
+}
+
+.login-terms-link:hover {
+  color: #ffffff;
+}
+
+.login-error {
+  margin: 10px 8px 0;
+  color: #c2413b;
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1.45;
+  text-align: center;
+}
+
+.login-error[hidden] {
+  display: none;
+}
+
+.login-browse {
+  display: flex;
+  width: 100%;
+  min-height: 50px;
+  align-items: center;
+  justify-content: center;
+  margin-top: 12px;
+  border: 1px solid rgba(140, 208, 242, .58);
+  border-radius: 16px;
+  background: rgba(255, 255, 255, .05);
+  color: rgba(255, 255, 255, .92);
+  font-size: 14px;
+  font-weight: 900;
+  text-decoration: none;
+}
+
+.login-helper {
+  margin: 15px 0 1px;
+  color: rgba(195, 224, 239, .78);
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1.5;
+  text-align: center;
+  word-break: keep-all;
+}
+
+.login-footer {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding: 16px 0 0;
+  border-top: 1px solid rgba(208, 235, 248, .18);
+  color: rgba(202, 226, 239, .55);
+}
+
+.login-footer button {
+  min-height: 32px;
+  padding: 0 4px;
+  border: 0;
+  background: transparent;
+  color: rgba(218, 236, 245, .72);
+  font-size: 11px;
+  font-weight: 700;
+  cursor: default;
+}
+
+@media (max-width: 360px) {
+  .login-page {
+    padding-right: 12px;
+    padding-left: 12px;
+  }
+
+  .login-main {
+    padding-top: 24px;
+  }
+
+  .login-symbol {
+    width: 82px;
+    height: 82px;
+  }
+
+  .login-intro h2 {
+    margin-top: 19px;
+    font-size: 23px;
+  }
+
+  .login-description {
+    font-size: 13px;
+  }
+
+  .login-actions {
+    margin-top: 28px;
+    padding: 14px;
+    border-radius: 20px;
+  }
+}
+
+@media (min-width: 700px) {
+  .login-page {
+    padding-right: 28px;
+    padding-left: 28px;
+  }
+}

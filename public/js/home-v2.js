@@ -2,9 +2,10 @@
 "use strict";
 const state={todayExpanded:false,todayRows:[],nearbyExpanded:false,nearbyRows:[],nearbyRadius:300,nearestExpanded:false,hasLocation:false,userCoords:null};
 const section=document.createElement("section");section.className="home-v2 home-reference";section.setAttribute("aria-label","SNORKY 홈");
-section.innerHTML=`<section id="homeHero" class="home-hero" style="background-image:url('./public/images/snorky-home-hero-v3.jpg')"><div class="home-hero-shade"></div><div class="home-hero-content"><div class="home-hero-brand brand-mark" role="button" tabindex="0" aria-label="SNORKY 로고" style="cursor:pointer"><img src="./public/images/snorky-symbol.png" alt="SNORKY" class="home-hero-logo"><span class="home-hero-brand-name">SNORKY</span></div><div class="home-hero-body"><h1 class="home-hero-title">오늘, 어디 바다로 갈까?</h1><p class="home-hero-subtitle">스노클링 · 프리다이빙 포인트를 바다 컨디션으로 추천해드려요!</p></div></div></section><section id="homeMarineWarning" class="home-marine-warning" aria-live="polite" hidden style="display:none"></section><section class="home-discovery"><div id="homeSearchAnchor" class="home-search-anchor"></div></section><div class="home-filter-row" aria-label="포인트 필터"><label class="home-filter-chip active"><span>⌖ 지역</span><select id="homeRegionFilter" aria-label="지역 선택" multiple size="1"><option value="">전체</option></select></label><label class="home-filter-chip"><span>♒ 지형</span><select id="homeTerrainFilter" aria-label="지형 선택" multiple size="1"><option value="">전체</option></select></label><label class="home-filter-chip"><span>☆ 추천조건</span><select id="homeRecommendFilter" aria-label="추천조건 선택" multiple size="1"><option value="">전체</option></select></label></div><button id="homeSearchButton" class="home-search-submit" type="button">검색</button><section class="home-section home-best-section"><div class="home-reference-head"><h2>오늘의 추천 BEST</h2><button class="home-inline-more" type="button" data-toggle-today hidden>더보기 ›</button></div><div id="homeTodayBest" aria-live="polite"><div class="home-empty"><strong>오늘의 바다를 확인하고 있어요.</strong>잠시만 기다려 주세요.</div></div></section><section class="home-section home-nearby-section"><div class="home-reference-head"><h2>내 주변 추천 BEST</h2><button class="home-inline-more" type="button" data-toggle-nearby hidden>더보기 ›</button></div><div id="homeNearbyBest" aria-live="polite"></div></section><section class="home-section home-nearest-section"><div class="home-reference-head"><h2>가까운 포인트</h2><button class="home-inline-more" type="button" data-toggle-nearest hidden>더보기 ›</button></div><div id="homeNearestBest" aria-live="polite"></div></section>`;
+section.innerHTML=`<section id="homeHero" class="home-hero" style="background-image:url('./public/images/snorky-hero-freediving.jpg')"><div class="home-hero-shade"></div><div class="home-hero-content"><div class="home-hero-header" style="display:flex;justify-content:space-between;align-items:center;width:100%"><div class="home-hero-brand brand-mark" role="button" tabindex="0" aria-label="SNORKY 로고" style="cursor:pointer"><img src="./public/images/snorky-symbol.png" alt="SNORKY" class="home-hero-logo"><span class="home-hero-brand-name">SNORKY</span></div><a id="homeAccountLink" class="home-account-link" href="./login.html" aria-label="로그인"><span id="homeAccountAvatarWrap" class="home-account-avatar-wrap"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="3.5"></circle><path d="M5.5 20c.5-4 2.7-6 6.5-6s6 2 6.5 6"></path></svg></span><span id="homeAccountName" class="home-account-name">로그인</span></a></div><div class="home-hero-body"><h1 class="home-hero-title">오늘, 어디 바다로 갈까?</h1><p class="home-hero-subtitle">스노클링 · 프리다이빙 포인트를 바다 컨디션으로 추천해드려요!</p></div></div></section><section id="homeMarineWarning" class="home-marine-warning" aria-live="polite" hidden style="display:none"></section><section class="home-discovery"><div id="homeSearchAnchor" class="home-search-anchor"></div></section><div class="home-filter-row" aria-label="포인트 필터"><label class="home-filter-chip active"><span>⌖ 지역</span><select id="homeRegionFilter" aria-label="지역 선택" multiple size="1"><option value="">전체</option></select></label><label class="home-filter-chip"><span>♒ 지형</span><select id="homeTerrainFilter" aria-label="지형 선택" multiple size="1"><option value="">전체</option></select></label><label class="home-filter-chip"><span>☆ 추천조건</span><select id="homeRecommendFilter" aria-label="추천조건 선택" multiple size="1"><option value="">전체</option></select></label></div><button id="homeSearchButton" class="home-search-submit" type="button">검색</button><section class="home-section home-best-section"><div class="home-reference-head"><h2>오늘의 추천 BEST</h2><button class="home-inline-more" type="button" data-toggle-today hidden>더보기 ›</button></div><div id="homeTodayBest" aria-live="polite"><div class="home-empty"><strong>오늘의 바다를 확인하고 있어요.</strong>잠시만 기다려 주세요.</div></div></section><section class="home-section home-nearby-section"><div class="home-reference-head"><h2>내 주변 추천 BEST</h2><button class="home-inline-more" type="button" data-toggle-nearby hidden>더보기 ›</button></div><div id="homeNearbyBest" aria-live="polite"></div></section><section class="home-section home-nearest-section"><div class="home-reference-head"><h2>가까운 포인트</h2><button class="home-inline-more" type="button" data-toggle-nearest hidden>더보기 ›</button></div><div id="homeNearestBest" aria-live="polite"></div></section><section class="home-section home-inquiry-box-section" style="margin-top:20px;margin-bottom:6px"><button id="homeInquiryTrigger" class="home-inquiry-box" type="button" aria-label="문의하기"><div class="home-inquiry-box-content"><div class="home-inquiry-box-title"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg><strong>문의하기</strong></div><p class="home-inquiry-box-desc">포인트 정보 수정 · 포인트 제보 · 기타 문의</p></div><span class="home-inquiry-box-arrow" aria-hidden="true">›</span></button></section><div id="homeAccountFooterLinks" class="home-account-footer-links" style="display:none;justify-content:center;align-items:center;gap:18px;margin:14px auto 8px;padding:6px 0;font-size:13px;color:#788b9b;"><button id="homeFooterLogoutBtn" class="home-account-footer-btn" type="button" style="border:0;background:transparent;color:#788b9b;font-size:13px;font-weight:600;cursor:pointer;padding:4px 8px;text-decoration:none;">로그아웃</button><span style="color:#cfd8dc;user-select:none;">·</span><a id="homeFooterDeleteAccountBtn" class="home-account-footer-btn" href="./account-delete.html" style="border:0;background:transparent;color:#788b9b;font-size:13px;font-weight:600;cursor:pointer;padding:4px 8px;text-decoration:none;">회원탈퇴</a></div><div class="home-policy-footer-links" style="display:flex;justify-content:center;align-items:center;gap:12px;margin:8px auto 26px;font-size:12px;color:#94a3b8;"><a href="./terms.html" style="color:#94a3b8;text-decoration:none;">SNORKY 이용약관</a><span style="color:#cbd5e1;user-select:none;">·</span><a href="./privacy.html" style="color:#94a3b8;text-decoration:none;">개인정보처리방침</a></div>`;
 const homeMountRoot=document.getElementById("homeV2Root")||document.querySelector(".app")||document.body;
 homeMountRoot.appendChild(section);
+try{window.SNORKYRenderHomeProfile?.();window.dispatchEvent(new CustomEvent("snorky:auth-changed"))}catch(_){}
 window.SNORKYAdmin?.bindSecretEntry?.();
 let heroLogoClicks=[];
 document.addEventListener("click",event=>{
@@ -22,7 +23,6 @@ document.addEventListener("click",event=>{
   }
 });
 const bottom=document.createElement("nav");bottom.className="home-bottom-nav";bottom.setAttribute("aria-label","하단 내비게이션");bottom.innerHTML='<button class="active" data-bottom="home"><svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg><span>홈</span></button><button data-bottom="map"><svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg><span>지도</span></button><button data-bottom="favorites"><svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg><span>즐겨찾기</span></button><button data-bottom="mypage"><svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg><span>마이페이지</span></button>';document.body.appendChild(bottom);
-const myPage=document.createElement("section");myPage.id="homeMyPage";myPage.className="home-my-page";myPage.innerHTML='<div class="home-my-page-card"><header><div><small>SNORKY</small><h2>마이페이지</h2></div><button type="button" data-close-mypage aria-label="닫기">×</button></header><button class="home-my-favorite" type="button" data-my-favorites><span><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg></span><span><strong>즐겨찾기</strong><small>저장한 포인트를 확인하세요.</small></span><b>›</b></button></div>';document.body.appendChild(myPage);myPage.addEventListener("click",event=>{if(event.target===myPage||event.target.closest("[data-close-mypage]")){myPage.classList.remove("open");bottom.querySelector('[data-bottom="home"]')?.classList.add("active");bottom.querySelector('[data-bottom="mypage"]')?.classList.remove("active")}else if(event.target.closest("[data-my-favorites]")){myPage.classList.remove("open");openFavoritesOnMap();}});
 
 function getAllActivePoints(){if(Array.isArray(window.SNORKY_ACTIVE_POINTS)&&window.SNORKY_ACTIVE_POINTS.length)return window.SNORKY_ACTIVE_POINTS;if(typeof locations!=="undefined"&&locations&&typeof locations==="object")return Object.values(locations).flat();if(window.locations&&typeof window.locations==="object")return Object.values(window.locations).flat();return[]}
 const escapeHtml=value=>String(value??"").replace(/[&<>"]/g,char=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"})[char]);
@@ -100,7 +100,7 @@ function nearbyListCard(point,index){
 }
 function nearestCard(point){const image=pointImage(point),distance=Number.isFinite(point.distance)?point.distance.toFixed(1):"--";return`<button class="home-top-card" type="button" data-home-point="${escapeHtml(point.supabaseId||point.id)}" data-home-lat="${escapeHtml(point.lat)}" data-home-lng="${escapeHtml(point.lng)}">${image?`<img src="${escapeHtml(image)}" alt="" loading="lazy">`:'<span class="home-card-fallback"></span>'}<span class="home-distance-badge">${distance}km</span><span class="home-top-info"><strong>${escapeHtml(point.name)}</strong><small>${escapeHtml(point.region||"전국")} · ${distance}km</small></span></button>`}
 function nearestListCard(point){const image=pointImage(point),distance=Number.isFinite(point.distance)?point.distance.toFixed(1):"--";return`<button class="home-rank-row home-nearest-row" type="button" data-home-point="${escapeHtml(point.supabaseId||point.id)}" data-home-lat="${escapeHtml(point.lat)}" data-home-lng="${escapeHtml(point.lng)}"><span class="home-list-photo${image?'':' home-best-fallback'}">${image?`<img src="${escapeHtml(image)}" alt="" loading="lazy">`:""}</span><span class="home-list-copy"><strong>${escapeHtml(point.name)}</strong><small>${escapeHtml(point.region||"전국")} · ${distance}km</small></span><span class="home-list-chevron">›</span></button>`}
-function setHeroImage(){const hero=document.getElementById("homeHero");if(hero){hero.style.backgroundImage="url('./public/images/snorky-home-hero-v3.jpg')"}}
+function setHeroImage(){const hero=document.getElementById("homeHero");if(hero){hero.style.backgroundImage="url('./public/images/snorky-hero-freediving.jpg')"}}
 function renderToday(){
   const host=document.getElementById("homeTodayBest"),toggle=section.querySelector("[data-toggle-today]");
   setHeroImage();
@@ -296,7 +296,21 @@ if(homeRegionSelect){
     openPointOnMap(null,"region",{region:regionName});
   };
 }
-section.querySelectorAll("[data-home-target]").forEach(button=>button.onclick=()=>{const target=button.dataset.homeTarget;if(target==="favorites"){if(typeof openFavoritesOnMap==="function")openFavoritesOnMap();else openMapScreen();}else if(target==="today"){openPointOnMap(null,"todayBest")}else if(target==="forecast"){openPointOnMap(null,"all")}});
+section.querySelectorAll("[data-home-target]").forEach(button=>button.onclick=()=>{
+  const target=button.dataset.homeTarget;
+  if(target==="favorites"){
+    if(!window.SNORKYAuthSession?.isLoggedIn?.()){
+      window.SNORKYAuthSession?.showLoginPrompt?.("즐겨찾기는 로그인 후 이용할 수 있어요.");
+      return;
+    }
+    if(typeof openFavoritesOnMap==="function")openFavoritesOnMap();
+    else openMapScreen();
+  }else if(target==="today"){
+    openPointOnMap(null,"todayBest");
+  }else if(target==="forecast"){
+    openPointOnMap(null,"all");
+  }
+});
 
 const mapScreen=document.createElement("section");
 mapScreen.id="snorkyMapScreen";
@@ -649,6 +663,10 @@ function openPointOnMap(pointId,source="home",options={}){
 }
 
 function openFavoritesOnMap(){
+  if(!window.SNORKYAuthSession?.isLoggedIn?.()){
+    window.SNORKYAuthSession?.showLoginPrompt?.("즐겨찾기는 로그인 후 이용할 수 있어요.");
+    return;
+  }
   document.body.classList.remove("home-show-legacy");
   snorkyMapWarningMode=false;
   snorkyMapActiveFilter="즐겨찾기";
@@ -1723,14 +1741,55 @@ bottom.onclick=event=>{
     renderSnorkyMapBottomCards();
     applySnorkyMapInitialViewport(false);
   }else if(target==="favorites"){
+    if(!window.SNORKYAuthSession?.isLoggedIn?.()){
+      window.SNORKYAuthSession?.showLoginPrompt?.("즐겨찾기는 로그인 후 이용할 수 있어요.");
+      return;
+    }
     openFavoritesOnMap();
   }else if(target==="mypage"){
-    closeMapScreen();
-    document.body.classList.remove("home-show-legacy");
-    window.dispatchEvent(new Event("snorky:open-inquiry"));
+    let session=null;
+    try{session=window.SNORKYAuthSession?window.SNORKYAuthSession.get():JSON.parse(localStorage.getItem('snorky_auth_session_v1')||'null')}catch(_){session=null}
+    if(session&&session.version===1&&session.user){
+      location.href='./mypage.html';
+    }else{
+      location.href='./login.html';
+    }
+    return;
   }
   bottom.querySelectorAll("button").forEach(item=>item.classList.toggle("active",item===button));
 };
+function syncAccountFooterLinks(){
+  let session=null;
+  try{
+    session=window.SNORKYAuthSession?window.SNORKYAuthSession.get():JSON.parse(localStorage.getItem('snorky_auth_session_v1')||'null');
+  }catch(_){session=null}
+  const isLogin=Boolean(session&&session.version===1&&session.user);
+  const footerLinks=document.getElementById("homeAccountFooterLinks");
+  if(footerLinks)footerLinks.style.display=isLogin?"flex":"none";
+}
+syncAccountFooterLinks();
+window.addEventListener("storage",event=>{if(event.key==='snorky_auth_session_v1'||!event.key)syncAccountFooterLinks()});
+window.addEventListener("snorky:auth-changed",syncAccountFooterLinks);
+window.addEventListener("snorky:profile-updated",syncAccountFooterLinks);
+
+document.getElementById("homeInquiryTrigger")?.addEventListener("click",()=>{
+  if(window.SNORKYInquiry?.open)window.SNORKYInquiry.open();
+  else window.dispatchEvent(new Event("snorky:open-inquiry"));
+});
+
+document.getElementById("homeFooterLogoutBtn")?.addEventListener("click",()=>{
+  try{
+    if(window.SNORKYAuthSession?.clear){
+      window.SNORKYAuthSession.clear();
+    }else{
+      localStorage.removeItem("snorky_auth_session_v1");
+    }
+  }catch(_){}
+  syncAccountFooterLinks();
+  try{
+    window.dispatchEvent(new CustomEvent("snorky:auth-changed"));
+  }catch(_){}
+});
 
 document.addEventListener("snorky:today-best-ready",event=>{const policy=event.detail?.policy,recommendable=policy?.caseName!=="E"&&policy?.caseName!=="KMA";state.todayRows=recommendable?(event.detail.homeRows||[]):[];renderToday();populateRegions();renderWarning();renderSnorkyMapMarkers();renderSnorkyMapBottomCards();});
 document.addEventListener("snorky:today-best-error",event=>{if(!state.todayRows.length){const host=document.getElementById("homeTodayBest");if(host)host.innerHTML='<div class="home-empty"><strong>오늘의 추천 포인트를 불러오지 못했습니다.</strong>잠시 후 다시 시도해 주세요.</div>'}populateRegions();renderWarning();});

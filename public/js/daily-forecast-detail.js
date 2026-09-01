@@ -196,6 +196,9 @@
       if (hasBlock) {
         return { cls: "pill-bad", label: "입수금지" };
       }
+      if (rows.some(r => val(r, ["safety_status"]) === "UNKNOWN")) {
+        return { cls: "pill-neutral", label: "확인필요" };
+      }
       const sc = avgScore(rows);
       return dayPillFromScore(sc);
     }
@@ -210,6 +213,9 @@
     if (allBlock) {
       return { cls: "pill-bad", label: "입수금지" };
     }
+    if (targetRows.some(r => val(r, ["safety_status"]) === "UNKNOWN")) {
+      return { cls: "pill-neutral", label: "확인필요" };
+    }
 
     const sc = avgScore(targetRows);
     return dayPillFromScore(sc);
@@ -220,6 +226,7 @@
     if (isMid) {
       const hasBlock = rows.some(r => val(r, ["safety_status"]) === "BLOCK" || val(r, ["condition_status"]) === "입수 금지" || val(r, ["condition_status"]) === "입수금지");
       if (hasBlock) return "score-bad";
+      if (rows.some(r => val(r, ["safety_status"]) === "UNKNOWN")) return "score-none";
       return scoreCls(avgScore(rows));
     }
     const daySlots = rows.filter(r => {
@@ -229,6 +236,7 @@
     const targetRows = daySlots.length ? daySlots : rows;
     const allBlock = targetRows.every(r => val(r, ["safety_status"]) === "BLOCK" || val(r, ["condition_status"]) === "입수 금지" || val(r, ["condition_status"]) === "입수금지");
     if (allBlock) return "score-bad";
+    if (targetRows.some(r => val(r, ["safety_status"]) === "UNKNOWN")) return "score-none";
     return scoreCls(avgScore(targetRows));
   }
 
@@ -240,6 +248,7 @@
     if (safety === "BLOCK" || status === "입수 금지" || status === "입수금지") {
       return { cls: "pill-bad", label: "입수금지" };
     }
+    if (safety === "UNKNOWN") return { cls: "pill-neutral", label: "확인필요" };
 
     const serverRec = val(r, ["recommendation"]);
     const h = kstHour(r);
@@ -495,6 +504,11 @@
     // 4. 관측소 식별 및 KHOA 공공데이터포털 실제 조석 API 조회
     const lat = Number(point.lat || point.latitude);
     const lng = Number(point.lng || point.longitude);
+    // 나만의 스팟은 저장 좌표가 없으면 공식 관측소를 임의로 대입하지 않는다.
+    if (point.isCustomSpot === true && (!Number.isFinite(lat) || !Number.isFinite(lng))) {
+      _tideCache[dateStr] = null;
+      return null;
+    }
     const station = getNearestTideStation(lat, lng);
 
     if (station?.code) {
@@ -656,6 +670,15 @@
         captionText: "안전 기준을 초과하여 입수가 권장되지 않는 시간대입니다."
       };
     }
+    if (safety === "UNKNOWN") {
+      return {
+        score: null,
+        statusText: "확인 필요",
+        chipText: "Safety UNKNOWN",
+        chipClass: "chip-caution",
+        captionText: "해상특보 구역을 확정할 수 없어 입수 가능으로 판단하지 않습니다."
+      };
+    }
 
     const sc = scoreNum(row);
     const serverRec = val(row, ["recommendation"]);
@@ -764,12 +787,12 @@
     if (!row) return "";
     const wi = wIcon(row);
     const temp = val(row, ["temperature", "temp"]);
-    const tempText = Number.isFinite(Number(temp)) ? `${Math.round(Number(temp))}°` : "--°";
+    const tempText = (temp !== null && temp !== undefined && temp !== "" && Number.isFinite(Number(temp))) ? `${Math.round(Number(temp))}°` : "--°";
     const precip = val(row, ["precipitation", "rain_amount"]);
-    const precipText = Number.isFinite(Number(precip))
+    const precipText = (precip !== null && precip !== undefined && precip !== "" && Number.isFinite(Number(precip)))
       ? (Number(precip) === 0 ? "0 mm" : `${fmt(precip, 1)} mm`) : "-- mm";
     const prob = val(row, ["precipitation_probability", "rain_probability"]);
-    const probText = Number.isFinite(Number(prob)) ? `${Math.round(Number(prob))}%` : "--%";
+    const probText = (prob !== null && prob !== undefined && prob !== "" && Number.isFinite(Number(prob))) ? `${Math.round(Number(prob))}%` : "--%";
 
     // 슬롯 레이블
     const h = kstHour(row);
@@ -1109,12 +1132,12 @@
       const p   = slotPill(r);
       const wi  = wIcon(r);
       const temp = val(r, ["temperature", "temp"]);
-      const tempText = Number.isFinite(Number(temp)) ? `${Math.round(Number(temp))}` : "--";
+      const tempText = (temp !== null && temp !== undefined && temp !== "" && Number.isFinite(Number(temp))) ? `${Math.round(Number(temp))}` : "--";
       const precip = val(r, ["precipitation", "rain_amount"]);
-      const rainAmount = Number.isFinite(Number(precip))
+      const rainAmount = (precip !== null && precip !== undefined && precip !== "" && Number.isFinite(Number(precip)))
         ? (Number(precip) === 0 ? "0mm" : `${fmt(precip, 1)}mm`) : "--mm";
       const prob = val(r, ["precipitation_probability", "rain_probability"]);
-      const rainProb = Number.isFinite(Number(prob)) ? `${Math.round(Number(prob))}%` : "--%";
+      const rainProb = (prob !== null && prob !== undefined && prob !== "" && Number.isFinite(Number(prob))) ? `${Math.round(Number(prob))}%` : "--%";
       const isSel = r === _selectedSlot;
 
       return `
@@ -1685,7 +1708,7 @@
     if (detailEl) detailEl.innerHTML = "";
 
     // Supabase 준비 대기
-    if (!window.snorkySupabase && !window.getSnorkySupabase) {
+    if (_point.isCustomSpot !== true && !window.snorkySupabase && !window.getSnorkySupabase) {
       await new Promise(resolve => {
         const t = setTimeout(resolve, 2000);
         window.addEventListener("snorky:supabase-ready", () => { clearTimeout(t); resolve(); }, { once: true });

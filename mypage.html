@@ -1,0 +1,710 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>마이페이지 - SNORKY</title>
+  <link rel="icon" href="./public/images/snorky-symbol.png" type="image/png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Pretendard:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <style>
+    *,*::before,*::after{box-sizing:border-box}
+    html,body{margin:0;padding:0;width:100%;min-height:100%;font-family:'Pretendard',-apple-system,BlinkMacSystemFont,system-ui,Roboto,sans-serif;background:#f6f8fa;color:#102a3a;-webkit-font-smoothing:antialiased}
+    body{display:flex;flex-direction:column;align-items:center;padding:0 0 calc(40px + env(safe-area-inset-bottom,0px))}
+    
+    .mypage-app{width:100%;max-width:520px;min-height:100vh;display:flex;flex-direction:column;background:#fff;box-shadow:0 0 30px rgba(10,35,48,.04)}
+    
+    /* 상단 헤더 */
+    .mypage-header{position:sticky;top:0;z-index:50;display:flex;align-items:center;justify-content:space-between;height:56px;padding:calc(env(safe-area-inset-top,0px) + 8px) 16px 8px;background:rgba(255,255,255,.94);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);border-bottom:1px solid #edf2f5}
+    .mypage-back{display:grid;place-items:center;width:40px;height:40px;padding:0;border:1px solid #e2eaed;border-radius:50%;background:#f8fafb;color:#183048;font-size:24px;font-weight:900;text-decoration:none;line-height:1;transition:background .15s}
+    .mypage-back:hover{background:#edf3f6}
+    .mypage-header h1{margin:0;font-size:17.5px;font-weight:800;letter-spacing:-.02em;color:#0e2032}
+    .mypage-header-spacer{width:40px}
+    
+    .mypage-content{flex:1;padding:20px 18px}
+    
+    /* 프로필 카드 */
+    .mypage-profile-card{display:flex;align-items:center;gap:14px;padding:18px 16px;background:linear-gradient(135deg,#f0f7fa 0%,#e7f3f9 100%);border:1px solid #d8e7ee;border-radius:20px;margin-bottom:24px}
+    .mypage-avatar-wrap{position:relative;width:56px;height:56px;flex:0 0 56px}
+    .mypage-avatar{width:100%;height:100%;border-radius:50%;object-fit:cover;background:#fff;border:2.5px solid #fff;box-shadow:0 4px 12px rgba(7,80,110,.12)}
+    .mypage-profile-info{flex:1;min-width:0;display:flex;flex-direction:column;gap:4px}
+    .mypage-nickname{font-size:17.5px;font-weight:800;color:#07506e;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+    .mypage-badge-row{display:flex;align-items:center;gap:6px}
+    .mypage-badge{display:inline-flex;align-items:center;width:fit-content;padding:2px 8px;border-radius:99px;background:rgba(8,124,167,.12);color:#087ca7;font-size:11px;font-weight:700}
+    .mypage-edit-btn{padding:7px 12px;border:1px solid #cce0e8;border-radius:12px;background:#ffffff;color:#087ca7;font-size:12px;font-weight:800;cursor:pointer;white-space:nowrap;transition:all .15s}
+    .mypage-edit-btn:hover{background:#087ca7;color:#fff;border-color:#087ca7}
+    
+    /* 메뉴 섹션 */
+    .mypage-menu-group{display:grid;gap:10px;margin-bottom:28px}
+    .mypage-menu-item{display:grid;grid-template-columns:42px 1fr;align-items:center;gap:13px;width:100%;padding:14px 16px;border:1px solid #e5edf1;border-radius:18px;background:#ffffff;color:#16313f;text-align:left;cursor:pointer;box-shadow:0 2px 8px rgba(22,49,63,.03);transition:transform .15s,box-shadow .15s,border-color .15s}
+    .mypage-menu-item:hover{transform:translateY(-1px);box-shadow:0 5px 16px rgba(22,49,63,.06);border-color:#cce1ea}
+    .mypage-menu-icon{display:grid;place-items:center;width:42px;height:42px;border-radius:13px;background:#f0f7fb;color:#087ca7}
+    .mypage-menu-text{display:flex;flex-direction:column;gap:2.5px}
+    .mypage-menu-text strong{font-size:14.5px;font-weight:800;color:#16313f}
+    .mypage-menu-text small{font-size:12px;color:#708792}
+    .mypage-menu-arrow{font-size:20px;color:#9cb0b8;text-align:right}
+    
+    /* 하단 정보 & 로그아웃 */
+    .mypage-footer{margin-top:auto;padding-top:20px;border-top:1px solid #f0f4f7;display:flex;flex-direction:column;align-items:center;gap:14px}
+    .mypage-links{display:flex;align-items:center;justify-content:center;gap:12px}
+    .mypage-link{border:0;background:transparent;color:#78909c;font-size:12.5px;font-weight:600;cursor:pointer;padding:4px 6px;text-decoration:none}
+    .mypage-link:hover{color:#07506e;text-decoration:underline}
+    .mypage-sep{color:#d6e2e7;font-size:11px}
+    
+    .mypage-logout-btn{width:100%;height:48px;display:flex;align-items:center;justify-content:center;border:1px solid #d9e6ec;border-radius:14px;background:#f8fafb;color:#5a7380;font-size:14px;font-weight:700;cursor:pointer;transition:all .15s}
+    .mypage-logout-btn:hover{background:#f0f5f7;color:#07506e;border-color:#c8dce4}
+
+    /* 프로필 편집 모달 */
+    .profile-modal{position:fixed;inset:0;z-index:1200;display:flex;align-items:center;justify-content:center;padding:16px}
+    .profile-modal[hidden]{display:none!important}
+    .profile-modal-backdrop{position:absolute;inset:0;background:rgba(10,35,48,.45);backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px)}
+    .profile-modal-card{position:relative;z-index:1;width:100%;max-width:440px;background:#fff;border-radius:24px;box-shadow:0 12px 40px rgba(10,35,48,.18);padding:24px 20px;box-sizing:border-box;animation:profilePop .2s cubic-bezier(0.16,1,0.3,1)}
+    @keyframes profilePop{from{opacity:0;transform:scale(0.95)}to{opacity:1;transform:scale(1)}}
+    
+    .profile-modal-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;padding-bottom:12px;border-bottom:1px solid #edf2f5}
+    .profile-modal-head h2{margin:0;font-size:18px;font-weight:800;color:#0e2032}
+    .profile-modal-close{width:36px;height:36px;border:0;border-radius:50%;background:#f0f4f6;color:#55707d;font-size:22px;cursor:pointer;display:grid;place-items:center;line-height:1}
+    .profile-modal-close:hover{background:#e4ebef;color:#0e2032}
+    
+    .profile-modal-avatar-sec{display:flex;flex-direction:column;align-items:center;gap:12px;margin-bottom:20px}
+    .profile-preview-wrap{width:84px;height:84px;border-radius:50%;overflow:hidden;border:3px solid #eef5f8;box-shadow:0 4px 14px rgba(7,80,110,.14);background:#f6f8fa}
+    .profile-preview-img{width:100%;height:100%;object-fit:cover}
+    .profile-avatar-actions{display:flex;align-items:center;gap:8px}
+    .profile-btn-sm{padding:6px 12px;border-radius:10px;font-size:12px;font-weight:700;cursor:pointer;transition:all .15s}
+    .profile-btn-change{border:1px solid #087ca7;background:#f0f8fb;color:#087ca7}
+    .profile-btn-change:hover{background:#087ca7;color:#fff}
+    .profile-btn-reset{border:1px solid #d4e0e5;background:#fff;color:#6b828e}
+    .profile-btn-reset:hover{background:#f3f6f8;color:#2c404c}
+    .profile-avatar-hint{margin:0;font-size:11px;color:#8ba0a9}
+    
+    .profile-modal-field{display:flex;flex-direction:column;gap:6px;margin-bottom:22px}
+    .profile-modal-field label{font-size:13px;font-weight:800;color:#183445}
+    .profile-modal-input{height:46px;padding:0 14px;border:1px solid #d3e1e7;border-radius:12px;font-size:14.5px;color:#102a3a;outline:none;font-family:inherit;transition:border-color .15s,box-shadow .15s}
+    .profile-modal-input:focus{border-color:#087ca7;box-shadow:0 0 0 3px rgba(8,124,167,.12)}
+    .profile-field-hint{margin:0;font-size:11.5px;color:#859da7;line-height:1.4}
+    
+    .profile-status-msg{min-height:18px;margin:0 0 14px;font-size:12.5px;font-weight:700;color:#d32f2f;text-align:center}
+    .profile-status-msg.success{color:#07885b}
+    
+    .profile-modal-actions{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+    .profile-act-btn{height:46px;border-radius:12px;font-size:14.5px;font-weight:800;cursor:pointer;border:0;transition:all .15s}
+    .profile-btn-cancel{background:#f0f4f6;color:#55707d}
+    .profile-btn-cancel:hover{background:#e4ecef;color:#183445}
+    .profile-btn-save{background:linear-gradient(135deg,#087ca7,#07506e);color:#fff;box-shadow:0 4px 12px rgba(8,124,167,.25)}
+    .profile-btn-save:hover{filter:brightness(1.06)}
+    .profile-btn-save:disabled{opacity:.6;cursor:wait}
+
+    /* 크롭 모달 스타일 */
+    .crop-modal{position:fixed;inset:0;z-index:1300;display:flex;align-items:center;justify-content:center;padding:16px}
+    .crop-modal[hidden]{display:none!important}
+    .crop-modal-backdrop{position:absolute;inset:0;background:rgba(10,35,48,.6);backdrop-filter:blur(5px);-webkit-backdrop-filter:blur(5px)}
+    .crop-modal-card{position:relative;z-index:1;width:100%;max-width:380px;background:#fff;border-radius:24px;box-shadow:0 14px 45px rgba(10,35,48,.24);padding:20px 18px;box-sizing:border-box;animation:profilePop .2s cubic-bezier(0.16,1,0.3,1);display:flex;flex-direction:column;align-items:center}
+    .crop-modal-head{display:flex;align-items:center;justify-content:space-between;width:100%;margin-bottom:14px;padding-bottom:10px;border-bottom:1px solid #edf2f5}
+    .crop-modal-head h3{margin:0;font-size:17px;font-weight:800;color:#0e2032}
+    
+    .crop-stage-container{position:relative;width:280px;height:280px;background:#182830;border-radius:18px;overflow:hidden;touch-action:none;user-select:none;-webkit-user-select:none;cursor:grab}
+    .crop-stage-container:active{cursor:grabbing}
+    .crop-stage-img{position:absolute;top:0;left:0;pointer-events:none;transform-origin:0 0;will-change:transform}
+    .crop-mask-overlay{position:absolute;pointer-events:none;box-shadow:0 0 0 9999px rgba(10,25,35,.55);border-radius:50%;width:240px;height:240px;top:20px;left:20px;border:2px dashed rgba(255,255,255,.85);box-sizing:border-box}
+    
+    .crop-controls{width:100%;display:flex;flex-direction:column;gap:10px;margin-top:16px}
+    .crop-zoom-row{display:flex;align-items:center;gap:10px;width:100%}
+    .crop-zoom-btn{width:32px;height:32px;border:1px solid #dce4e8;border-radius:50%;background:#f8fafb;color:#456070;font-size:16px;font-weight:800;display:grid;place-items:center;cursor:pointer}
+    .crop-zoom-slider{flex:1;height:6px;border-radius:3px;background:#e2eaee;outline:none;-webkit-appearance:none;cursor:pointer}
+    .crop-zoom-slider::-webkit-slider-thumb{-webkit-appearance:none;width:18px;height:18px;border-radius:50%;background:#087ca7;cursor:pointer;box-shadow:0 2px 6px rgba(8,124,167,.35)}
+    .crop-hint-text{margin:0;font-size:11.5px;color:#78909c;text-align:center}
+    
+    .crop-modal-actions{display:grid;grid-template-columns:1fr 1fr;gap:10px;width:100%;margin-top:16px}
+  </style>
+</head>
+<body>
+  <div class="mypage-app">
+    <!-- 1. 상단 -->
+    <header class="mypage-header">
+      <a href="./index.html" class="mypage-back" aria-label="뒤로가기">‹</a>
+      <h1>마이페이지</h1>
+      <div class="mypage-header-spacer" aria-hidden="true"></div>
+    </header>
+
+    <main class="mypage-content">
+      <!-- 2. 프로필 -->
+      <section class="mypage-profile-card">
+        <div class="mypage-avatar-wrap">
+          <img id="userAvatarImg" class="mypage-avatar" src="./public/images/snorky-symbol.png" alt="프로필 사진">
+        </div>
+        <div class="mypage-profile-info">
+          <strong id="userNickname" class="mypage-nickname">카카오 사용자</strong>
+          <div class="mypage-badge-row">
+            <span id="userBadge" class="mypage-badge">카카오 로그인</span>
+          </div>
+        </div>
+        <button id="openEditProfileBtn" class="mypage-edit-btn" type="button">프로필 편집</button>
+      </section>
+
+      <!-- 3. 메뉴 -->
+      <nav class="mypage-menu-group" aria-label="마이페이지 메뉴">
+        <button class="mypage-menu-item" type="button" data-action="favorites">
+          <span class="mypage-menu-icon">
+            <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+          </span>
+          <div class="mypage-menu-text">
+            <strong>즐겨찾기</strong>
+            <small>저장한 스노클링 포인트</small>
+          </div>
+        </button>
+
+        <button class="mypage-menu-item" type="button" data-action="my-points">
+          <span class="mypage-menu-icon">
+            <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+          </span>
+          <div class="mypage-menu-text">
+            <strong>나만의 스팟</strong>
+            <small>나만의 스노클링 스팟 기록</small>
+          </div>
+        </button>
+
+        <button class="mypage-menu-item" type="button" data-action="schedule">
+          <span class="mypage-menu-icon">
+            <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+          </span>
+          <div class="mypage-menu-text">
+            <strong>다이빙 스케줄</strong>
+            <small>다가오는 다이빙 일정 관리</small>
+          </div>
+        </button>
+
+        <button class="mypage-menu-item" type="button" data-action="share">
+          <span class="mypage-menu-icon">
+            <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
+          </span>
+          <div class="mypage-menu-text">
+            <strong>버디에게 공유하기</strong>
+            <small>친구에게 포인트 다이빙스케줄을 공유 하고 SNORKY를 소개해주세요</small>
+          </div>
+        </button>
+      </nav>
+    </main>
+  </div>
+
+  <!-- 프로필 편집 모달 -->
+  <section id="profileEditModal" class="profile-modal" role="dialog" aria-modal="true" aria-labelledby="profileEditTitle" hidden>
+    <div class="profile-modal-backdrop" id="profileEditBackdrop"></div>
+    <div class="profile-modal-card">
+      <header class="profile-modal-head">
+        <h2 id="profileEditTitle">프로필 편집</h2>
+        <button id="closeEditProfileBtn" class="profile-modal-close" type="button" aria-label="닫기">×</button>
+      </header>
+
+      <form id="profileEditForm">
+        <!-- 프로필 사진 -->
+        <div class="profile-modal-avatar-sec">
+          <div class="profile-preview-wrap">
+            <img id="editAvatarPreview" class="profile-preview-img" src="./public/images/snorky-symbol.png" alt="미리보기">
+          </div>
+          <div class="profile-avatar-actions">
+            <button id="changeAvatarBtn" class="profile-btn-sm profile-btn-change" type="button">사진 변경</button>
+            <button id="resetAvatarBtn" class="profile-btn-sm profile-btn-reset" type="button">기본 이미지</button>
+          </div>
+          <input id="avatarFileInput" type="file" accept="image/jpeg,image/png,image/webp" hidden>
+          <p class="profile-avatar-hint">JPG, PNG, WebP · 최대 5MB</p>
+        </div>
+
+        <!-- 닉네임 -->
+        <div class="profile-modal-field">
+          <label for="editNicknameInput">닉네임</label>
+          <input id="editNicknameInput" class="profile-modal-input" type="text" maxlength="20" placeholder="닉네임 입력 (미입력 시 카카오 닉네임 사용)" autocomplete="off">
+          <p class="profile-field-hint">* 닉네임을 비워두면 카카오 원본 닉네임으로 표시됩니다.</p>
+        </div>
+
+        <p id="profileEditStatus" class="profile-status-msg" aria-live="polite"></p>
+
+        <!-- 버튼 -->
+        <div class="profile-modal-actions">
+          <button id="cancelProfileEditBtn" class="profile-act-btn profile-btn-cancel" type="button">취소</button>
+          <button id="saveProfileBtn" class="profile-act-btn profile-btn-save" type="submit">저장</button>
+        </div>
+      </form>
+    </div>
+  </section>
+
+  <!-- 프로필 사진 크롭/조절 모달 -->
+  <section id="avatarCropModal" class="crop-modal" role="dialog" aria-modal="true" aria-labelledby="avatarCropTitle" hidden>
+    <div class="crop-modal-backdrop" id="avatarCropBackdrop"></div>
+    <div class="crop-modal-card">
+      <header class="crop-modal-head">
+        <h3 id="avatarCropTitle">프로필 사진 조절</h3>
+        <button id="closeCropModalBtn" class="profile-modal-close" type="button" aria-label="닫기">×</button>
+      </header>
+
+      <div id="cropStageContainer" class="crop-stage-container">
+        <img id="cropStageImg" class="crop-stage-img" alt="크롭 대상 사진">
+        <div class="crop-mask-overlay"></div>
+      </div>
+
+      <div class="crop-controls">
+        <div class="crop-zoom-row">
+          <button id="zoomOutBtn" class="crop-zoom-btn" type="button" aria-label="축소">−</button>
+          <input id="cropZoomSlider" class="crop-zoom-slider" type="range" min="1" max="3" step="0.02" value="1" aria-label="확대 축소">
+          <button id="zoomInBtn" class="crop-zoom-btn" type="button" aria-label="확대">+</button>
+        </div>
+        <p class="crop-hint-text">사진을 드래그하여 위치를 맞추고 크기를 조절하세요.</p>
+      </div>
+
+      <div class="crop-modal-actions">
+        <button id="cancelCropBtn" class="profile-act-btn profile-btn-cancel" type="button">취소</button>
+        <button id="applyCropBtn" class="profile-act-btn profile-btn-save" type="button">적용하기</button>
+      </div>
+    </div>
+  </section>
+
+  <script src="./public/js/supabase-client.js"></script>
+  <script async src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" onload="window.dispatchEvent(new Event('snorky:supabase-ready'))"></script>
+  <script src="./public/js/auth-session.js?v=20260901_v1"></script>
+  <script src="./public/js/user-profile.js?v=20260901_v1"></script>
+  <script>
+    (function () {
+      "use strict";
+
+      function getSession() {
+        return window.SNORKYAuthSession?.get() || null;
+      }
+
+      let currentSession = getSession();
+      if (!currentSession || currentSession.version !== 1 || !currentSession.user) {
+        location.replace("./login.html");
+        return;
+      }
+
+      const DEFAULT_SYMBOL = "./public/images/snorky-symbol.png";
+
+      document.querySelector('[data-action="my-points"]')?.addEventListener("click", function () {
+        location.href = "./my-spots.html";
+      });
+
+      // Elements
+      const userNicknameEl = document.getElementById("userNickname");
+      const userAvatarImgEl = document.getElementById("userAvatarImg");
+      const userBadgeEl = document.getElementById("userBadge");
+
+      const profileModal = document.getElementById("profileEditModal");
+      const openEditBtn = document.getElementById("openEditProfileBtn");
+      const closeEditBtn = document.getElementById("closeEditProfileBtn");
+      const cancelEditBtn = document.getElementById("cancelProfileEditBtn");
+      const backdrop = document.getElementById("profileEditBackdrop");
+
+      const profileForm = document.getElementById("profileEditForm");
+      const editAvatarPreview = document.getElementById("editAvatarPreview");
+      const changeAvatarBtn = document.getElementById("changeAvatarBtn");
+      const resetAvatarBtn = document.getElementById("resetAvatarBtn");
+      const avatarFileInput = document.getElementById("avatarFileInput");
+      const editNicknameInput = document.getElementById("editNicknameInput");
+      const statusMsg = document.getElementById("profileEditStatus");
+      const saveBtn = document.getElementById("saveProfileBtn");
+
+      // Crop Modal Elements
+      const cropModal = document.getElementById("avatarCropModal");
+      const cropBackdrop = document.getElementById("avatarCropBackdrop");
+      const closeCropBtn = document.getElementById("closeCropModalBtn");
+      const cancelCropBtn = document.getElementById("cancelCropBtn");
+      const applyCropBtn = document.getElementById("applyCropBtn");
+      const cropStage = document.getElementById("cropStageContainer");
+      const cropImg = document.getElementById("cropStageImg");
+      const zoomSlider = document.getElementById("cropZoomSlider");
+      const zoomInBtn = document.getElementById("zoomInBtn");
+      const zoomOutBtn = document.getElementById("zoomOutBtn");
+
+      let selectedAvatarFile = null;
+      let selectedAvatarType = "default"; // 'default' | 'custom' | 'none'
+
+      // Crop State
+      const STAGE_SIZE = 280;
+      const CROP_SIZE = 240;
+      const CROP_OFFSET = (STAGE_SIZE - CROP_SIZE) / 2; // 20px
+      const TARGET_OUTPUT_SIZE = 512; // 최대 512x512 리사이징
+
+      let rawImage = null;
+      let imgNaturalWidth = 0;
+      let imgNaturalHeight = 0;
+      let baseScale = 1;
+      let currentZoom = 1;
+      let panX = 0;
+      let panY = 0;
+      let isDragging = false;
+      let dragStartX = 0;
+      let dragStartY = 0;
+      let initialPanX = 0;
+      let initialPanY = 0;
+      let initialPinchDist = 0;
+      let initialPinchZoom = 1;
+
+      function renderProfileUI() {
+        currentSession = getSession();
+        if (!currentSession || !currentSession.user) return;
+        const effective = window.SNORKYAuthSession?.getEffectiveProfile(currentSession);
+        if (userNicknameEl) {
+          userNicknameEl.textContent = effective.nickname;
+        }
+        if (userAvatarImgEl) {
+          userAvatarImgEl.src = effective.avatarUrl || DEFAULT_SYMBOL;
+        }
+        if (userBadgeEl) {
+          userBadgeEl.textContent = effective.isCustomNickname || effective.isCustomAvatar ? "SNORKY 프로필" : "카카오 로그인";
+        }
+      }
+
+      function openModal() {
+        currentSession = getSession();
+        if (!currentSession || !currentSession.user) return;
+
+        const effective = window.SNORKYAuthSession?.getEffectiveProfile(currentSession);
+        editNicknameInput.value = currentSession.user.customNickname || "";
+        selectedAvatarFile = null;
+        selectedAvatarType = currentSession.user.avatarType || "default";
+
+        editAvatarPreview.src = effective.avatarUrl || DEFAULT_SYMBOL;
+        avatarFileInput.value = "";
+        statusMsg.textContent = "";
+        statusMsg.className = "profile-status-msg";
+        saveBtn.disabled = false;
+
+        profileModal.hidden = false;
+        setTimeout(() => editNicknameInput.focus(), 100);
+      }
+
+      function closeModal() {
+        profileModal.hidden = true;
+        selectedAvatarFile = null;
+      }
+
+      // 이벤트 바인딩
+      openEditBtn?.addEventListener("click", openModal);
+      closeEditBtn?.addEventListener("click", closeModal);
+      cancelEditBtn?.addEventListener("click", closeModal);
+      backdrop?.addEventListener("click", closeModal);
+
+      document.addEventListener("keydown", (e) => {
+        if (e.key === "Escape") {
+          if (cropModal && !cropModal.hidden) {
+            closeCropModal();
+          } else if (profileModal && !profileModal.hidden) {
+            closeModal();
+          }
+        }
+      });
+
+      // 사진 변경 버튼 -> 파일 다이얼로그 열기
+      changeAvatarBtn?.addEventListener("click", () => {
+        avatarFileInput?.click();
+      });
+
+      avatarFileInput?.addEventListener("change", (e) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+
+        if (file.size > 5 * 1024 * 1024) {
+          statusMsg.textContent = "이미지 크기는 최대 5MB까지 가능합니다.";
+          statusMsg.className = "profile-status-msg";
+          avatarFileInput.value = "";
+          return;
+        }
+        if (!["image/jpeg", "image/png", "image/webp"].includes(file.type)) {
+          statusMsg.textContent = "JPG, PNG, WebP 형식만 지원합니다.";
+          statusMsg.className = "profile-status-msg";
+          avatarFileInput.value = "";
+          return;
+        }
+
+        const reader = new FileReader();
+        reader.onload = (evt) => {
+          const img = new Image();
+          img.onload = () => {
+            rawImage = img;
+            imgNaturalWidth = img.naturalWidth || img.width;
+            imgNaturalHeight = img.naturalHeight || img.height;
+            openCropModal(evt.target.result);
+          };
+          img.src = evt.target.result;
+        };
+        reader.readAsDataURL(file);
+      });
+
+      // 기본 이미지로 초기화 버튼
+      resetAvatarBtn?.addEventListener("click", () => {
+        selectedAvatarFile = null;
+        selectedAvatarType = "none"; // 기본 심볼 사용
+        avatarFileInput.value = "";
+        editAvatarPreview.src = DEFAULT_SYMBOL;
+        statusMsg.textContent = "기본 이미지로 설정되었습니다. (저장 시 적용)";
+        statusMsg.className = "profile-status-msg success";
+      });
+
+      // ==========================================
+      // 크롭 / 조절 모달 로직
+      // ==========================================
+      function openCropModal(imgSrc) {
+        cropImg.src = imgSrc;
+        currentZoom = 1;
+        zoomSlider.value = "1";
+
+        // baseScale: 원형 크롭 영역(240px)을 빈틈없이 채우는 최소 배율
+        baseScale = Math.max(CROP_SIZE / imgNaturalWidth, CROP_SIZE / imgNaturalHeight);
+        panX = 0;
+        panY = 0;
+        updateCropTransform();
+
+        cropModal.hidden = false;
+      }
+
+      function closeCropModal() {
+        cropModal.hidden = true;
+        avatarFileInput.value = "";
+        rawImage = null;
+      }
+
+      function clampPan(x, y, zoom) {
+        const totalScale = baseScale * zoom;
+        const renderW = imgNaturalWidth * totalScale;
+        const renderH = imgNaturalHeight * totalScale;
+
+        // 크롭 영역이 렌더링된 이미지 바깥으로 나가지 않도록 제한
+        const maxPanX = Math.max(0, (renderW - CROP_SIZE) / 2);
+        const maxPanY = Math.max(0, (renderH - CROP_SIZE) / 2);
+
+        const clampedX = Math.min(maxPanX, Math.max(-maxPanX, x));
+        const clampedY = Math.min(maxPanY, Math.max(-maxPanY, y));
+        return { x: clampedX, y: clampedY };
+      }
+
+      function updateCropTransform() {
+        const clamped = clampPan(panX, panY, currentZoom);
+        panX = clamped.x;
+        panY = clamped.y;
+
+        const totalScale = baseScale * currentZoom;
+        const renderW = imgNaturalWidth * totalScale;
+        const renderH = imgNaturalHeight * totalScale;
+        const imgLeft = (STAGE_SIZE - renderW) / 2 + panX;
+        const imgTop = (STAGE_SIZE - renderH) / 2 + panY;
+
+        cropImg.style.width = `${imgNaturalWidth}px`;
+        cropImg.style.height = `${imgNaturalHeight}px`;
+        cropImg.style.transform = `translate3d(${imgLeft}px, ${imgTop}px, 0) scale(${totalScale})`;
+      }
+
+      function setZoom(newZoom) {
+        currentZoom = Math.min(3, Math.max(1, newZoom));
+        zoomSlider.value = String(currentZoom);
+        updateCropTransform();
+      }
+
+      zoomSlider?.addEventListener("input", (e) => {
+        setZoom(parseFloat(e.target.value));
+      });
+
+      zoomInBtn?.addEventListener("click", () => {
+        setZoom(currentZoom + 0.15);
+      });
+
+      zoomOutBtn?.addEventListener("click", () => {
+        setZoom(currentZoom - 0.15);
+      });
+
+      // 마우스 휠로 줌
+      cropStage?.addEventListener("wheel", (e) => {
+        e.preventDefault();
+        const delta = e.deltaY > 0 ? -0.1 : 0.1;
+        setZoom(currentZoom + delta);
+      }, { passive: false });
+
+      // 마우스 드래그 이벤트
+      cropStage?.addEventListener("mousedown", (e) => {
+        isDragging = true;
+        dragStartX = e.clientX;
+        dragStartY = e.clientY;
+        initialPanX = panX;
+        initialPanY = panY;
+      });
+
+      window.addEventListener("mousemove", (e) => {
+        if (!isDragging) return;
+        panX = initialPanX + (e.clientX - dragStartX);
+        panY = initialPanY + (e.clientY - dragStartY);
+        updateCropTransform();
+      });
+
+      window.addEventListener("mouseup", () => {
+        isDragging = false;
+      });
+
+      // 터치 이벤트 (드래그 & 핀치 줌)
+      cropStage?.addEventListener("touchstart", (e) => {
+        if (e.touches.length === 1) {
+          isDragging = true;
+          dragStartX = e.touches[0].clientX;
+          dragStartY = e.touches[0].clientY;
+          initialPanX = panX;
+          initialPanY = panY;
+        } else if (e.touches.length === 2) {
+          isDragging = false;
+          initialPinchDist = Math.hypot(
+            e.touches[0].clientX - e.touches[1].clientX,
+            e.touches[0].clientY - e.touches[1].clientY
+          );
+          initialPinchZoom = currentZoom;
+        }
+      }, { passive: false });
+
+      cropStage?.addEventListener("touchmove", (e) => {
+        e.preventDefault();
+        if (e.touches.length === 1 && isDragging) {
+          panX = initialPanX + (e.touches[0].clientX - dragStartX);
+          panY = initialPanY + (e.touches[0].clientY - dragStartY);
+          updateCropTransform();
+        } else if (e.touches.length === 2 && initialPinchDist > 0) {
+          const currentDist = Math.hypot(
+            e.touches[0].clientX - e.touches[1].clientX,
+            e.touches[0].clientY - e.touches[1].clientY
+          );
+          const factor = currentDist / initialPinchDist;
+          setZoom(initialPinchZoom * factor);
+        }
+      }, { passive: false });
+
+      cropStage?.addEventListener("touchend", () => {
+        isDragging = false;
+        initialPinchDist = 0;
+      });
+
+      closeCropBtn?.addEventListener("click", closeCropModal);
+      cancelCropBtn?.addEventListener("click", closeCropModal);
+      cropBackdrop?.addEventListener("click", closeCropModal);
+
+      // 크롭 적용 버튼 클릭 -> Canvas 512x512 리사이즈 및 Blob 생성
+      applyCropBtn?.addEventListener("click", () => {
+        if (!rawImage) {
+          closeCropModal();
+          return;
+        }
+
+        const totalScale = baseScale * currentZoom;
+        const renderW = imgNaturalWidth * totalScale;
+        const renderH = imgNaturalHeight * totalScale;
+        const imgLeft = (STAGE_SIZE - renderW) / 2 + panX;
+        const imgTop = (STAGE_SIZE - renderH) / 2 + panY;
+
+        // 크롭 박스 영역(CROP_OFFSET ~ CROP_OFFSET + CROP_SIZE)의 원본 이미지 좌표 계산
+        const srcX = (CROP_OFFSET - imgLeft) / totalScale;
+        const srcY = (CROP_OFFSET - imgTop) / totalScale;
+        const srcSize = CROP_SIZE / totalScale;
+
+        const canvas = document.createElement("canvas");
+        canvas.width = TARGET_OUTPUT_SIZE;
+        canvas.height = TARGET_OUTPUT_SIZE;
+        const ctx = canvas.getContext("2d");
+
+        // 고품질 보간 설정
+        ctx.imageSmoothingEnabled = true;
+        ctx.imageSmoothingQuality = "high";
+
+        // 크롭 영역을 512x512 캔버스에 그리기
+        ctx.drawImage(
+          rawImage,
+          srcX,
+          srcY,
+          srcSize,
+          srcSize,
+          0,
+          0,
+          TARGET_OUTPUT_SIZE,
+          TARGET_OUTPUT_SIZE
+        );
+
+        // JPEG Blob 생성 (품질 0.88 - 화질 우수 및 수십~수백 KB 경량화)
+        canvas.toBlob((blob) => {
+          if (!blob) {
+            alert("이미지 크롭 처리에 실패했습니다.");
+            return;
+          }
+
+          selectedAvatarFile = new File([blob], `profile_${Date.now()}.jpg`, {
+            type: "image/jpeg",
+          });
+          selectedAvatarType = "custom";
+
+          // 프로필 편집 모달의 미리보기 이미지 갱신
+          editAvatarPreview.src = URL.createObjectURL(blob);
+          statusMsg.textContent = "사진이 조절되었습니다. 저장 버튼을 눌러 적용하세요.";
+          statusMsg.className = "profile-status-msg success";
+
+          closeCropModal();
+        }, "image/jpeg", 0.88);
+      });
+
+      // 폼 제출 (저장)
+      profileForm?.addEventListener("submit", async (e) => {
+        e.preventDefault();
+        statusMsg.textContent = "";
+        statusMsg.className = "profile-status-msg";
+        saveBtn.disabled = true;
+        saveBtn.textContent = "저장 중...";
+
+        try {
+          const nicknameVal = editNicknameInput.value.trim();
+          if (nicknameVal.length > 20) {
+            throw new Error("닉네임은 최대 20자까지 가능합니다.");
+          }
+
+          if (!window.SNORKYUserProfile?.saveProfile) {
+            throw new Error("프로필 저장 모듈을 불러오지 못했습니다.");
+          }
+
+          await window.SNORKYUserProfile.saveProfile({
+            customNickname: nicknameVal,
+            avatarFile: selectedAvatarFile,
+            avatarType: selectedAvatarType,
+          });
+
+          renderProfileUI();
+          statusMsg.textContent = "프로필이 성공적으로 저장되었습니다.";
+          statusMsg.className = "profile-status-msg success";
+
+          setTimeout(() => {
+            closeModal();
+            saveBtn.textContent = "저장";
+          }, 400);
+        } catch (err) {
+          console.error("[SNORKY Profile Save Error]", err);
+          statusMsg.textContent = err.message || "프로필 저장 중 오류가 발생했습니다.";
+          statusMsg.className = "profile-status-msg";
+          saveBtn.disabled = false;
+          saveBtn.textContent = "저장";
+        }
+      });
+
+      // 로그아웃 처리
+      const logoutBtn = document.getElementById("logoutBtn");
+      if (logoutBtn) {
+        logoutBtn.addEventListener("click", function () {
+          try {
+            if (window.SNORKYAuthSession?.clear) {
+              window.SNORKYAuthSession.clear();
+            } else {
+              localStorage.removeItem("snorky_auth_session_v1");
+            }
+          } catch (_) {}
+          location.replace("./index.html");
+        });
+      }
+
+      // 초기 렌더링 및 원격 프로필 동기화
+      renderProfileUI();
+      if (window.SNORKYUserProfile?.fetchRemoteProfile) {
+        window.SNORKYUserProfile.fetchRemoteProfile(currentSession.provider || "kakao", currentSession.user.id)
+          .then(() => renderProfileUI())
+          .catch(() => {});
+      }
+    })();
+  </script>
+</body>
+</html>

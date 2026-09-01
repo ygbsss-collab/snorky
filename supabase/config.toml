@@ -27,3 +27,12 @@ verify_jwt = false
 
 [functions.submit-inquiry]
 verify_jwt = false
+
+[functions.kakao-auth]
+verify_jwt = false
+
+[functions.delete-account]
+verify_jwt = false
+
+[functions.point-evaluation-refresh]
+verify_jwt = false

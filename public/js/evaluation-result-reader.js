@@ -10,6 +10,36 @@
   let todayCache = null;
   let todayCacheTime = 0;
   const pointSlotsCache = new Map();
+  const dryRunResults = new Map();
+
+  function registerDryRunResults(pointId, rows, expiresAt) {
+    const id = String(pointId || "");
+    const expiry = Number(expiresAt);
+    const source = Array.isArray(rows) ? rows : [];
+    if (!id || !source.length || !Number.isFinite(expiry) || expiry <= Date.now()) return false;
+    dryRunResults.set(id, { rows: source, expiresAt: expiry });
+    return true;
+  }
+
+  function getDryRunRows(pointId, mode) {
+    const id = String(pointId || "");
+    const cached = dryRunResults.get(id);
+    if (!cached) return null;
+    if (cached.expiresAt <= Date.now()) {
+      dryRunResults.delete(id);
+      return null;
+    }
+    return cached.rows.filter(row => row && row.mode === mode);
+  }
+
+  function clearDryRunResults(pointId) {
+    dryRunResults.delete(String(pointId || ""));
+  }
+
+  function getDryRunToday(pointId) {
+    const rows = getDryRunRows(pointId, "TODAY");
+    return rows?.[0] || null;
+  }
 
   function getKstDateString() {
     const kst = new Date(new Date().getTime() + 9 * 3600000);
@@ -146,6 +176,11 @@
         if (!map.has(pointId)) map.set(pointId, row);
       });
 
+      for (const [pointId] of dryRunResults) {
+        const customToday = getDryRunRows(pointId, "TODAY");
+        if (customToday?.length) map.set(pointId, customToday[0]);
+      }
+
       todayCache = map;
       todayCacheTime = now;
       return map;
@@ -159,6 +194,8 @@
    * Loads SHORT results (+1~+3 days, 15 slots) for a specific point.
    */
   async function loadShortResultsForPoint(pointId, forceRefresh = false) {
+    const dryRows = getDryRunRows(pointId, "SHORT");
+    if (dryRows) return dryRows;
     const cacheKey = `SHORT_${pointId}`;
     const now = Date.now();
     const cached = pointSlotsCache.get(cacheKey);
@@ -195,6 +232,8 @@
    * Loads MID results (+4~+6 days, 6 slots: AM/PM) for a specific point.
    */
   async function loadMidResultsForPoint(pointId, forceRefresh = false) {
+    const dryRows = getDryRunRows(pointId, "MID");
+    if (dryRows) return dryRows;
     const cacheKey = `MID_${pointId}`;
     const now = Date.now();
     const cached = pointSlotsCache.get(cacheKey);
@@ -298,6 +337,8 @@
    * Loads TODAY_HOURLY results (7 slots: 03, 06, 09, 12, 15, 18, 21) for a specific point.
    */
   async function loadTodayHourly(pointId, forceRefresh = false) {
+    const dryRows = getDryRunRows(pointId, "TODAY_HOURLY");
+    if (dryRows) return dryRows;
     const todayDate = getKstDateString();
     const cacheKey = `TODAY_HOURLY_${pointId}_${todayDate}`;
     const now = Date.now();
@@ -341,5 +382,8 @@
     loadMidResultsForPoint,
     loadAllSlotsForPoint,
     loadBestCandidates,
+    registerDryRunResults,
+    clearDryRunResults,
+    getDryRunToday,
   });
 })();

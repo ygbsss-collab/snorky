@@ -20,6 +20,11 @@ export type SnorkyPoint = {
   environment?: PointEnvironment | null;
   warning_area_code?: string | null;
   land_warning_area_code?: string | null;
+  /** 나만의 스팟 요청에서만 사용하는 확정 KMA 중기 코드. */
+  mid_land_reg_id?: string | null;
+  mid_temp_reg_id?: string | null;
+  /** 공식 points와 나만의 스팟의 Safety/fallback 정책을 분리한다. */
+  is_custom_point?: boolean;
   updated_at?: string | null;
 };
 export type GridPoint = { id: string | number; name: string; region: string | null; latitude: number; longitude: number; environment?: PointEnvironment | null; warning_area_code?: string | null; land_warning_area_code?: string | null };

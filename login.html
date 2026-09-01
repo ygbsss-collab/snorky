@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#ffffff">
+  <title>로그인 | SNORKY</title>
+  <link rel="stylesheet" href="./public/css/login.css?v=20260901_v1">
+  <script src="https://t1.kakaocdn.net/kakao_js_sdk/2.8.2/kakao.min.js" crossorigin="anonymous" defer></script>
+  <script src="./public/js/supabase-client.js?v=20260820_stitch_v76" defer></script>
+  <script src="./public/js/auth-session.js?v=20260901_v1" defer></script>
+  <script src="./public/js/auth-kakao.js?v=20260901_v1" defer></script>
+</head>
+<body>
+  <div class="login-page">
+    <header class="login-header">
+      <a class="login-back" href="./index.html" aria-label="홈으로 돌아가기">‹</a>
+      <h1>로그인</h1>
+      <span class="login-header-spacer" aria-hidden="true"></span>
+    </header>
+
+    <main class="login-main">
+      <section class="login-intro" aria-labelledby="loginBrandName">
+        <img class="login-symbol" src="./public/images/snorky-symbol.png" alt="SNORKY 심볼">
+        <p id="loginBrandName" class="login-brand">SNORKY</p>
+        <h2>나만의 바다를 저장해보세요</h2>
+        <p class="login-description">즐겨찾기 · 나만의 포인트 · 다이빙 스케줄을 한곳에서 관리해요</p>
+      </section>
+
+      <section class="login-actions" aria-label="로그인 선택">
+        <button id="kakaoLoginButton" class="login-kakao" type="button">카카오로 시작하기</button>
+        <p class="login-terms-notice">
+          카카오로 시작하면 <a href="./terms.html" class="login-terms-link">SNORKY 이용약관</a>에 동의하고 <a href="./privacy.html" class="login-terms-link">개인정보처리방침</a>을 확인한 것으로 봅니다.
+        </p>
+        <p id="loginError" class="login-error" role="alert" aria-live="polite" hidden></p>
+        <a class="login-browse" href="./index.html">로그인 없이 둘러보기</a>
+        <p class="login-helper">기본 예보는 로그인 없이 이용할 수 있어요</p>
+      </section>
+    </main>
+  </div>
+</body>
+</html>

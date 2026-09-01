@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="theme-color" content="#087ca7">
+  <title>나만의 스팟 - SNORKY</title>
+  <link href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="./public/css/condition-analysis-overlay.css?v=20260901_custom_v1">
+  <link rel="stylesheet" href="./public/css/today-condition-detail.css?v=20260901_custom_v1">
+  <link rel="stylesheet" href="./public/css/daily-forecast-detail.css?v=20260901_custom_v1">
+  <link rel="stylesheet" href="./public/css/my-spots.css?v=20260901_custom_v1">
+</head>
+<body>
+  <div class="custom-spots-app">
+    <header class="custom-spots-header">
+      <a class="custom-spots-back" href="./mypage.html" aria-label="마이페이지로 돌아가기">‹</a>
+      <div>
+        <h1>나만의 스팟</h1>
+        <p>직접 고른 좌표로 SNORKY 컨디션을 확인하세요.</p>
+      </div>
+      <button id="newCustomSpotBtn" class="custom-spots-add" type="button">＋ 추가</button>
+    </header>
+
+    <main>
+      <section id="customSpotList" class="custom-spot-list" aria-live="polite"></section>
+
+      <section id="customSpotEditor" class="custom-spot-editor" hidden>
+        <div class="custom-editor-head">
+          <div>
+            <h2 id="customEditorTitle">새 스팟 저장</h2>
+            <p>검색 결과는 지도 이동에만 사용됩니다. 지도에서 최종 위치를 직접 선택하세요.</p>
+          </div>
+          <button id="closeCustomEditorBtn" type="button" aria-label="닫기">×</button>
+        </div>
+
+        <form id="customSpotForm">
+          <label class="custom-field">
+            <span>스팟 이름</span>
+            <input id="customSpotName" maxlength="50" autocomplete="off" required placeholder="예: 내가 찾은 작은 해변">
+          </label>
+
+          <div class="custom-field">
+            <span>장소 검색</span>
+            <div class="custom-search-row">
+              <input id="customPlaceSearch" autocomplete="off" placeholder="장소명 / 주소 검색">
+              <button id="customPlaceSearchBtn" type="button">검색</button>
+            </div>
+            <div id="customPlaceResults" class="custom-search-results"></div>
+          </div>
+
+          <div class="custom-field">
+            <span>최종 좌표 선택</span>
+            <p id="customMapGuide" class="custom-map-guide">지도를 클릭하면 마커가 생성됩니다. 마커를 드래그하거나 다시 클릭해 조정할 수 있습니다.</p>
+            <div id="customSpotMap" class="custom-spot-map" aria-label="나만의 스팟 좌표 선택 지도"></div>
+          </div>
+
+          <p id="customSpotError" class="custom-spot-error" role="alert"></p>
+          <div class="custom-editor-actions">
+            <button id="cancelCustomSpotBtn" class="custom-secondary" type="button">취소</button>
+            <button id="saveCustomSpotBtn" class="custom-primary" type="submit">저장</button>
+          </div>
+        </form>
+      </section>
+    </main>
+  </div>
+
+  <script src="./public/js/auth-session.js?v=20260901_custom_v1"></script>
+  <script src="./public/js/supabase-client.js?v=20260901_custom_v1"></script>
+  <script src="./public/js/kma-warning-zones.js?v=20260820_stitch_v76"></script>
+  <script src="./public/js/kma-safety.js?v=20260820_stitch_v76"></script>
+  <script src="./public/js/evaluation-result-reader.js?v=20260901_custom_v1"></script>
+  <script src="./public/js/condition-analysis-overlay.js?v=20260901_custom_v1"></script>
+  <script src="./public/js/today-condition-detail.js?v=20260901_custom_safety_v2"></script>
+  <script src="./public/js/daily-forecast-detail.js?v=20260901_custom_tide_v2"></script>
+  <script src="./public/js/my-spots.js?v=20260901_custom_safety_v2"></script>
+  <script async src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" onload="window.dispatchEvent(new Event('snorky:supabase-ready'))"></script>
+</body>
+</html>

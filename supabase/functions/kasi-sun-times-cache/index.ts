@@ -12,6 +12,11 @@ export interface KasiSunTimesCacheRow {
   fetched_at: string;
 }
 
+export interface KasiSunTimesLoadOptions {
+  /** Custom/dryRun 요청에서만 사용하는 외부 KASI 호출 상한. 캐시 HIT에는 적용되지 않는다. */
+  fetchTimeoutMs?: number;
+}
+
 /**
  * Loads KASI SunTimes strictly from KASI source.
  * [CRITICAL] 임의 일출·일몰 계산 fallback 금지. KASI 실패/누락 시 null 반환.
@@ -21,7 +26,8 @@ export async function loadKasiSunTimes(
   latitude: number,
   longitude: number,
   dateStr: string, // YYYY-MM-DD
-  apiKey?: string
+  apiKey?: string,
+  options: KasiSunTimesLoadOptions = {}
 ): Promise<KasiSunTimesInput> {
   const roundLat = Math.round(latitude * 100) / 100;
   const roundLng = Math.round(longitude * 100) / 100;
@@ -50,10 +56,17 @@ export async function loadKasiSunTimes(
 
   // 2. KASI API on-demand fetch if apiKey provided
   if (apiKey) {
+    const fetchTimeoutMs = Number(options.fetchTimeoutMs);
+    const controller = Number.isFinite(fetchTimeoutMs) && fetchTimeoutMs > 0
+      ? new AbortController()
+      : null;
+    const timeoutId = controller
+      ? setTimeout(() => controller.abort(), fetchTimeoutMs)
+      : null;
     try {
       const locdateParam = dateStr.replace(/-/g, "");
       const url = `https://apis.data.go.kr/B090041/openapi/service/RiseSetInfoService/getLCSunRiseSetInfo?serviceKey=${apiKey}&locdate=${locdateParam}&latitude=${roundLat}&longitude=${roundLng}&dnYn=N`;
-      const res = await fetch(url);
+      const res = await fetch(url, controller ? { signal: controller.signal } : undefined);
       if (res.ok) {
         const text = await res.text();
         const sunriseMatch = text.match(/<sunrise>(\d{4})<\/sunrise>/);
@@ -87,6 +100,8 @@ export async function loadKasiSunTimes(
       }
     } catch (_) {
       // Fall through to null
+    } finally {
+      if (timeoutId !== null) clearTimeout(timeoutId);
     }
   }
 

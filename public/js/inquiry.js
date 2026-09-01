@@ -7,14 +7,6 @@
   `;
   document.head.appendChild(style);
 
-  // Replace the legacy my-page surface at the same bottom-navigation position.
-  document.getElementById("homeMyPage")?.remove();
-  const legacyMenuButton = document.querySelector('.home-bottom-nav [data-bottom="mypage"]');
-  if (legacyMenuButton) {
-    legacyMenuButton.querySelector("span").textContent = "문의하기";
-    legacyMenuButton.setAttribute("aria-label", "문의하기");
-  }
-
   const overlay = document.createElement("section");
   overlay.id = "homeInquiry";
   overlay.className = "home-inquiry";
@@ -40,11 +32,8 @@
   const pointTypes = new Set(["point_correction", "point_report"]);
   let captchaToken = "";
 
-  function setBottomActive(active) {
-    document.querySelectorAll(".home-bottom-nav [data-bottom]").forEach(button => button.classList.toggle("active", button.dataset.bottom === active));
-  }
-  function closeInquiry() { overlay.classList.remove("open"); setBottomActive("home"); }
-  function openInquiry() { overlay.classList.add("open"); setBottomActive("mypage"); requestAnimationFrame(() => typeInput.focus()); }
+  function closeInquiry() { overlay.classList.remove("open"); }
+  function openInquiry() { overlay.classList.add("open"); requestAnimationFrame(() => typeInput.focus()); }
   function updatePointField() { pointField.hidden = !pointTypes.has(typeInput.value); }
   function setStatus(message, success) { status.textContent = message; status.classList.toggle("success", Boolean(success)); }
   async function responseMessage(error) {
