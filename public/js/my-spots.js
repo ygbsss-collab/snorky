@@ -202,6 +202,7 @@
         <div class="custom-spot-actions">
           <button class="custom-today-btn" type="button" data-today-spot="${spot.id}">오늘 컨디션 보기</button>
           <button class="custom-sixday-btn" type="button" data-sixday-spot="${spot.id}">컨디션 예보</button>
+          <button class="custom-map-btn" type="button" data-map-spot="${spot.id}">해양 상세지도</button>
         </div>
       </article>`;
     }).join("");
@@ -210,6 +211,7 @@
     listEl.querySelectorAll("[data-delete-spot]").forEach(button => button.addEventListener("click", () => deleteSpot(Number(button.dataset.deleteSpot))));
     listEl.querySelectorAll("[data-today-spot]").forEach(button => button.addEventListener("click", () => openCondition(Number(button.dataset.todaySpot), "today")));
     listEl.querySelectorAll("[data-sixday-spot]").forEach(button => button.addEventListener("click", () => openCondition(Number(button.dataset.sixdaySpot), "sixday")));
+    listEl.querySelectorAll("[data-map-spot]").forEach(button => button.addEventListener("click", () => openDetailMap(Number(button.dataset.mapSpot))));
   }
 
   function loadKakao() {
@@ -573,6 +575,22 @@
       await openEvaluationResult(point, mode);
     } catch (error) {
       window.alert(CONDITION_FETCH_ERROR);
+    }
+  }
+
+  async function openDetailMap(spotId) {
+    const spot = spots.find(item => Number(item.id) === Number(spotId));
+    if (!spot) return;
+    try {
+      await loadKakao();
+      const point = customPointForUi(spot, null);
+      if (window.SNORKYPointDetailMap?.open) {
+        window.SNORKYPointDetailMap.open(point);
+      } else {
+        window.alert("해양 상세지도를 불러올 수 없습니다.");
+      }
+    } catch (error) {
+      window.alert(error.message || "해양 상세지도를 불러오지 못했습니다.");
     }
   }
 

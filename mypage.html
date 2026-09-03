@@ -8,6 +8,8 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Pretendard:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="./public/css/bottom-nav.css?v=20260903_v1">
+  <script src="./public/js/bottom-nav.js?v=20260903_v1"></script>
   <style>
     *,*::before,*::after{box-sizing:border-box}
     html,body{margin:0;padding:0;width:100%;min-height:100%;font-family:'Pretendard',-apple-system,BlinkMacSystemFont,system-ui,Roboto,sans-serif;background:#f6f8fa;color:#102a3a;-webkit-font-smoothing:antialiased}
@@ -56,10 +58,10 @@
     .mypage-logout-btn:hover{background:#f0f5f7;color:#07506e;border-color:#c8dce4}
 
     /* 프로필 편집 모달 */
-    .profile-modal{position:fixed;inset:0;z-index:1200;display:flex;align-items:center;justify-content:center;padding:16px}
+    .profile-modal{position:fixed;inset:0 0 var(--snorky-bottom-nav-offset,0px);z-index:1200;display:flex;align-items:center;justify-content:center;padding:16px}
     .profile-modal[hidden]{display:none!important}
     .profile-modal-backdrop{position:absolute;inset:0;background:rgba(10,35,48,.45);backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px)}
-    .profile-modal-card{position:relative;z-index:1;width:100%;max-width:440px;background:#fff;border-radius:24px;box-shadow:0 12px 40px rgba(10,35,48,.18);padding:24px 20px;box-sizing:border-box;animation:profilePop .2s cubic-bezier(0.16,1,0.3,1)}
+    .profile-modal-card{position:relative;z-index:1;width:100%;max-width:440px;max-height:calc(100dvh - 32px);overflow-y:auto;background:#fff;border-radius:24px;box-shadow:0 12px 40px rgba(10,35,48,.18);padding:24px 20px;box-sizing:border-box;animation:profilePop .2s cubic-bezier(0.16,1,0.3,1)}
     @keyframes profilePop{from{opacity:0;transform:scale(0.95)}to{opacity:1;transform:scale(1)}}
     
     .profile-modal-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;padding-bottom:12px;border-bottom:1px solid #edf2f5}
@@ -78,10 +80,23 @@
     .profile-btn-reset:hover{background:#f3f6f8;color:#2c404c}
     .profile-avatar-hint{margin:0;font-size:11px;color:#8ba0a9}
     
-    .profile-modal-field{display:flex;flex-direction:column;gap:6px;margin-bottom:22px}
+    .profile-modal-field{display:flex;flex-direction:column;gap:6px;margin-bottom:18px}
     .profile-modal-field label{font-size:13px;font-weight:800;color:#183445}
     .profile-modal-input{height:46px;padding:0 14px;border:1px solid #d3e1e7;border-radius:12px;font-size:14.5px;color:#102a3a;outline:none;font-family:inherit;transition:border-color .15s,box-shadow .15s}
     .profile-modal-input:focus{border-color:#087ca7;box-shadow:0 0 0 3px rgba(8,124,167,.12)}
+    .profile-nickname-row{display:grid;grid-template-columns:minmax(0,1fr) 94px;gap:8px;align-items:center}
+    .profile-nickname-row .profile-modal-input{width:100%;min-width:0}
+    .profile-nickname-check-btn{width:94px;height:46px;padding:0;border:1px solid #087ca7;border-radius:12px;background:#f0f8fb;color:#087ca7;font-family:inherit;font-size:13px;font-weight:800;cursor:pointer;transition:background .15s,color .15s}
+    .profile-nickname-check-btn:hover{background:#087ca7;color:#fff}
+    .profile-nickname-check-btn:disabled{opacity:.6;cursor:not-allowed}
+    .profile-nickname-meta{display:flex;align-items:flex-start;justify-content:space-between;gap:10px}
+    .profile-nickname-check-msg{min-height:16px;margin:0;font-size:11.5px;font-weight:700;color:#859da7;line-height:1.4}
+    .profile-nickname-check-msg.available{color:#07885b}
+    .profile-nickname-check-msg.unavailable{color:#d32f2f}
+    select.profile-modal-input{padding-right:40px;background:#fff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='13' height='13' viewBox='0 0 24 24' fill='none' stroke='%2355707d' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E") no-repeat right 14px center;appearance:none;-webkit-appearance:none;cursor:pointer}
+    .profile-modal-textarea{height:76px;min-height:76px;padding:11px 14px;line-height:1.5;resize:none}
+    .profile-field-meta{display:flex;align-items:flex-start;justify-content:space-between;gap:10px}
+    .profile-char-count{flex:0 0 auto;font-size:11.5px;color:#859da7}
     .profile-field-hint{margin:0;font-size:11.5px;color:#859da7;line-height:1.4}
     
     .profile-status-msg{min-height:18px;margin:0 0 14px;font-size:12.5px;font-weight:700;color:#d32f2f;text-align:center}
@@ -93,10 +108,10 @@
     .profile-btn-cancel:hover{background:#e4ecef;color:#183445}
     .profile-btn-save{background:linear-gradient(135deg,#087ca7,#07506e);color:#fff;box-shadow:0 4px 12px rgba(8,124,167,.25)}
     .profile-btn-save:hover{filter:brightness(1.06)}
-    .profile-btn-save:disabled{opacity:.6;cursor:wait}
+    .profile-btn-save:disabled{opacity:.6;cursor:not-allowed}
 
     /* 크롭 모달 스타일 */
-    .crop-modal{position:fixed;inset:0;z-index:1300;display:flex;align-items:center;justify-content:center;padding:16px}
+    .crop-modal{position:fixed;inset:0 0 var(--snorky-bottom-nav-offset,0px);z-index:1300;display:flex;align-items:center;justify-content:center;padding:16px}
     .crop-modal[hidden]{display:none!important}
     .crop-modal-backdrop{position:absolute;inset:0;background:rgba(10,35,48,.6);backdrop-filter:blur(5px);-webkit-backdrop-filter:blur(5px)}
     .crop-modal-card{position:relative;z-index:1;width:100%;max-width:380px;background:#fff;border-radius:24px;box-shadow:0 14px 45px rgba(10,35,48,.24);padding:20px 18px;box-sizing:border-box;animation:profilePop .2s cubic-bezier(0.16,1,0.3,1);display:flex;flex-direction:column;align-items:center}
@@ -124,7 +139,10 @@
     <header class="mypage-header">
       <a href="./index.html" class="mypage-back" aria-label="뒤로가기">‹</a>
       <h1>마이페이지</h1>
-      <div class="mypage-header-spacer" aria-hidden="true"></div>
+      <button type="button" id="btnMypageNoti" class="buddy-noti-btn" aria-label="알림" style="position:relative;background:transparent;border:0;cursor:pointer;padding:6px;display:grid;place-items:center;color:#1e293b;">
+        <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path><path d="M13.73 21a2 2 0 0 1-3.46 0"></path></svg>
+        <span id="mypageNotiBadge" class="buddy-noti-badge" style="display:none;position:absolute;top:2px;right:2px;min-width:16px;height:16px;padding:0 4px;border-radius:8px;background:#ef4444;color:#fff;font-size:10px;font-weight:800;line-height:16px;text-align:center;"></span>
+      </button>
     </header>
 
     <main class="mypage-content">
@@ -174,6 +192,16 @@
           </div>
         </button>
 
+        <button class="mypage-menu-item" type="button" data-action="my-buddy" onclick="location.href='./my-buddy.html'">
+          <span class="mypage-menu-icon">
+            <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+          </span>
+          <div class="mypage-menu-text">
+            <strong>나의 버디찾기 내역</strong>
+            <small>내가 등록하거나 신청한 버디 일정을 관리합니다.</small>
+          </div>
+        </button>
+
         <button class="mypage-menu-item" type="button" data-action="share">
           <span class="mypage-menu-icon">
             <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
@@ -213,8 +241,52 @@
         <!-- 닉네임 -->
         <div class="profile-modal-field">
           <label for="editNicknameInput">닉네임</label>
-          <input id="editNicknameInput" class="profile-modal-input" type="text" maxlength="20" placeholder="닉네임 입력 (미입력 시 카카오 닉네임 사용)" autocomplete="off">
+          <div class="profile-nickname-row">
+            <input id="editNicknameInput" class="profile-modal-input" type="text" maxlength="8" placeholder="닉네임 입력 (2~8자)" autocomplete="off">
+            <button id="checkNicknameBtn" class="profile-nickname-check-btn" type="button">중복검사</button>
+          </div>
+          <div class="profile-nickname-meta">
+            <p id="nicknameCheckStatus" class="profile-nickname-check-msg" aria-live="polite"></p>
+            <span id="editNicknameCount" class="profile-char-count">0 / 8</span>
+          </div>
+          <p class="profile-field-hint">* 2~8자 · 한글, 영문, 숫자, _만 사용할 수 있습니다.</p>
           <p class="profile-field-hint">* 닉네임을 비워두면 카카오 원본 닉네임으로 표시됩니다.</p>
+        </div>
+
+        <!-- 성별 -->
+        <div class="profile-modal-field">
+          <label for="editGenderSelect">성별</label>
+          <select id="editGenderSelect" class="profile-modal-input">
+            <option value="남성">남성</option>
+            <option value="여성">여성</option>
+            <option value="비공개">비공개</option>
+          </select>
+        </div>
+
+        <!-- 프리다이빙 레벨 -->
+        <div class="profile-modal-field">
+          <label for="editAidaLevelSelect">프리다이빙 레벨</label>
+          <select id="editAidaLevelSelect" class="profile-modal-input">
+            <option value="없음">없음</option>
+            <option value="AIDA 1">AIDA 1</option>
+            <option value="AIDA 2">AIDA 2</option>
+            <option value="AIDA 3">AIDA 3</option>
+            <option value="AIDA 4">AIDA 4</option>
+            <option value="Instructor">Instructor</option>
+            <option value="기타">기타 (직접 입력)</option>
+          </select>
+          <input id="editAidaCustomInput" class="profile-modal-input" type="text" maxlength="30" placeholder="예: PADI Freediver, SSI Level 2 등" style="display:none;margin-top:6px;" autocomplete="off">
+          <p class="profile-field-hint">* 버디 모집 및 참가 신청 시 프로필에 표시됩니다.</p>
+        </div>
+
+        <!-- 자기소개 -->
+        <div class="profile-modal-field">
+          <label for="editBioInput">자기소개</label>
+          <textarea id="editBioInput" class="profile-modal-input profile-modal-textarea" rows="3" maxlength="100" placeholder="다이빙 경험이나 함께하고 싶은 활동을 간단히 소개해 주세요."></textarea>
+          <div class="profile-field-meta">
+            <p class="profile-field-hint">* 버디 참가 신청 시 필수입니다.</p>
+            <span id="editBioCount" class="profile-char-count">0 / 100</span>
+          </div>
         </div>
 
         <p id="profileEditStatus" class="profile-status-msg" aria-live="polite"></p>
@@ -258,10 +330,24 @@
     </div>
   </section>
 
+  <!-- 알림 모달 -->
+  <section id="mypageNotiModal" class="profile-modal" role="dialog" aria-modal="true" aria-labelledby="notiModalTitle" hidden>
+    <div class="profile-modal-backdrop" id="mypageNotiBackdrop"></div>
+    <div class="profile-modal-card" style="max-height:80vh;display:flex;flex-direction:column;">
+      <header class="profile-modal-head" style="margin-bottom:12px;padding-bottom:10px;">
+        <h2 id="notiModalTitle">알림</h2>
+        <button id="closeMypageNotiBtn" class="profile-modal-close" type="button" aria-label="닫기">×</button>
+      </header>
+      <div id="mypageNotiList" style="overflow-y:auto;display:flex;flex-direction:column;gap:8px;padding-right:2px;">
+        <div style="padding:24px 0;text-align:center;color:#64748b;font-size:13px;">불러오는 중...</div>
+      </div>
+    </div>
+  </section>
+
   <script src="./public/js/supabase-client.js"></script>
   <script async src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" onload="window.dispatchEvent(new Event('snorky:supabase-ready'))"></script>
-  <script src="./public/js/auth-session.js?v=20260901_v1"></script>
-  <script src="./public/js/user-profile.js?v=20260901_v1"></script>
+  <script src="./public/js/auth-session.js?v=20260903_v2"></script>
+  <script src="./public/js/user-profile.js?v=20260903_v4"></script>
   <script>
     (function () {
       "use strict";
@@ -286,6 +372,10 @@
         location.href = "./diving-schedule.html";
       });
 
+      document.querySelector('[data-action="my-buddy"]')?.addEventListener("click", function () {
+        location.href = "./my-buddy.html";
+      });
+
       // Elements
       const userNicknameEl = document.getElementById("userNickname");
       const userAvatarImgEl = document.getElementById("userAvatarImg");
@@ -303,8 +393,137 @@
       const resetAvatarBtn = document.getElementById("resetAvatarBtn");
       const avatarFileInput = document.getElementById("avatarFileInput");
       const editNicknameInput = document.getElementById("editNicknameInput");
+      const checkNicknameBtn = document.getElementById("checkNicknameBtn");
+      const nicknameCheckStatus = document.getElementById("nicknameCheckStatus");
+      const editNicknameCount = document.getElementById("editNicknameCount");
+      const editGenderSelect = document.getElementById("editGenderSelect");
+      const editAidaLevelSelect = document.getElementById("editAidaLevelSelect");
+      const editAidaCustomInput = document.getElementById("editAidaCustomInput");
+      const editBioInput = document.getElementById("editBioInput");
+      const editBioCount = document.getElementById("editBioCount");
       const statusMsg = document.getElementById("profileEditStatus");
       const saveBtn = document.getElementById("saveProfileBtn");
+
+      let initialCustomNickname = "";
+      let verifiedNickname = null;
+      let isProfileSaving = false;
+      let isNicknameChecking = false;
+
+      function setNicknameCheckStatus(message, state = "") {
+        if (!nicknameCheckStatus) return;
+        nicknameCheckStatus.textContent = message;
+        nicknameCheckStatus.className = `profile-nickname-check-msg${state ? ` ${state}` : ""}`;
+      }
+
+      function validateNicknameInput() {
+        if (!window.SNORKYUserProfile?.validateNickname) {
+          throw new Error("닉네임 검증 모듈을 불러오지 못했습니다.");
+        }
+        return window.SNORKYUserProfile.validateNickname(editNicknameInput?.value || "");
+      }
+
+      function updateNicknameCount() {
+        if (editNicknameCount) editNicknameCount.textContent = `${editNicknameInput?.value.length || 0} / 8`;
+      }
+
+      function syncProfileSaveState() {
+        if (!saveBtn || !editNicknameInput) return;
+        let currentNickname = "";
+        let isValid = true;
+        try {
+          currentNickname = validateNicknameInput();
+        } catch (_) {
+          isValid = false;
+        }
+        const needsCheck = Boolean(isValid && currentNickname && currentNickname !== initialCustomNickname && verifiedNickname !== currentNickname);
+        saveBtn.disabled = isProfileSaving || !isValid || needsCheck;
+        if (checkNicknameBtn) checkNicknameBtn.disabled = isNicknameChecking || !isValid || !currentNickname;
+      }
+
+      editNicknameInput?.addEventListener("input", () => {
+        verifiedNickname = null;
+        updateNicknameCount();
+        try {
+          const currentNickname = validateNicknameInput();
+          if (currentNickname && currentNickname !== initialCustomNickname) {
+            setNicknameCheckStatus("닉네임 중복검사가 필요합니다.");
+          } else {
+            setNicknameCheckStatus("");
+          }
+        } catch (err) {
+          setNicknameCheckStatus(err.message, "unavailable");
+        }
+        syncProfileSaveState();
+      });
+
+      checkNicknameBtn?.addEventListener("click", async () => {
+        verifiedNickname = null;
+        let nickname = "";
+        try {
+          nickname = validateNicknameInput();
+        } catch (err) {
+          setNicknameCheckStatus(err.message, "unavailable");
+          syncProfileSaveState();
+          return;
+        }
+        if (!nickname) {
+          setNicknameCheckStatus("닉네임을 입력해 주세요.", "unavailable");
+          syncProfileSaveState();
+          return;
+        }
+        if (!window.SNORKYUserProfile?.checkNicknameAvailability) {
+          setNicknameCheckStatus("닉네임 중복검사 모듈을 불러오지 못했습니다.", "unavailable");
+          syncProfileSaveState();
+          return;
+        }
+
+        editNicknameInput.value = nickname;
+        updateNicknameCount();
+        isNicknameChecking = true;
+        syncProfileSaveState();
+        checkNicknameBtn.textContent = "확인 중...";
+        try {
+          const isAvailable = await window.SNORKYUserProfile.checkNicknameAvailability(nickname);
+          if ((editNicknameInput?.value.trim() || "") !== nickname) {
+            verifiedNickname = null;
+            try {
+              const currentNickname = validateNicknameInput();
+              setNicknameCheckStatus(currentNickname ? "닉네임 중복검사가 필요합니다." : "");
+            } catch (err) {
+              setNicknameCheckStatus(err.message, "unavailable");
+            }
+            return;
+          }
+          if (isAvailable) {
+            verifiedNickname = nickname;
+            setNicknameCheckStatus("사용 가능한 닉네임입니다.", "available");
+          } else {
+            setNicknameCheckStatus("이미 사용 중인 닉네임입니다.", "unavailable");
+          }
+        } catch (err) {
+          setNicknameCheckStatus(err.message || "닉네임 중복검사 중 오류가 발생했습니다.", "unavailable");
+        } finally {
+          isNicknameChecking = false;
+          checkNicknameBtn.textContent = "중복검사";
+          syncProfileSaveState();
+        }
+      });
+
+      editBioInput?.addEventListener("input", () => {
+        if (editBioCount) editBioCount.textContent = `${editBioInput.value.length} / 100`;
+      });
+
+      editAidaLevelSelect?.addEventListener("change", () => {
+        if (editAidaCustomInput) {
+          if (editAidaLevelSelect.value === "기타") {
+            editAidaCustomInput.style.display = "block";
+            editAidaCustomInput.focus();
+          } else {
+            editAidaCustomInput.style.display = "none";
+            editAidaCustomInput.value = "";
+          }
+        }
+      });
 
       // Crop Modal Elements
       const cropModal = document.getElementById("avatarCropModal");
@@ -353,7 +572,10 @@
           userAvatarImgEl.src = effective.avatarUrl || DEFAULT_SYMBOL;
         }
         if (userBadgeEl) {
-          userBadgeEl.textContent = effective.isCustomNickname || effective.isCustomAvatar ? "SNORKY 프로필" : "카카오 로그인";
+          const aidaLvl = currentSession.user.aidaLevel;
+          const aidaDisp = (aidaLvl && aidaLvl !== "없음") ? aidaLvl : "레벨 없음";
+          const badgeText = (effective.isCustomNickname || effective.isCustomAvatar ? "SNORKY 프로필" : "카카오 로그인") + (aidaDisp !== "레벨 없음" ? " · " + aidaDisp : "");
+          userBadgeEl.textContent = badgeText;
         }
       }
 
@@ -362,7 +584,31 @@
         if (!currentSession || !currentSession.user) return;
 
         const effective = window.SNORKYAuthSession?.getEffectiveProfile(currentSession);
-        editNicknameInput.value = currentSession.user.customNickname || "";
+        initialCustomNickname = (currentSession.user.customNickname || "").trim();
+        verifiedNickname = null;
+        isProfileSaving = false;
+        isNicknameChecking = false;
+        editNicknameInput.value = initialCustomNickname;
+        updateNicknameCount();
+        setNicknameCheckStatus("");
+        if (editGenderSelect) editGenderSelect.value = currentSession.user.gender || "비공개";
+        if (editBioInput) editBioInput.value = currentSession.user.bio || "";
+        if (editBioCount) editBioCount.textContent = `${editBioInput?.value.length || 0} / 100`;
+
+        const standardLevels = ["없음", "AIDA 1", "AIDA 2", "AIDA 3", "AIDA 4", "Instructor"];
+        const currentLvl = currentSession.user.aidaLevel || "없음";
+        if (editAidaLevelSelect && editAidaCustomInput) {
+          if (standardLevels.includes(currentLvl)) {
+            editAidaLevelSelect.value = currentLvl;
+            editAidaCustomInput.style.display = "none";
+            editAidaCustomInput.value = "";
+          } else {
+            editAidaLevelSelect.value = "기타";
+            editAidaCustomInput.style.display = "block";
+            editAidaCustomInput.value = currentLvl;
+          }
+        }
+
         selectedAvatarFile = null;
         selectedAvatarType = currentSession.user.avatarType || "default";
 
@@ -370,7 +616,7 @@
         avatarFileInput.value = "";
         statusMsg.textContent = "";
         statusMsg.className = "profile-status-msg";
-        saveBtn.disabled = false;
+        syncProfileSaveState();
 
         profileModal.hidden = false;
         setTimeout(() => editNicknameInput.focus(), 100);
@@ -650,23 +896,52 @@
         e.preventDefault();
         statusMsg.textContent = "";
         statusMsg.className = "profile-status-msg";
-        saveBtn.disabled = true;
+
+        let nicknameVal = "";
+        try {
+          nicknameVal = validateNicknameInput();
+        } catch (err) {
+          setNicknameCheckStatus(err.message, "unavailable");
+          syncProfileSaveState();
+          return;
+        }
+        editNicknameInput.value = nicknameVal;
+        updateNicknameCount();
+        if (nicknameVal && nicknameVal !== initialCustomNickname && verifiedNickname !== nicknameVal) {
+          setNicknameCheckStatus("닉네임 중복검사가 필요합니다.");
+          syncProfileSaveState();
+          return;
+        }
+
+        isProfileSaving = true;
+        syncProfileSaveState();
         saveBtn.textContent = "저장 중...";
 
         try {
-          const nicknameVal = editNicknameInput.value.trim();
-          if (nicknameVal.length > 20) {
-            throw new Error("닉네임은 최대 20자까지 가능합니다.");
+          const bioVal = editBioInput ? editBioInput.value.trim() : "";
+          if (bioVal.length > 100) {
+            throw new Error("자기소개는 최대 100자까지 가능합니다.");
           }
 
           if (!window.SNORKYUserProfile?.saveProfile) {
             throw new Error("프로필 저장 모듈을 불러오지 못했습니다.");
           }
 
+          let finalAida = editAidaLevelSelect ? editAidaLevelSelect.value : "없음";
+          if (finalAida === "기타") {
+            finalAida = editAidaCustomInput ? editAidaCustomInput.value.trim() : "";
+            if (!finalAida) {
+              throw new Error("프리다이빙 레벨을 직접 입력해 주세요.");
+            }
+          }
+
           await window.SNORKYUserProfile.saveProfile({
             customNickname: nicknameVal,
             avatarFile: selectedAvatarFile,
             avatarType: selectedAvatarType,
+            aidaLevel: finalAida,
+            gender: editGenderSelect ? editGenderSelect.value : "비공개",
+            bio: bioVal,
           });
 
           renderProfileUI();
@@ -679,9 +954,14 @@
           }, 400);
         } catch (err) {
           console.error("[SNORKY Profile Save Error]", err);
+          if (err.message === "이미 사용 중인 닉네임입니다.") {
+            verifiedNickname = null;
+            setNicknameCheckStatus(err.message, "unavailable");
+          }
           statusMsg.textContent = err.message || "프로필 저장 중 오류가 발생했습니다.";
           statusMsg.className = "profile-status-msg";
-          saveBtn.disabled = false;
+          isProfileSaving = false;
+          syncProfileSaveState();
           saveBtn.textContent = "저장";
         }
       });
@@ -707,6 +987,170 @@
         window.SNORKYUserProfile.fetchRemoteProfile(currentSession.provider || "kakao", currentSession.user.id)
           .then(() => renderProfileUI())
           .catch(() => {});
+      }
+
+      // ── 마이페이지 알림 모달 & 뱃지 ──
+      const notiBtn = document.getElementById("btnMypageNoti");
+      const notiBadge = document.getElementById("mypageNotiBadge");
+      const notiModal = document.getElementById("mypageNotiModal");
+      const closeNotiBtn = document.getElementById("closeMypageNotiBtn");
+      const notiBackdrop = document.getElementById("mypageNotiBackdrop");
+      const notiListEl = document.getElementById("mypageNotiList");
+
+      function formatNotiTime(isoStr) {
+        if (!isoStr) return "";
+        try {
+          const d = new Date(isoStr);
+          const now = new Date();
+          const diffMin = Math.floor((now.getTime() - d.getTime()) / 60000);
+          if (diffMin < 1) return "방금 전";
+          if (diffMin < 60) return `${diffMin}분 전`;
+          const diffHr = Math.floor(diffMin / 60);
+          if (diffHr < 24) return `${diffHr}시간 전`;
+          return `${d.getMonth() + 1}월 ${d.getDate()}일`;
+        } catch (_) { return ""; }
+      }
+
+      async function loadMypageNotifications(retryCount) {
+        retryCount = retryCount || 0;
+        if (!notiBtn) return;
+        if (!currentSession?.user?.id) {
+          if (notiBadge) notiBadge.style.display = "none";
+          if (notiListEl) {
+            notiListEl.innerHTML = '<div style="padding:28px 0;text-align:center;color:#64748b;font-size:13px;">로그인 후 알림을 확인할 수 있습니다.</div>';
+          }
+          return;
+        }
+
+        let sb = null;
+        try { sb = window.getSnorkySupabase ? window.getSnorkySupabase() : window.snorkySupabase; } catch (_) {}
+        if (!sb && window.supabase && window.supabase.createClient) {
+          try {
+            const config = window.SNORKY_SUPABASE_CONFIG || (window.getSnorkySupabaseConfig && window.getSnorkySupabaseConfig());
+            if (config?.url && config?.anonKey) sb = window.supabase.createClient(config.url, config.anonKey);
+          } catch (_) {}
+        }
+
+        if (!sb) {
+          if (retryCount < 5) {
+            await new Promise(r => setTimeout(r, 300));
+            return loadMypageNotifications(retryCount + 1);
+          }
+          if (notiListEl) {
+            notiListEl.innerHTML = '<div style="padding:28px 0;text-align:center;color:#64748b;font-size:13px;">서버 연결 중입니다. 잠시 후 다시 시도해 주세요.</div>';
+          }
+          return;
+        }
+
+        try {
+          const thirtyDaysAgoIso = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
+          const { data: notis, error } = await sb
+            .from("user_notifications")
+            .select("id, type, title, content, buddy_post_id, link_url, is_read, created_at")
+            .eq("user_id", String(currentSession.user.id))
+            .gte("created_at", thirtyDaysAgoIso)
+            .order("created_at", { ascending: false })
+            .limit(50);
+
+          if (error) {
+            console.error("[MypageNotifications] fetch error:", error);
+            if (notiListEl) {
+              notiListEl.innerHTML = '<div style="padding:28px 0;text-align:center;color:#64748b;font-size:13px;">새로운 알림이 없습니다.</div>';
+            }
+            if (notiBadge) notiBadge.style.display = "none";
+            return;
+          }
+
+          const notiArr = notis || [];
+          const unreadCount = notiArr.filter(n => !n.is_read).length;
+          if (notiBadge) {
+            if (unreadCount > 0) {
+              notiBadge.style.display = "inline-block";
+              notiBadge.textContent = unreadCount >= 10 ? "10+" : String(unreadCount);
+            } else {
+              notiBadge.style.display = "none";
+            }
+          }
+
+          if (notiListEl) {
+            if (notiArr.length === 0) {
+              notiListEl.innerHTML = '<div style="padding:28px 0;text-align:center;color:#64748b;font-size:13px;">새로운 알림이 없습니다.</div>';
+            } else {
+              notiListEl.innerHTML = notiArr.map(n => {
+                const isDeleted = (n.type === "buddy_canceled" || (!n.link_url && !n.buddy_post_id));
+                return `
+                <div class="mypage-noti-item ${n.is_read ? 'is-read' : 'is-unread'}" data-noti-id="${n.id}" data-link-url="${n.link_url || ''}" data-post-id="${n.buddy_post_id || ''}" data-noti-type="${n.type || ''}" style="padding:12px;border-radius:12px;background:${n.is_read ? '#f8fafc' : '#f0f9ff'};border:1px solid ${n.is_read ? '#e2e8f0' : '#bae6fd'};cursor:pointer;transition:background .15s;">
+                  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;">
+                    <strong style="font-size:13px;color:${n.is_read ? '#64748b' : '#0284c7'};font-weight:700;">${n.title}</strong>
+                    ${!n.is_read ? '<span style="width:6px;height:6px;border-radius:50%;background:#0284c7;display:inline-block;"></span>' : ''}
+                  </div>
+                  <p style="margin:0 0 6px;font-size:12.5px;line-height:1.45;color:${n.is_read ? '#475467' : '#1e293b'};word-break:keep-all;">${n.content}</p>
+                  <div style="display:flex;align-items:center;justify-content:space-between;font-size:11px;color:#94a3b8;">
+                    <span>${formatNotiTime(n.created_at)}</span>
+                    <span style="color:${isDeleted ? '#94a3b8' : (n.is_read ? '#64748b' : '#0284c7')};font-weight:600;">${isDeleted ? '(삭제된 공고)' : '내역 보기 ›'}</span>
+                  </div>
+                </div>
+              `;
+              }).join("");
+
+              notiListEl.querySelectorAll(".mypage-noti-item").forEach(item => {
+                item.addEventListener("click", async () => {
+                  const notiId = Number(item.getAttribute("data-noti-id"));
+                  const linkUrl = item.getAttribute("data-link-url");
+                  const postId = Number(item.getAttribute("data-post-id"));
+                  const notiType = item.getAttribute("data-noti-type");
+
+                  if (sb && notiId) {
+                    try {
+                      await sb.from("user_notifications").update({ is_read: true, read_at: new Date().toISOString() }).eq("id", notiId);
+                    } catch (_) {}
+                  }
+
+                  if (notiModal) notiModal.hidden = true;
+                  loadMypageNotifications();
+
+                  if (notiType === "buddy_canceled" || (!linkUrl && !postId)) {
+                    alert("삭제된 버디 모임 공고입니다.");
+                    return;
+                  }
+
+                  if (linkUrl) {
+                    location.href = linkUrl;
+                  } else if (postId) {
+                    location.href = `./buddy.html?post_id=${postId}`;
+                  }
+                });
+              });
+            }
+          }
+        } catch (err) {
+          console.error("[MypageNotifications] catch:", err);
+          if (notiListEl) {
+            notiListEl.innerHTML = '<div style="padding:28px 0;text-align:center;color:#64748b;font-size:13px;">새로운 알림이 없습니다.</div>';
+          }
+        }
+      }
+
+      function openNotiModal() {
+        if (!notiModal) return;
+        notiModal.hidden = false;
+        loadMypageNotifications();
+      }
+
+      function closeNotiModal() {
+        if (!notiModal) return;
+        notiModal.hidden = true;
+      }
+
+      notiBtn?.addEventListener("click", openNotiModal);
+      closeNotiBtn?.addEventListener("click", closeNotiModal);
+      notiBackdrop?.addEventListener("click", closeNotiModal);
+
+      if (window.supabase) {
+        loadMypageNotifications();
+      } else {
+        window.addEventListener("snorky:supabase-ready", loadMypageNotifications, { once: true });
+        setTimeout(() => { if (window.supabase) loadMypageNotifications(); }, 800);
       }
     })();
   </script>

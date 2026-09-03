@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>버디 모집 등록 - SNORKY</title>
+  <link rel="icon" href="./public/images/snorky-symbol.png" type="image/png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Pretendard:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="./public/css/buddy.css?v=20260903_v12">
+  <link rel="stylesheet" href="./public/css/bottom-nav.css?v=20260903_v1">
+  <script src="./public/js/bottom-nav.js?v=20260903_v1"></script>
+</head>
+<body>
+  <div class="buddy-app">
+    <!-- 상단 헤더 -->
+    <header class="buddy-header">
+      <button type="button" id="btnBack" class="buddy-back" aria-label="뒤로가기" onclick="if (window.history.length > 1 && document.referrer) { history.back(); } else { location.href = './buddy.html'; }">‹</button>
+      <h1 class="buddy-header-title">버디 모집 등록</h1>
+      <div style="width:38px"></div>
+    </header>
+
+    <!-- 비로그인 안내 배너 (미로그인 시 표시) -->
+    <div id="loginPrompt" class="buddy-content" style="display:none">
+      <div class="buddy-login-prompt">
+        <svg class="buddy-login-icon" viewBox="0 0 24 24" width="44" height="44" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+        <h3>로그인이 필요합니다</h3>
+        <p>버디를 모집하고 신청 알림을 받으려면<br>먼저 카카오로 로그인해 주세요.</p>
+        <a id="loginBtn" class="buddy-login-btn" href="./login.html?redirect=buddy-create.html">카카오 로그인</a>
+      </div>
+    </div>
+
+    <!-- 등록 폼 메인 콘텐츠 -->
+    <main id="createFormWrap" class="buddy-content">
+      <!-- 안내 배너 -->
+      <div class="buddy-notice-card">
+        <span class="buddy-notice-icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+        </span>
+        <span class="buddy-notice-text">안전한 다이빙을 위해 참가자의 레벨과 안전 수칙을 확인하고, 전화번호나 카카오톡 ID 등 개인 연락처는 직접 기재하지 마세요.</span>
+      </div>
+
+      <!-- 섹션 1: 활동 및 난이도 -->
+      <section class="buddy-section">
+        <h2 class="buddy-section-title">활동 구분 및 난이도</h2>
+        
+        <!-- 1. 활동 구분 -->
+        <div class="buddy-field">
+          <label class="buddy-label">활동 구분<span class="required">*</span></label>
+          <div class="buddy-chip-group" id="activityTypeGroup">
+            <button type="button" class="buddy-chip-btn active" data-val="스노쿨링">스노쿨링</button>
+            <button type="button" class="buddy-chip-btn" data-val="프리다이빙">프리다이빙</button>
+            <button type="button" class="buddy-chip-btn" data-val="실내다이빙">실내다이빙</button>
+          </div>
+          <input type="hidden" id="activityTypeInput" value="스노쿨링">
+        </div>
+
+        <!-- 9. 난이도 -->
+        <div class="buddy-field" style="margin-top:14px">
+          <label class="buddy-label">난이도<span class="required">*</span></label>
+          <div class="buddy-chip-group" id="difficultyGroup">
+            <button type="button" class="buddy-chip-btn active" data-val="무관">무관</button>
+            <button type="button" class="buddy-chip-btn" data-val="초급">초급</button>
+            <button type="button" class="buddy-chip-btn" data-val="중급">중급</button>
+            <button type="button" class="buddy-chip-btn" data-val="상급">상급</button>
+          </div>
+          <input type="hidden" id="difficultyInput" value="무관">
+        </div>
+      </section>
+
+      <!-- 섹션 2: 일시 및 장소 -->
+      <section class="buddy-section">
+        <h2 class="buddy-section-title">일시 및 장소</h2>
+
+        <!-- 4. 날짜 & 5. 입수 시간 -->
+        <div class="buddy-row-2">
+          <div class="buddy-field">
+            <label class="buddy-label" for="eventDateInput">날짜<span class="required">*</span></label>
+            <input id="eventDateInput" class="buddy-input" type="date" required>
+          </div>
+          <div class="buddy-field">
+            <label class="buddy-label" for="entryTimeInput">입수 시간<span class="required">*</span></label>
+            <input id="entryTimeInput" class="buddy-input" type="time" value="10:00" required>
+          </div>
+        </div>
+
+        <!-- 2. 지역 -->
+        <div class="buddy-field" style="margin-top:14px">
+          <label class="buddy-label" for="regionSelect">지역<span class="required">*</span></label>
+          <select id="regionSelect" class="buddy-select" required>
+            <option value="">지역을 선택해 주세요</option>
+          </select>
+        </div>
+
+        <!-- 3. 포인트명 -->
+        <div class="buddy-field" style="margin-top:14px">
+          <label class="buddy-label">포인트명<span class="required">*</span></label>
+          <div class="buddy-point-tabs">
+            <button type="button" id="tabSnorkyPoint" class="buddy-point-tab active">스노키 포인트 선택</button>
+            <button type="button" id="tabCustomPoint" class="buddy-point-tab">직접 입력</button>
+          </div>
+
+          <!-- 스노키 포인트 선택 영역 -->
+          <div id="snorkyPointArea">
+            <select id="snorkyPointSelect" class="buddy-select">
+              <option value="">지역을 먼저 선택해 주세요</option>
+            </select>
+            <span class="buddy-helper">선택한 지역에 등록된 스노키 공식 포인트를 불러옵니다.</span>
+          </div>
+
+          <!-- 직접 입력 영역 -->
+          <div id="customPointArea" style="display:none">
+            <input id="customPointInput" class="buddy-input" type="text" placeholder="예: K-26 잠수풀, 삼척 갈남항 등" maxlength="50">
+            <span class="buddy-helper">실내 다이빙 풀장 또는 지도에 없는 스팟 이름을 직접 입력하세요.</span>
+          </div>
+        </div>
+      </section>
+
+      <!-- 섹션 3: 모집 인원 및 성별 -->
+      <section class="buddy-section">
+        <h2 class="buddy-section-title">모집 조건</h2>
+
+        <!-- 8. 모집 인원 -->
+        <div class="buddy-field">
+          <label class="buddy-label">모집 총 인원 (본인 포함)<span class="required">*</span></label>
+          <div class="buddy-stepper-box">
+            <button type="button" id="capacityMinusBtn" class="buddy-stepper-btn" aria-label="인원 감소">－</button>
+            <input id="capacityInput" class="buddy-stepper-input" type="number" min="2" max="20" value="2" readonly>
+            <button type="button" id="capacityPlusBtn" class="buddy-stepper-btn" aria-label="인원 증가">＋</button>
+            <span id="capacityBadge" class="buddy-capacity-badge">현재 1 / 2명</span>
+          </div>
+          <span class="buddy-helper">최소 2명 이상부터 모집 가능합니다. (주최자 포함)</span>
+        </div>
+
+        <!-- 7. 모집 대상 성별 -->
+        <div class="buddy-field" style="margin-top:14px">
+          <label class="buddy-label">모집 대상 성별<span class="required">*</span></label>
+          <div class="buddy-chip-group" id="preferredGenderGroup">
+            <button type="button" class="buddy-chip-btn active" data-val="성별 무관">성별 무관</button>
+            <button type="button" class="buddy-chip-btn" data-val="남성">남성만</button>
+            <button type="button" class="buddy-chip-btn" data-val="여성">여성만</button>
+          </div>
+          <input type="hidden" id="preferredGenderInput" value="성별 무관">
+        </div>
+
+        <!-- 6. 주최자 성별 표시 -->
+        <div class="buddy-field" style="margin-top:14px">
+          <label class="buddy-label">주최자 성별 표시<span class="required">*</span></label>
+          <div class="buddy-chip-group" id="hostGenderGroup">
+            <button type="button" class="buddy-chip-btn active" data-val="남성">남성</button>
+            <button type="button" class="buddy-chip-btn" data-val="여성">여성</button>
+            <button type="button" class="buddy-chip-btn" data-val="비공개">비공개</button>
+          </div>
+          <input type="hidden" id="hostGenderInput" value="남성">
+        </div>
+
+        <!-- 주최자 프리다이빙 레벨 -->
+        <div class="buddy-field" style="margin-top:14px">
+          <label class="buddy-label">프리다이빙 레벨</label>
+          <select id="hostAidaLevelSelect" class="buddy-select">
+            <option value="없음">없음</option>
+            <option value="AIDA 1">AIDA 1</option>
+            <option value="AIDA 2">AIDA 2</option>
+            <option value="AIDA 3">AIDA 3</option>
+            <option value="AIDA 4">AIDA 4</option>
+            <option value="Instructor">Instructor</option>
+            <option value="기타">기타 (직접 입력)</option>
+          </select>
+          <input id="hostAidaCustomInput" class="buddy-input" type="text" maxlength="30" placeholder="예: PADI Freediver, SSI Level 2 등" style="display:none;margin-top:6px;">
+          <span class="buddy-helper">프로필에 등록된 레벨이 자동 선택됩니다. (수정 가능)</span>
+        </div>
+      </section>
+
+      <!-- 섹션 4: 내용 및 알림 -->
+      <section class="buddy-section">
+        <h2 class="buddy-section-title">상세 내용 및 알림</h2>
+
+        <!-- 10. 간단한 모집 내용 -->
+        <div class="buddy-field">
+          <label class="buddy-label" for="descInput">모집 내용</label>
+          <textarea id="descInput" class="buddy-textarea" placeholder="준비물, 레벨, 카풀 여부, 수심 등 필요한 안내를 작성해 주세요. (연락처 직접 노출 금지)" maxlength="500"></textarea>
+        </div>
+
+        <!-- 11. 참가 신청 시 알림 받기 -->
+        <div class="buddy-switch-row" style="margin-top:14px">
+          <div class="buddy-switch-info">
+            <span class="buddy-switch-title">참가 신청 시 알림 받기</span>
+            <span class="buddy-switch-desc">새로운 버디가 참가를 신청하면 알림을 받습니다.</span>
+          </div>
+          <label class="buddy-switch">
+            <input type="checkbox" id="notificationToggle" checked>
+            <span class="buddy-switch-slider"></span>
+          </label>
+        </div>
+
+        <!-- 12. 내 다이빙 캘린더에 추가 -->
+        <div class="buddy-switch-row" style="margin-top:14px">
+          <div class="buddy-switch-info">
+            <span class="buddy-switch-title">내 다이빙 캘린더에 추가</span>
+            <span class="buddy-switch-desc">등록한 일정을 내 다이빙 캘린더에도 저장합니다.</span>
+          </div>
+          <label class="buddy-switch">
+            <input type="checkbox" id="addToCalendarToggle" checked>
+            <span class="buddy-switch-slider"></span>
+          </label>
+        </div>
+      </section>
+
+      <!-- 섹션 5: 참가자 연락 방법 -->
+      <section class="buddy-section">
+        <h2 class="buddy-section-title">참가자 연락 방법</h2>
+
+        <div class="buddy-field">
+          <label class="buddy-label">연락 수단 선택<span class="required">*</span></label>
+          <div class="buddy-chip-group" id="contactMethodGroup">
+            <button type="button" class="buddy-chip-btn active" data-val="open_chat">카카오 오픈채팅</button>
+            <button type="button" class="buddy-chip-btn" data-val="later">추후 설정</button>
+          </div>
+          <input type="hidden" id="contactMethodInput" value="open_chat">
+        </div>
+
+        <!-- 오픈채팅 링크 입력란 (카카오 오픈채팅 선택 시) -->
+        <div id="openChatArea" class="buddy-field" style="margin-top:10px">
+          <label class="buddy-label" for="openChatUrlInput">오픈채팅방 링크<span class="required">*</span></label>
+          <input id="openChatUrlInput" class="buddy-input" type="url" placeholder="https://open.kakao.com/..." maxlength="200">
+          <span class="buddy-helper">승인된 참가자에게만 대화방 링크가 안내되며, 공개 목록에는 노출되지 않습니다.</span>
+        </div>
+
+        <!-- 추후 설정 안내 (추후 설정 선택 시) -->
+        <div id="laterNoticeArea" class="buddy-notice-card" style="display:none;margin-top:10px">
+          <span class="buddy-notice-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+          </span>
+          <span class="buddy-notice-text">링크 없이 등록할 수 있습니다. 참가자 승인 전까지 오픈채팅방 링크를 설정해 주세요.</span>
+        </div>
+      </section>
+
+      <!-- 폼 하단 등록 버튼 (고정 해제, 폼 바로 아래 자연스러운 배치) -->
+      <div class="buddy-submit-wrap">
+        <button type="button" id="submitBtn" class="buddy-submit-btn">
+          <span>버디 모집 등록하기</span>
+        </button>
+      </div>
+    </main>
+
+    <!-- 등록 전 동의 확인 모달 -->
+    <div id="confirmModal" class="buddy-modal-overlay" style="display:none" role="dialog" aria-modal="true" aria-labelledby="confirmModalTitle">
+      <div class="buddy-modal-card">
+        <header class="buddy-modal-head">
+          <h3 id="confirmModalTitle" class="buddy-modal-title">버디 모집 등록 전 확인</h3>
+          <button type="button" id="btnCloseConfirmModal" class="buddy-modal-close" aria-label="닫기">
+            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+          </button>
+        </header>
+
+        <div class="buddy-modal-body">
+          <ul class="buddy-modal-list">
+            <li>다이빙/스노클링 활동의 안전 책임은 참가자와 주최자 본인에게 있습니다.</li>
+            <li>참가 전 서로의 경험 수준, 건강 상태, 장비 및 현장 상황을 반드시 확인해야 합니다.</li>
+            <li>SNORKY는 버디 매칭과 일정 공유를 위한 정보 제공 서비스이며, 실제 활동 중 발생하는 사고·분쟁 등에 대한 책임을 부담하지 않습니다.</li>
+            <li>전화번호, 카카오톡 ID 등 개인정보를 모집글에 직접 작성하지 마세요.</li>
+            <li>오픈채팅방 링크는 승인된 참가자와의 연락을 위해서만 사용되며 공개 모집글에는 노출되지 않습니다.</li>
+          </ul>
+
+          <div class="buddy-agree-row">
+            <label class="buddy-agree-label">
+              <input type="checkbox" id="agreeSafetyCheck">
+              <span>위 내용을 확인했고 동의합니다.</span>
+            </label>
+          </div>
+        </div>
+
+        <footer class="buddy-modal-foot">
+          <button type="button" id="btnCancelConfirm" class="buddy-btn-cancel">취소</button>
+          <button type="button" id="btnSubmitFinal" class="buddy-btn-confirm" disabled>동의하고 등록</button>
+        </footer>
+      </div>
+    </div>
+
+    <!-- 토스트 메시지 -->
+    <div id="toast" class="buddy-toast" role="alert" aria-live="assertive"></div>
+  </div>
+
+  <script src="./public/js/supabase-client.js"></script>
+  <script src="./public/js/auth-session.js"></script>
+  <script src="./public/js/buddy-regions.js?v=20260903_v1"></script>
+  <script src="./public/js/buddy-create.js?v=20260903_v8"></script>
+  <script async src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" onload="window.dispatchEvent(new Event('snorky:supabase-ready'))"></script>
+</body>
+</html>

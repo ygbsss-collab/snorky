@@ -47,6 +47,7 @@
   let monthlySchedules = new Map(); // dateStr -> Array<Schedule>
   let editingScheduleId = null;
   let selectedPointType = "official"; // 'official' | 'custom'
+  let buddyPostOwnerMap = new Map(); // buddy_post_id -> owner_user_id
 
   let officialPoints = [];
   let customSpots = [];
@@ -275,11 +276,43 @@
         monthlySchedules.get(dStr).push(row);
       });
 
+      // 버디 일정 소유자(주최자) 정보 로드
+      const buddyPostIds = Array.from(new Set(
+        (data || [])
+          .map(row => row.buddy_post_id)
+          .filter(Boolean)
+          .map(Number)
+      ));
+
+      buddyPostOwnerMap.clear();
+      if (buddyPostIds.length > 0) {
+        try {
+          const { data: posts } = await sb
+            .from("buddy_posts")
+            .select("id, user_id")
+            .in("id", buddyPostIds);
+          (posts || []).forEach(p => {
+            buddyPostOwnerMap.set(Number(p.id), String(p.user_id));
+          });
+        } catch (_) {}
+      }
+
       renderCalendar();
       renderSelectedDaySchedules();
     } catch (err) {
       console.error("[SNORKY Diving Schedule Load Exception]", err);
     }
+  }
+
+  // 버디 일정 구분 헬퍼 ('host' | 'guest' | null)
+  function getBuddyScheduleRole(item) {
+    if (!item?.buddy_post_id) return null;
+    const postOwnerId = buddyPostOwnerMap.get(Number(item.buddy_post_id));
+    if (postOwnerId) {
+      return postOwnerId === userId ? "host" : "guest";
+    }
+    if (item.memo && item.memo.includes("[버디 참가")) return "guest";
+    return "host";
   }
 
   // Render Calendar Grid
@@ -320,8 +353,19 @@
       if (schedules.length > 0) {
         badgesHtml = '<div class="calendar-badges">';
         schedules.slice(0, 2).forEach(item => {
-          const typeClass = item.point_type === "custom" ? "custom" : "";
-          badgesHtml += `<span class="calendar-badge-item ${typeClass}" title="${escapeHtml(item.point_name)}">${escapeHtml(item.point_name)}</span>`;
+          const buddyRole = getBuddyScheduleRole(item);
+          let typeClass = item.point_type === "custom" ? "custom" : "";
+          let labelText = item.point_name;
+
+          if (buddyRole === "host") {
+            typeClass = "buddy-host";
+            labelText = `버디 모집 | ${item.point_name}`;
+          } else if (buddyRole === "guest") {
+            typeClass = "buddy-guest";
+            labelText = `버디 참가 | ${item.point_name}`;
+          }
+
+          badgesHtml += `<span class="calendar-badge-item ${typeClass}" title="${escapeHtml(labelText)}">${escapeHtml(labelText)}</span>`;
         });
         if (schedules.length > 2) {
           badgesHtml += `<span class="calendar-badge-more">+${schedules.length - 2}</span>`;
@@ -394,11 +438,20 @@
     schedules.forEach(item => {
       const isCustom = item.point_type === "custom";
       const typeTag = isCustom ? '<span class="schedule-type-tag custom">나만의 스팟</span>' : '<span class="schedule-type-tag">SNORKY 포인트</span>';
+      
+      const buddyRole = getBuddyScheduleRole(item);
+      let buddyTag = "";
+      if (buddyRole === "host") {
+        buddyTag = '<span class="schedule-type-tag buddy-host">버디 모집</span>';
+      } else if (buddyRole === "guest") {
+        buddyTag = '<span class="schedule-type-tag buddy-guest">버디 참가</span>';
+      }
 
       listHtml += `
         <article class="schedule-card" data-id="${item.id}">
           <div class="schedule-card-top">
             <div class="schedule-point-info">
+              ${buddyTag}
               ${typeTag}
               <strong class="schedule-point-name">${escapeHtml(item.point_name)}</strong>
             </div>

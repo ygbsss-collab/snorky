@@ -1,0 +1,1453 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>나의 버디찾기 내역 - SNORKY</title>
+  <link rel="icon" href="./public/images/snorky-symbol.png" type="image/png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Pretendard:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="./public/css/buddy.css?v=20260903_v17">
+  <link rel="stylesheet" href="./public/css/bottom-nav.css?v=20260903_v1">
+  <script src="./public/js/bottom-nav.js?v=20260903_v1"></script>
+  <style>
+    *,*::before,*::after{box-sizing:border-box}
+    html,body{margin:0;padding:0;width:100%;min-height:100%;font-family:'Pretendard',-apple-system,BlinkMacSystemFont,system-ui,sans-serif;background:#f6f8fa;color:#102a3a;-webkit-font-smoothing:antialiased}
+    body{display:flex;flex-direction:column;align-items:center;padding:0 0 calc(40px + env(safe-area-inset-bottom,0px))}
+    .mybuddy-app{width:100%;max-width:520px;min-height:100vh;display:flex;flex-direction:column;background:#fff;box-shadow:0 0 30px rgba(10,35,48,.04)}
+
+    /* 헤더 */
+    .mybuddy-header{position:sticky;top:0;z-index:50;display:flex;align-items:center;justify-content:space-between;height:56px;padding:calc(env(safe-area-inset-top,0px) + 8px) 16px 8px;background:rgba(255,255,255,.94);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);border-bottom:1px solid #edf2f5}
+    .mybuddy-back{display:grid;place-items:center;width:40px;height:40px;border:1px solid #e2eaed;border-radius:50%;background:#f8fafb;color:#183048;font-size:24px;font-weight:900;text-decoration:none;line-height:1;transition:background .15s}
+    .mybuddy-back:hover{background:#edf3f6}
+    .mybuddy-header h1{margin:0;font-size:17px;font-weight:800;letter-spacing:-.02em;color:#0e2032}
+    .mybuddy-header-spacer{width:40px}
+
+    /* 탭 */
+    .mybuddy-tabs{display:flex;border-bottom:2px solid #edf2f5;background:#fff;position:sticky;top:56px;z-index:40}
+    .mybuddy-tab{flex:1;padding:13px 8px;border:0;background:transparent;font-family:inherit;font-size:14px;font-weight:700;color:#7a8fa0;cursor:pointer;border-bottom:2.5px solid transparent;margin-bottom:-2px;transition:color .15s,border-color .15s}
+    .mybuddy-tab.active{color:#087ca7;border-bottom-color:#087ca7}
+
+    /* 콘텐츠 */
+    .mybuddy-content{flex:1;padding:10px 14px 80px;display:flex;flex-direction:column;gap:8px}
+
+    /* 상세 모달 상태/배지 */
+    .mybuddy-card-status{font-size:11px;font-weight:700;padding:2px 7px;border-radius:99px;background:#e0f2fe;color:#0369a1;margin-left:auto}
+    .mybuddy-card-status.closed{background:#f1f5f9;color:#64748b}
+
+    .mybuddy-badge{display:inline-flex;align-items:center;padding:2px 8px;border-radius:99px;font-size:11px;font-weight:700}
+    .mybuddy-badge-snorkeling{background:#e0f2fe;color:#0369a1}
+    .mybuddy-badge-freediving{background:#fae8ff;color:#9333ea}
+    .mybuddy-badge-indoor{background:#dcfce7;color:#16a34a}
+
+    .mybuddy-app-status{font-size:11.5px;font-weight:700;padding:2px 8px;border-radius:99px}
+    .mybuddy-app-status.pending{background:#fef9c3;color:#a16207}
+    .mybuddy-app-status.approved{background:#dcfce7;color:#16a34a}
+    .mybuddy-app-status.rejected{background:#fee2e2;color:#dc2626}
+    .mybuddy-app-status.canceled{background:#f1f5f9;color:#64748b}
+
+    /* 빈 상태 */
+    .mybuddy-empty{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:48px 20px;gap:10px;color:#7a8fa0;text-align:center}
+    .mybuddy-empty svg{opacity:.35}
+    .mybuddy-empty strong{font-size:15px;font-weight:700;color:#4a6070}
+    .mybuddy-empty small{font-size:13px}
+
+    /* 토스트 */
+    .mybuddy-toast{position:fixed;bottom:calc(20px + var(--snorky-bottom-nav-offset,0px));left:50%;transform:translateX(-50%);background:rgba(16,42,58,.92);color:#fff;font-size:13.5px;font-weight:600;padding:10px 18px;border-radius:12px;pointer-events:none;opacity:0;transition:opacity .25s;white-space:nowrap;z-index:9999;max-width:calc(100vw - 40px);text-align:center}
+    .mybuddy-toast.show{opacity:1}
+
+    /* 모달 */
+    .mybuddy-modal-overlay{position:fixed;inset:0 0 var(--snorky-bottom-nav-offset,0px);z-index:1200;display:flex;align-items:flex-end;justify-content:center;background:rgba(10,35,48,.42);backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px)}
+    .mybuddy-modal-card{width:100%;max-width:520px;max-height:90vh;overflow-y:auto;background:#fff;border-radius:24px 24px 0 0;padding:0 0 calc(20px + env(safe-area-inset-bottom,0px));animation:slideUp .25s cubic-bezier(0.16,1,0.3,1)}
+    @keyframes slideUp{from{transform:translateY(60px);opacity:0}to{transform:translateY(0);opacity:1}}
+    .mybuddy-modal-head{position:sticky;top:0;z-index:10;display:flex;align-items:center;justify-content:space-between;padding:13px 16px 11px;background:#fff;border-bottom:1px solid #edf2f5}
+    .mybuddy-modal-title{margin:0;font-size:15px;font-weight:800;color:#0e2032;letter-spacing:-.02em}
+    .mybuddy-modal-close{width:30px;height:30px;border:0;border-radius:8px;background:#f0f4f6;color:#55707d;font-size:16px;cursor:pointer;display:grid;place-items:center;flex-shrink:0}
+    .mybuddy-modal-close:hover{background:#e4ebef}
+    .mybuddy-modal-body{padding:12px 14px}
+    .mybuddy-detail-badges{display:flex;align-items:center;gap:6px;margin-bottom:6px;flex-wrap:wrap}
+    .mybuddy-detail-heading{font-size:16px;font-weight:800;color:#0e2032;margin:0 0 10px;letter-spacing:-.02em;line-height:1.35;word-break:keep-all}
+    .mybuddy-info-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px 10px;background:#f8fafc;border:1px solid #eef2f7;border-radius:12px;padding:10px 12px;margin-bottom:10px}
+    .mybuddy-info-item{display:flex;flex-direction:column;gap:2px}
+    .mybuddy-info-label{font-size:10.5px;color:#94a3b8;font-weight:600;letter-spacing:.01em}
+    .mybuddy-info-val{font-size:12.5px;font-weight:700;color:#1a3548;line-height:1.35}
+    .mybuddy-desc-section{margin-bottom:10px}
+    .mybuddy-desc-box{background:#f8fafc;border:1px solid #eef2f7;border-radius:10px;padding:9px 11px;font-size:12.5px;color:#344e5f;line-height:1.55;min-height:40px;max-height:110px;overflow-y:auto;white-space:pre-wrap;word-break:keep-all}
+
+    /* 신청자 리스트 */
+    .mybuddy-applicants-section{border-top:1px solid #edf2f5;padding-top:12px;margin-bottom:10px}
+    .mybuddy-applicants-title{font-size:12.5px;font-weight:800;color:#344e5f;margin:0 0 8px;letter-spacing:.02em;text-transform:uppercase}
+    .mybuddy-applicant-item{display:flex;align-items:center;justify-content:space-between;padding:8px 10px;border:1px solid #e9f0f4;border-radius:10px;margin-bottom:5px;gap:8px;flex-wrap:wrap;background:#fff}
+    .mybuddy-applicant-name{font-size:12.5px;font-weight:700;color:#1a3548;flex:1}
+    .mybuddy-applicant-time{font-size:10.5px;color:#7a8fa0}
+    .mybuddy-applicant-status{font-size:10.5px;font-weight:700;padding:2px 7px;border-radius:99px}
+    .mybuddy-applicant-status.pending{background:#fef9c3;color:#a16207}
+    .mybuddy-applicant-status.approved{background:#dcfce7;color:#16a34a}
+    .mybuddy-applicant-status.rejected{background:#fee2e2;color:#dc2626}
+    .mybuddy-applicant-actions{display:flex;gap:5px}
+    .mybuddy-applicant-btn{height:26px;padding:0 9px;border-radius:6px;font-size:11px;font-weight:700;cursor:pointer;border:1px solid;font-family:inherit;transition:all .12s;white-space:nowrap}
+    .mybuddy-applicant-btn.approve{border-color:#16a34a;background:#dcfce7;color:#16a34a}
+    .mybuddy-applicant-btn.approve:hover{background:#16a34a;color:#fff}
+    .mybuddy-applicant-btn.reject{border-color:#d1d5db;background:#f9fafb;color:#64748b}
+    .mybuddy-applicant-btn.reject:hover{background:#fee2e2;color:#dc2626;border-color:#fca5a5}
+
+    /* 액션 버튼 */
+    .mybuddy-modal-actions{display:flex;flex-direction:column;gap:7px;padding:0 14px;margin-top:2px}
+    .mybuddy-action-btn{width:100%;height:40px;border-radius:10px;font-size:13px;font-weight:700;cursor:pointer;border:1px solid;font-family:inherit;transition:all .15s;display:flex;align-items:center;justify-content:center;gap:6px;letter-spacing:-.01em}
+    .mybuddy-action-btn.primary{background:#1570ef;border-color:#1570ef;color:#fff}
+    .mybuddy-action-btn.primary:hover{opacity:.92}
+    .mybuddy-action-btn.secondary{background:#f0f8fb;border-color:#cce0e8;color:#087ca7}
+    .mybuddy-action-btn.secondary:hover{background:#dbeafe;border-color:#87bdd0}
+    .mybuddy-action-btn.danger{background:#fff0f0;border-color:#fca5a5;color:#dc2626}
+    .mybuddy-action-btn.danger:hover{background:#fee2e2}
+    .mybuddy-action-btn.muted{background:#f1f5f9;border-color:#e2e8f0;color:#64748b}
+    .mybuddy-action-btn:disabled{opacity:.5;cursor:not-allowed}
+
+    /* 확인 모달 */
+    .mybuddy-overlay-center{position:fixed;inset:0 0 var(--snorky-bottom-nav-offset,0px);z-index:1300;display:flex;align-items:center;justify-content:center;background:rgba(10,35,48,.5);backdrop-filter:blur(4px);padding:20px}
+    .mybuddy-confirm-card{width:100%;max-width:340px;background:#fff;border-radius:20px;padding:24px 20px;box-shadow:0 12px 40px rgba(10,35,48,.2)}
+    .mybuddy-confirm-title{font-size:16px;font-weight:800;color:#0e2032;margin:0 0 10px}
+    .mybuddy-confirm-title.danger{color:#dc2626}
+    .mybuddy-confirm-body{font-size:13.5px;color:#4a6070;line-height:1.6;margin:0 0 20px}
+    .mybuddy-confirm-actions{display:flex;gap:8px}
+    .mybuddy-confirm-btn{flex:1;height:44px;border-radius:12px;font-size:14px;font-weight:700;cursor:pointer;border:1px solid;font-family:inherit;transition:all .15s}
+    .mybuddy-confirm-btn.cancel{background:#f1f5f9;border-color:#e2e8f0;color:#475467}
+    .mybuddy-confirm-btn.cancel:hover{background:#e2e8f0}
+    .mybuddy-confirm-btn.block{background:#dc2626;border-color:#dc2626;color:#fff}
+    .mybuddy-confirm-btn.block:hover{background:#b91c1c}
+  </style>
+</head>
+<body>
+  <div class="mybuddy-app">
+    <header class="mybuddy-header">
+      <a href="./mypage.html" class="mybuddy-back" aria-label="마이페이지로 돌아가기">&#8249;</a>
+      <h1>나의 버디찾기 내역</h1>
+      <button type="button" id="btnBuddyNoti" class="buddy-noti-btn" aria-label="알림" style="position:relative;background:transparent;border:0;cursor:pointer;padding:6px;display:grid;place-items:center;color:#0e2032;">
+        <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path><path d="M13.73 21a2 2 0 0 1-3.46 0"></path></svg>
+        <span id="buddyNotiBadge" class="buddy-noti-badge" style="display:none;position:absolute;top:2px;right:2px;min-width:16px;height:16px;padding:0 4px;border-radius:8px;background:#ef4444;color:#fff;font-size:10px;font-weight:800;line-height:16px;text-align:center;"></span>
+      </button>
+    </header>
+
+    <div class="mybuddy-tabs" role="tablist">
+      <button class="mybuddy-tab active" id="tabMyPosts" role="tab" aria-selected="true">내가 등록한 공고</button>
+      <button class="mybuddy-tab" id="tabMyApps" role="tab" aria-selected="false">내가 신청한 공고</button>
+    </div>
+
+    <main class="mybuddy-content" id="mybuddyContent" aria-live="polite">
+      <div class="mybuddy-empty">
+        <svg viewBox="0 0 24 24" width="48" height="48" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+        <strong>불러오는 중...</strong>
+      </div>
+    </main>
+  </div>
+
+  <!-- 호스트 공고 상세/관리 모달 -->
+  <div id="hostDetailModal" class="mybuddy-modal-overlay" style="display:none" role="dialog" aria-modal="true" aria-labelledby="hostModalTitle">
+    <div class="mybuddy-modal-card">
+      <div class="mybuddy-modal-head">
+        <h2 id="hostModalTitle" class="mybuddy-modal-title">내 공고 관리</h2>
+        <button type="button" id="btnCloseHostModal" class="mybuddy-modal-close" aria-label="닫기">
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+      </div>
+      <div class="mybuddy-modal-body">
+        <div class="mybuddy-detail-badges">
+          <span id="hdetailActivity" class="mybuddy-badge"></span>
+          <span id="hdetailStatus" class="mybuddy-card-status"></span>
+        </div>
+        <h3 id="hdetailPointName" class="mybuddy-detail-heading"></h3>
+        <div class="mybuddy-info-grid">
+          <div class="mybuddy-info-item"><span class="mybuddy-info-label">지역</span><strong id="hdetailRegion" class="mybuddy-info-val">-</strong></div>
+          <div class="mybuddy-info-item"><span class="mybuddy-info-label">일시</span><strong id="hdetailDateTime" class="mybuddy-info-val">-</strong></div>
+          <div class="mybuddy-info-item"><span class="mybuddy-info-label">모집 인원</span><strong id="hdetailCapacity" class="mybuddy-info-val">-</strong><div id="hdetailConfirmedProfiles" class="buddy-confirmed-participants" aria-label="참가 확정 프로필"></div></div>
+          <div class="mybuddy-info-item"><span class="mybuddy-info-label">난이도</span><strong id="hdetailDifficulty" class="mybuddy-info-val">-</strong></div>
+          <div class="mybuddy-info-item"><span class="mybuddy-info-label">모집 대상 성별</span><strong id="hdetailPreferredGender" class="mybuddy-info-val">-</strong></div>
+          <div class="mybuddy-info-item buddy-detail-host-item"><span class="mybuddy-info-label">주최자</span><div id="hdetailHostInfo" class="mybuddy-info-val buddy-detail-host-row">-</div></div>
+        </div>
+        <div class="mybuddy-desc-section">
+          <span class="mybuddy-info-label">모집 내용</span>
+          <div id="hdetailDesc" class="mybuddy-desc-box" style="margin-top:6px"></div>
+        </div>
+        <div class="mybuddy-applicants-section">
+          <p class="mybuddy-applicants-title">참가 신청자</p>
+          <div id="hdetailApplicants"></div>
+        </div>
+      </div>
+      <div class="mybuddy-modal-actions">
+        <button type="button" id="hbtnEdit" class="mybuddy-action-btn secondary">공고 수정</button>
+        <button type="button" id="hbtnChat" class="mybuddy-action-btn secondary">오픈채팅 설정</button>
+        <button type="button" id="hbtnClosePost" class="mybuddy-action-btn muted">모집 마감</button>
+        <button type="button" id="hbtnDelete" class="mybuddy-action-btn danger">공고 삭제</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 신청자 공고 상세 모달 -->
+  <div id="applicantDetailModal" class="mybuddy-modal-overlay" style="display:none" role="dialog" aria-modal="true" aria-labelledby="appModalTitle">
+    <div class="mybuddy-modal-card">
+      <div class="mybuddy-modal-head">
+        <h2 id="appModalTitle" class="mybuddy-modal-title">신청한 공고</h2>
+        <button type="button" id="btnCloseAppModal" class="mybuddy-modal-close" aria-label="닫기">
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+      </div>
+      <div class="mybuddy-modal-body">
+        <div class="mybuddy-detail-badges">
+          <span id="adetailActivity" class="mybuddy-badge"></span>
+          <span id="adetailStatus" class="mybuddy-card-status"></span>
+          <span id="adetailMyStatus" class="mybuddy-app-status"></span>
+        </div>
+        <h3 id="adetailPointName" class="mybuddy-detail-heading"></h3>
+        <div class="mybuddy-info-grid">
+          <div class="mybuddy-info-item"><span class="mybuddy-info-label">지역</span><strong id="adetailRegion" class="mybuddy-info-val">-</strong></div>
+          <div class="mybuddy-info-item"><span class="mybuddy-info-label">일시</span><strong id="adetailDateTime" class="mybuddy-info-val">-</strong></div>
+          <div class="mybuddy-info-item"><span class="mybuddy-info-label">모집 인원</span><strong id="adetailCapacity" class="mybuddy-info-val">-</strong><div id="adetailConfirmedProfiles" class="buddy-confirmed-participants" aria-label="참가 확정 프로필"></div></div>
+          <div class="mybuddy-info-item"><span class="mybuddy-info-label">난이도</span><strong id="adetailDifficulty" class="mybuddy-info-val">-</strong></div>
+          <div class="mybuddy-info-item"><span class="mybuddy-info-label">모집 대상 성별</span><strong id="adetailPreferredGender" class="mybuddy-info-val">-</strong></div>
+          <div class="mybuddy-info-item buddy-detail-host-item"><span class="mybuddy-info-label">주최자</span><div id="adetailHostInfo" class="mybuddy-info-val buddy-detail-host-row">-</div></div>
+        </div>
+        <div class="mybuddy-desc-section">
+          <span class="mybuddy-info-label">모집 내용</span>
+          <div id="adetailDesc" class="mybuddy-desc-box" style="margin-top:6px"></div>
+        </div>
+      </div>
+      <div class="mybuddy-modal-actions">
+        <button type="button" id="abtnChat" class="mybuddy-action-btn buddy-chat-btn" style="display:none"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex-shrink:0"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg> 버디 대화방 참여</button>
+        <button type="button" id="abtnCancel" class="mybuddy-action-btn muted">신청 취소</button>
+        <button type="button" id="abtnBlock" class="mybuddy-action-btn danger">모임장 차단</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 차단 확인 모달 -->
+  <div id="blockConfirmModal" class="mybuddy-overlay-center" style="display:none">
+    <div class="mybuddy-confirm-card">
+      <p class="mybuddy-confirm-title danger">이 모임장을 차단할까요?</p>
+      <p class="mybuddy-confirm-body">차단하면 앞으로 이 사용자가 등록한 버디 공고가 목록과 검색 결과에 표시되지 않습니다.</p>
+      <div class="mybuddy-confirm-actions">
+        <button type="button" id="btnBlockCancel" class="mybuddy-confirm-btn cancel">취소</button>
+        <button type="button" id="btnBlockConfirm" class="mybuddy-confirm-btn block">차단</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 삭제 확인 모달 -->
+  <div id="deleteConfirmModal" class="mybuddy-overlay-center" style="display:none">
+    <div class="mybuddy-confirm-card">
+      <p class="mybuddy-confirm-title danger">공고를 삭제하시겠습니까?</p>
+      <p id="deleteConfirmBody" class="mybuddy-confirm-body">삭제된 공고는 복구할 수 없습니다.</p>
+      <div class="mybuddy-confirm-actions">
+        <button type="button" id="btnDeleteCancel" class="mybuddy-confirm-btn cancel">취소</button>
+        <button type="button" id="btnDeleteConfirm" class="mybuddy-confirm-btn block">삭제</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 알림 모달 -->
+  <div id="buddyNotiModal" class="buddy-modal-overlay" style="display:none" role="dialog" aria-modal="true" aria-labelledby="notiModalHeading">
+    <div class="buddy-modal-card buddy-noti-modal-card" style="max-height:80vh;display:flex;flex-direction:column;">
+      <header class="buddy-modal-head">
+        <h3 id="notiModalHeading" class="buddy-modal-title">알림</h3>
+        <button type="button" id="btnCloseNotiModal" class="buddy-modal-close" aria-label="닫기">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+        </button>
+      </header>
+      <div id="buddyNotiList" class="buddy-noti-list" style="overflow-y:auto;padding:12px 14px;display:flex;flex-direction:column;gap:8px;">
+        <div style="padding:24px 0;text-align:center;color:#64748b;font-size:13px;">불러오는 중...</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 카카오 오픈채팅 안내 모달 -->
+  <div id="mybuddyOpenChatModal" class="buddy-modal-overlay" style="display:none;z-index:1500" role="dialog" aria-modal="true" aria-labelledby="myOpenChatHeading">
+    <div class="buddy-modal-card" style="max-width:400px;">
+      <header class="buddy-modal-head">
+        <h3 id="myOpenChatHeading" class="buddy-modal-title">카카오톡 오픈채팅방으로 이동합니다</h3>
+        <button type="button" id="myBtnCloseOpenChat" class="buddy-modal-close" aria-label="닫기">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+        </button>
+      </header>
+      <div class="buddy-modal-body" style="gap:8px;">
+        <p style="margin:0;font-size:13px;line-height:1.65;color:#334155;word-break:keep-all;">이 대화방은 SNORKY가 운영하는 채팅방이 아니라 모임장이 직접 만든 <strong>카카오톡 오픈채팅방</strong>입니다.</p>
+        <p style="margin:0;font-size:13px;line-height:1.65;color:#334155;word-break:keep-all;">채팅방 내 대화, 약속, 금전거래, 개인정보 공유 및 모임 참여 과정에서 발생하는 사항은 이용자 간 책임으로 진행됩니다.</p>
+        <p style="margin:0;font-size:12.5px;line-height:1.6;color:#64748b;word-break:keep-all;">SNORKY는 버디 연결을 위한 정보만 제공하며, 실제 모임의 운영·안전·분쟁에 직접 관여하지 않습니다.</p>
+      </div>
+      <footer class="buddy-modal-foot">
+        <button type="button" id="myBtnCancelOpenChat" class="buddy-btn-cancel">취소</button>
+        <button type="button" id="myBtnConfirmOpenChat" class="buddy-btn-confirm">확인하고 참여</button>
+      </footer>
+    </div>
+  </div>
+
+  <div id="mybuddyToast" class="mybuddy-toast" role="alert" aria-live="assertive"></div>
+
+  <script src="./public/js/supabase-client.js"></script>
+  <script async src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" onload="window.dispatchEvent(new Event('snorky:supabase-ready'))"></script>
+  <script src="./public/js/auth-session.js?v=20260903_v1"></script>
+  <script src="./public/js/buddy-profile-card.js?v=20260903_v3"></script>
+  <script src="./public/js/buddy-card.js?v=20260903_v5"></script>
+  <script>
+  (function () {
+    "use strict";
+
+    const session = window.SNORKYAuthSession && window.SNORKYAuthSession.get ? window.SNORKYAuthSession.get() : null;
+    if (!session || !session.user) {
+      location.replace("./login.html?redirect=my-buddy.html");
+      return;
+    }
+    const currentUserId = String(session.user.id);
+
+    let _sb = null;
+    function getSb() {
+      if (_sb) return _sb;
+      if (window.getSnorkySupabase) {
+        try { _sb = window.getSnorkySupabase(); } catch (_) {}
+      }
+      if (!_sb && window.snorkySupabase) {
+        _sb = window.snorkySupabase;
+      }
+      if (!_sb && window.supabase && window.supabase.createClient) {
+        try {
+          const config = window.SNORKY_SUPABASE_CONFIG || (window.getSnorkySupabaseConfig && window.getSnorkySupabaseConfig());
+          if (config && config.url && config.anonKey) {
+            _sb = window.supabase.createClient(config.url, config.anonKey);
+          }
+        } catch (_) {}
+      }
+      return _sb;
+    }
+
+    const toastEl = document.getElementById("mybuddyToast");
+    let toastTimer = null;
+    function showToast(msg) {
+      if (!toastEl) return;
+      toastEl.textContent = msg;
+      toastEl.classList.add("show");
+      clearTimeout(toastTimer);
+      toastTimer = setTimeout(function () { toastEl.classList.remove("show"); }, 3000);
+    }
+
+    function escapeHtml(str) {
+      if (!str) return "";
+      return String(str).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");
+    }
+
+    const dayNames = ["일","월","화","수","목","금","토"];
+    function formatDate(dateStr) {
+      if (!dateStr) return "-";
+      try {
+        var parts = dateStr.split("-");
+        var d = new Date(Number(parts[0]), Number(parts[1]) - 1, Number(parts[2]));
+        var mm = String(Number(parts[1])).padStart(2, "0");
+        var dd = String(Number(parts[2])).padStart(2, "0");
+        return mm + "." + dd + " (" + dayNames[d.getDay()] + ")";
+      } catch (_) { return dateStr; }
+    }
+
+    function getBadgeClass(actType) {
+      if (actType === "프리다이빙") return "mybuddy-badge-freediving";
+      if (actType === "실내다이빙") return "mybuddy-badge-indoor";
+      return "mybuddy-badge-snorkeling";
+    }
+
+    // 프로필 캐시
+    var profileCache = {};
+    async function fetchProfiles(ids) {
+      var missing = ids.filter(function (id) { return !(id in profileCache); });
+      if (missing.length > 0 && getSb()) {
+        try {
+          var res = await getSb().from("user_profiles").select("provider_user_id, custom_nickname, custom_avatar_url, avatar_type, aida_level, gender, bio").in("provider_user_id", missing);
+          (res.data || []).forEach(function (p) {
+            profileCache[p.provider_user_id] = {
+              nickname: p.custom_nickname || null,
+              avatarUrl: (p.avatar_type === "custom" && p.custom_avatar_url) ? p.custom_avatar_url : null,
+              aidaLevel: p.aida_level || "없음",
+              gender: p.gender || "비공개",
+              bio: p.bio || ""
+            };
+          });
+          missing.forEach(function (id) {
+            if (!(id in profileCache)) profileCache[id] = { nickname: null, avatarUrl: null, aidaLevel: "없음", gender: "비공개", bio: "" };
+          });
+        } catch (_) {}
+      }
+    }
+    function getDisplayName(userId, fallbackName) {
+      var id = String(userId || "");
+      if (id in profileCache && profileCache[id] && profileCache[id].nickname) return profileCache[id].nickname;
+      return fallbackName || (id ? "버디_" + id.slice(-4) : "다이버");
+    }
+    function getDisplayAvatar(userId) {
+      var id = String(userId || "");
+      if (id in profileCache && profileCache[id] && profileCache[id].avatarUrl) return profileCache[id].avatarUrl;
+      return "./public/images/snorky-symbol.png";
+    }
+    function getDisplayAidaLevel(userId) {
+      var id = String(userId || "");
+      if (id in profileCache && profileCache[id] && profileCache[id].aidaLevel) return profileCache[id].aidaLevel;
+      return "없음";
+    }
+
+    function getProfileCardInfo(userId, fallback) {
+      var id = String(userId || "");
+      var profile = profileCache[id] || null;
+      var fallbackInfo = fallback || {};
+      var isCurrentUser = id && id === currentUserId;
+      var avatarUrl = profile && profile.avatarUrl ? profile.avatarUrl : "";
+      if (!avatarUrl && isCurrentUser && session.user.avatarType !== "none") {
+        avatarUrl = session.user.customAvatarUrl || session.user.profileImageUrl || "";
+      }
+      return {
+        displayName: getDisplayName(userId, fallbackInfo.displayName),
+        avatarUrl: avatarUrl || fallbackInfo.avatarUrl || "",
+        gender: (profile && profile.gender) || (isCurrentUser ? session.user.gender : null) || fallbackInfo.gender || "비공개",
+        aidaLevel: (profile && profile.aidaLevel) || (isCurrentUser ? session.user.aidaLevel : null) || fallbackInfo.aidaLevel || "없음",
+        bio: (profile && profile.bio) || (isCurrentUser ? session.user.bio : null) || fallbackInfo.bio || ""
+      };
+    }
+
+    function renderHostProfileRow(element, post) {
+      if (!element || !post) return null;
+      var author = resolveCardAuthor(post);
+      var aidaDisplay = author.aidaLevel && author.aidaLevel !== "없음" ? author.aidaLevel : "레벨 없음";
+      element.innerHTML = window.SNORKYBuddyProfileCard.renderTrigger({
+        userId: post.user_id,
+        profile: author,
+        className: "buddy-detail-host-avatar",
+        resolved: true
+      }) +
+        '<span class="buddy-detail-host-meta">' +
+          '<span class="buddy-detail-host-name">' + escapeHtml(author.displayName) + '</span>' +
+          '<span class="buddy-detail-host-divider">·</span>' +
+          '<span class="buddy-detail-host-gender">' + escapeHtml(author.gender || "비공개") + '</span>' +
+          '<span class="buddy-detail-host-divider">·</span>' +
+          '<span class="buddy-detail-host-aida">' + escapeHtml(aidaDisplay) + '</span>' +
+        '</span>';
+      return author;
+    }
+
+    function resolveCardAuthor(post) {
+      var id = String(post.user_id || "");
+      var profile = profileCache[id] || null;
+      var isCurrentUser = id && id === currentUserId;
+      var displayName = (profile && profile.nickname) ||
+        (isCurrentUser ? (session.user.customNickname || session.user.nickname) : null) ||
+        (id ? "버디_" + id.slice(-4) : "다이버");
+      var avatarUrl = profile && profile.avatarUrl ? profile.avatarUrl : null;
+      if (!avatarUrl && isCurrentUser && session.user.avatarType !== "none") {
+        avatarUrl = session.user.customAvatarUrl || session.user.profileImageUrl || null;
+      }
+      var aidaLevel = (profile && profile.aidaLevel) ||
+        (isCurrentUser ? session.user.aidaLevel : null) ||
+        post.host_aida_level ||
+        "없음";
+
+      return {
+        displayName: displayName,
+        avatarUrl: avatarUrl,
+        gender: (profile && profile.gender) || post.host_gender || "비공개",
+        aidaLevel: aidaLevel,
+        bio: (profile && profile.bio) || (isCurrentUser ? session.user.bio : null) || ""
+      };
+    }
+
+    // 탭
+    var urlParams = new URLSearchParams(window.location.search);
+    var requestedTab = urlParams.get("tab");
+    var activeTab = (requestedTab === "myApps") ? "myApps" : "myPosts";
+    var myPostsData = [];
+    var myAppsData = [];
+
+    var tabMyPosts = document.getElementById("tabMyPosts");
+    var tabMyApps = document.getElementById("tabMyApps");
+    var contentEl = document.getElementById("mybuddyContent");
+
+    function updateTabUI() {
+      tabMyPosts.classList.toggle("active", activeTab === "myPosts");
+      tabMyApps.classList.toggle("active", activeTab === "myApps");
+      tabMyPosts.setAttribute("aria-selected", activeTab === "myPosts" ? "true" : "false");
+      tabMyApps.setAttribute("aria-selected", activeTab === "myApps" ? "true" : "false");
+    }
+
+    tabMyPosts.addEventListener("click", async function () {
+      if (activeTab === "myPosts") return;
+      activeTab = "myPosts";
+      updateTabUI();
+      contentEl.innerHTML = '<div class="mybuddy-empty"><strong>불러오는 중...</strong></div>';
+      await loadMyPosts();
+      renderMyPosts();
+    });
+
+    tabMyApps.addEventListener("click", async function () {
+      if (activeTab === "myApps") return;
+      activeTab = "myApps";
+      updateTabUI();
+      contentEl.innerHTML = '<div class="mybuddy-empty"><strong>불러오는 중...</strong></div>';
+      await loadMyApps();
+      renderMyApps();
+    });
+
+    // ── 내가 등록한 공고 ──
+    async function loadMyPosts(retryCount) {
+      retryCount = retryCount || 0;
+      var sb = getSb();
+      if (!sb) {
+        if (retryCount < 6) {
+          await new Promise(function (r) { setTimeout(r, 250); });
+          return loadMyPosts(retryCount + 1);
+        }
+        console.error("[my-buddy] Supabase client unavailable.");
+        contentEl.innerHTML = '<div class="mybuddy-empty"><strong>서버 연결 중입니다. 잠시 후 새로고침해 주세요.</strong></div>';
+        myPostsData = [];
+        return;
+      }
+      try {
+        var res = await sb.from("buddy_posts")
+          .select("id, user_id, activity_type, region, point_id, point_name, is_snorky_point, event_date, entry_time, capacity, current_count, difficulty, status, host_gender, host_aida_level, preferred_gender, description, open_chat_url, contact_method, created_at")
+          .eq("user_id", currentUserId)
+          .order("id", { ascending: false });
+        if (res.error) {
+          console.error("[my-buddy] loadMyPosts error:", res.error);
+          contentEl.innerHTML = '<div class="mybuddy-empty"><strong>공고 조회 오류: ' + escapeHtml(res.error.message || '') + '</strong></div>';
+          myPostsData = [];
+          return;
+        }
+        myPostsData = res.data || [];
+      } catch (err) {
+        console.error("[my-buddy] loadMyPosts catch:", err);
+        myPostsData = [];
+      }
+    }
+
+    function renderMyPosts() {
+      if (!myPostsData.length) {
+        contentEl.innerHTML = '<div class="mybuddy-empty"><svg viewBox="0 0 24 24" width="48" height="48" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg><strong>등록한 버디 공고가 없습니다.</strong><small>버디찾기에서 공고를 등록해보세요.</small></div>';
+        return;
+      }
+      var html = myPostsData.map(function (post) {
+        return window.SNORKYBuddyCard.render({
+          post: post,
+          author: resolveCardAuthor(post),
+          formattedDate: formatDate(post.event_date),
+          attributes: {
+            "data-id": post.id,
+            role: "button",
+            tabindex: "0"
+          }
+        });
+      }).join("");
+      contentEl.innerHTML = html;
+
+      contentEl.querySelectorAll(".buddy-post-card").forEach(function (card) {
+        var id = Number(card.getAttribute("data-id"));
+        card.addEventListener("click", function () { openHostModal(id); });
+        card.addEventListener("keydown", function (e) {
+          if (e.target.closest("[data-buddy-profile-user-id]")) return;
+          if (e.key === "Enter") openHostModal(id);
+        });
+      });
+    }
+
+    // ── 호스트 상세 모달 ──
+    var hostModal = document.getElementById("hostDetailModal");
+    var currentHostPost = null;
+    document.getElementById("btnCloseHostModal").addEventListener("click", function () { hostModal.style.display = "none"; });
+    hostModal.addEventListener("click", function (e) { if (e.target === hostModal) hostModal.style.display = "none"; });
+
+    // 인원 계산 통일 함수: 주최자 1명 + buddy_applications의 APPROVED 레코드 수를 기준으로 buddy_posts 동기화
+    async function syncPostParticipantCount(postId) {
+      var sb = getSb();
+      if (!sb || !postId) return null;
+      try {
+        var postRes = await sb.from("buddy_posts").select("id, capacity, status").eq("id", postId).single();
+        if (postRes.error || !postRes.data) return null;
+        var post = postRes.data;
+
+        var appRes = await sb.from("buddy_applications").select("id").eq("buddy_post_id", postId).eq("status", "APPROVED");
+        var approvedCount = (appRes.data || []).length;
+        var totalCount = 1 + approvedCount; // 주최자 본인 1명 + 승인된 참가자 수
+
+        var capacity = Number(post.capacity) || 2;
+        var isFull = totalCount >= capacity;
+        var newStatus = isFull ? "CLOSED" : "RECRUITING";
+
+        await sb.from("buddy_posts").update({
+          current_count: totalCount,
+          status: newStatus
+        }).eq("id", postId);
+
+        return { totalCount: totalCount, approvedCount: approvedCount, status: newStatus, capacity: capacity, isFull: isFull };
+      } catch (e) {
+        console.error("[my-buddy] syncPostParticipantCount error:", e);
+        return null;
+      }
+    }
+
+    function updateHostDetailPostUI(post) {
+      if (!post) return;
+      var isClosed = post.status === "CLOSED";
+      var statusBadge = document.getElementById("hdetailStatus");
+      if (statusBadge) {
+        statusBadge.className = "mybuddy-card-status" + (isClosed ? " closed" : "");
+        statusBadge.textContent = isClosed ? "마감" : "모집중";
+      }
+      var capEl = document.getElementById("hdetailCapacity");
+      if (capEl) {
+        capEl.textContent = (post.current_count || 1) + " / " + (post.capacity || 2) + "명";
+      }
+      var hbtnClosePost = document.getElementById("hbtnClosePost");
+      if (hbtnClosePost) {
+        hbtnClosePost.textContent = isClosed ? "마감 완료" : "모집 마감";
+        hbtnClosePost.disabled = isClosed;
+      }
+    }
+
+    async function openHostModal(postId) {
+      var post = myPostsData.find(function (p) { return Number(p.id) === postId; });
+      if (!post) return;
+      currentHostPost = post;
+
+      // 모달 진입 시 실제 승인자 수 기반으로 인원/상태 즉시 보정 (주최자 1 + 승인자 수)
+      var syncRes = await syncPostParticipantCount(post.id);
+      if (syncRes) {
+        post.current_count = syncRes.totalCount;
+        post.status = syncRes.status;
+      }
+
+      var isClosed = post.status === "CLOSED";
+      var badgeClass = getBadgeClass(post.activity_type);
+      var statusBadge = document.getElementById("hdetailStatus");
+
+      document.getElementById("hdetailActivity").className = "mybuddy-badge " + badgeClass;
+      document.getElementById("hdetailActivity").textContent = post.activity_type;
+      statusBadge.className = "mybuddy-card-status" + (isClosed ? " closed" : "");
+      statusBadge.textContent = isClosed ? "마감" : "모집중";
+      document.getElementById("hdetailPointName").textContent = post.point_name;
+      document.getElementById("hdetailRegion").textContent = post.region;
+      document.getElementById("hdetailDateTime").textContent = formatDate(post.event_date) + " · " + (post.entry_time || "시간미정");
+      document.getElementById("hdetailCapacity").textContent = (post.current_count || 1) + " / " + (post.capacity || 2) + "명";
+      document.getElementById("hdetailDifficulty").textContent = post.difficulty || "무관";
+      document.getElementById("hdetailPreferredGender").textContent = post.preferred_gender || "성별 무관";
+      var hostAuthor = renderHostProfileRow(document.getElementById("hdetailHostInfo"), post);
+      window.SNORKYBuddyProfileCard.renderConfirmedParticipants(document.getElementById("hdetailConfirmedProfiles"), post, hostAuthor);
+      document.getElementById("hdetailDesc").textContent = post.description || "작성된 모집 내용이 없습니다.";
+
+      var hbtnClosePost = document.getElementById("hbtnClosePost");
+      hbtnClosePost.textContent = isClosed ? "마감 완료" : "모집 마감";
+      hbtnClosePost.disabled = isClosed;
+
+      // 공고 수정
+      document.getElementById("hbtnEdit").onclick = function () {
+        location.href = "./buddy-create.html?editId=" + post.id;
+      };
+
+      // 오픈채팅 설정
+      document.getElementById("hbtnChat").onclick = async function () {
+        var sb = getSb();
+        if (!sb) return;
+        try {
+          var fetchRes = await sb.from("buddy_posts").select("open_chat_url").eq("id", post.id).single();
+          var currentUrl = (fetchRes.data && fetchRes.data.open_chat_url) ? fetchRes.data.open_chat_url : "";
+          var promptMsg = currentUrl ? ("현재 링크: " + currentUrl + "\n\n수정할 링크를 입력하거나 취소를 누르세요:") : "카카오 오픈채팅방 링크를 입력해 주세요.\n(예: https://open.kakao.com/...)";
+          var newUrl = prompt(promptMsg, currentUrl);
+          if (newUrl !== null) {
+            var trimmed = newUrl.trim();
+            if (trimmed && !trimmed.includes("open.kakao.com")) { showToast("올바른 카카오 오픈채팅 링크 형식이 아닙니다."); return; }
+            var upd = await sb.from("buddy_posts").update({ open_chat_url: trimmed || null, contact_method: trimmed ? "open_chat" : "later" }).eq("id", post.id);
+            if (!upd.error) { post.open_chat_url = trimmed || null; showToast(trimmed ? "오픈채팅방 링크가 저장되었습니다." : "링크가 삭제되었습니다."); }
+            else showToast("저장 중 오류가 발생했습니다.");
+          }
+        } catch (_) { showToast("정보를 불러오지 못했습니다."); }
+      };
+
+      // 모집 마감
+      hbtnClosePost.onclick = async function () {
+        if (!confirm("버디 모집을 마감하시겠습니까? 마감 후 새로운 참가 신청을 받지 않습니다.")) return;
+        var sb = getSb();
+        if (!sb) return;
+        var res = await sb.from("buddy_posts").update({ status: "CLOSED" }).eq("id", post.id);
+        if (!res.error) { post.status = "CLOSED"; showToast("모집이 마감되었습니다."); hostModal.style.display = "none"; renderMyPosts(); }
+        else showToast("마감 처리 중 오류가 발생했습니다.");
+      };
+
+      // 공고 삭제
+      document.getElementById("hbtnDelete").onclick = async function () {
+        var sb = getSb();
+        var hasApplicants = false;
+        if (sb) {
+          try {
+            var cntRes = await sb.from("buddy_applications").select("id", { count: "exact" }).eq("buddy_post_id", post.id).neq("status", "CANCELED");
+            hasApplicants = (cntRes.count || 0) > 0;
+          } catch (_) {}
+        }
+        document.getElementById("deleteConfirmBody").textContent = hasApplicants
+          ? "이 공고에 참가 신청자가 있습니다. 삭제하면 신청자 데이터도 함께 삭제되며 복구할 수 없습니다."
+          : "삭제된 공고는 복구할 수 없습니다.";
+        var deleteModal = document.getElementById("deleteConfirmModal");
+        deleteModal.style.display = "flex";
+
+        document.getElementById("btnDeleteCancel").onclick = function () { deleteModal.style.display = "none"; };
+        document.getElementById("btnDeleteConfirm").onclick = async function () {
+          deleteModal.style.display = "none";
+
+          // 승인된 참가자 전원에게 공고 삭제/취소 알림 발송 (삭제 전 발송)
+          if (sb) {
+            try {
+              var approvedRes = await sb.from("buddy_applications")
+                .select("applicant_user_id")
+                .eq("buddy_post_id", Number(post.id))
+                .eq("status", "APPROVED");
+              if (approvedRes.error) {
+                console.error("[my-buddy] Error fetching approved applicants on delete:", approvedRes.error);
+              }
+              var approvedApps = approvedRes.data || [];
+              if (approvedApps.length > 0) {
+                // TEST 모드: 같은 user_id라도 승인된 신청 레코드가 있으면 알림 생성.
+                // 운영 시에는 uid !== String(currentUserId) 조건으로 자기 자신 제외 가능.
+                var recipientIds = Array.from(new Set(
+                  approvedApps
+                    .map(function(a) { return a.applicant_user_id ? String(a.applicant_user_id) : null; })
+                    .filter(function(uid) { return !!uid; }) // TEST: 자기 자신 제외 조건 해제
+                ));
+
+                if (recipientIds.length > 0) {
+                  var pName = post.point_name || "버디";
+                  var timeSummary = formatDate(post.event_date) + (post.entry_time ? " " + post.entry_time : "");
+                  var summaryText = "[" + pName + " · " + timeSummary + "]";
+                  var notiRows = recipientIds.map(function(uid) {
+                    return {
+                      user_id: uid,
+                      type: "buddy_canceled",
+                      title: "참가 중인 버디 모임이 취소되었습니다.",
+                      content: summaryText + " 모임장이 공고를 삭제하여 모임이 취소되었습니다.",
+                      buddy_post_id: null, // cascade 삭제 방지를 위해 null 처리
+                      point_name: pName,
+                      link_url: null, // 상세 이동 차단
+                      is_read: false
+                    };
+                  });
+                  var insRes = await sb.from("user_notifications").insert(notiRows);
+                  if (insRes.error) {
+                    console.error("[my-buddy] Error inserting delete notification:", insRes.error);
+                  } else {
+                    console.log("[my-buddy] buddy_canceled 알림 INSERT 성공:", recipientIds);
+                  }
+                }
+              }
+            } catch (notiErr) {
+              console.error("[my-buddy] Delete notification catch:", notiErr);
+            }
+          }
+
+          var delRes = await sb.from("buddy_posts").delete().eq("id", post.id);
+          if (!delRes.error) { showToast("공고가 삭제되었습니다."); hostModal.style.display = "none"; await loadMyPosts(); renderMyPosts(); }
+          else showToast("삭제 중 오류가 발생했습니다.");
+        };
+      };
+
+      // 신청자 목록
+      var appListEl = document.getElementById("hdetailApplicants");
+      appListEl.innerHTML = '<div style="font-size:13px;color:#7a8fa0;padding:8px 0">불러오는 중...</div>';
+      hostModal.style.display = "flex";
+      await loadAndRenderApplicants(postId, appListEl);
+    }
+
+    async function loadAndRenderApplicants(postId, containerEl) {
+      var sb = getSb();
+      if (!sb) { containerEl.innerHTML = '<div style="font-size:13px;color:#7a8fa0">연결 없음</div>'; return; }
+      try {
+        var res = await sb.from("buddy_applications").select("id, applicant_user_id, status, introduction, applicant_gender, applicant_aida_level, created_at").eq("buddy_post_id", postId).order("created_at", { ascending: true });
+        var apps = res.data || [];
+        if (res.error || !apps.length) { containerEl.innerHTML = '<div style="font-size:13px;color:#7a8fa0;padding:8px 0">신청자가 없습니다.</div>'; return; }
+
+        var applicantIds = apps.map(function (a) { return a.applicant_user_id; });
+        await fetchProfiles(applicantIds);
+
+        var statusLabel = { PENDING: "대기중", APPROVED: "승인", REJECTED: "거절", CANCELED: "취소" };
+        containerEl.innerHTML = apps.map(function (app) {
+          var name = getDisplayName(app.applicant_user_id, null);
+          var avatarSrc = getDisplayAvatar(app.applicant_user_id);
+          var aidaRaw = app.applicant_aida_level || getDisplayAidaLevel(app.applicant_user_id);
+          var aidaDisp = (aidaRaw && aidaRaw !== "없음") ? aidaRaw : "레벨 없음";
+          var gender = app.applicant_gender && app.applicant_gender !== "비공개" ? app.applicant_gender : null;
+          var metaText = [gender, aidaDisp].filter(Boolean).join(" · ");
+          var profileInfo = getProfileCardInfo(app.applicant_user_id, {
+            displayName: name,
+            avatarUrl: avatarSrc === "./public/images/snorky-symbol.png" ? "" : avatarSrc,
+            gender: app.applicant_gender || "비공개",
+            aidaLevel: aidaRaw,
+            bio: app.introduction || ""
+          });
+          var avatarTrigger = window.SNORKYBuddyProfileCard.renderTrigger({
+            userId: app.applicant_user_id,
+            profile: profileInfo,
+            className: "buddy-applicant-profile-avatar",
+            resolved: true
+          });
+          var label = statusLabel[app.status] || app.status;
+          var cls = (app.status || "").toLowerCase();
+          var createdStr = app.created_at ? new Date(app.created_at).toLocaleDateString("ko-KR", { month: "2-digit", day: "2-digit" }) : "";
+          var actBtns = "";
+          if (app.status === "PENDING") {
+            actBtns = '<div class="mybuddy-applicant-actions" style="margin-top:8px;display:flex;gap:6px;"><button class="mybuddy-applicant-btn approve" data-app-id="' + app.id + '" style="flex:1;">승인</button><button class="mybuddy-applicant-btn reject" data-app-id="' + app.id + '" style="flex:1;">거절</button></div>';
+          } else if (app.status === "APPROVED") {
+            actBtns = '<div class="mybuddy-applicant-actions" style="margin-top:8px;display:flex;gap:6px;"><button class="mybuddy-applicant-btn cancel-approve" data-app-id="' + app.id + '" style="flex:1;background:#fee2e2;color:#dc2626;border-color:#fca5a5;">승인 취소</button></div>';
+          }
+          var introHtml = app.introduction
+            ? '<div style="margin-top:7px;padding:8px 10px;background:#ffffff;border:1px solid #e2e8f0;border-radius:8px;font-size:12.5px;color:#334155;line-height:1.45;word-break:keep-all;">' + escapeHtml(app.introduction) + '</div>'
+            : '';
+
+          return '<div class="mybuddy-applicant-item" style="padding:10px 12px;border-radius:12px;background:#f8fafc;border:1px solid #e2e8f0;margin-bottom:8px;">' +
+            '<div style="display:flex;align-items:center;justify-content:space-between;gap:8px;">' +
+            '<div style="display:flex;align-items:center;gap:10px;">' +
+            avatarTrigger +
+            '<div>' +
+            '<div class="mybuddy-applicant-name" style="font-weight:700;font-size:13.5px;color:#1e293b;">' + escapeHtml(name) + '</div>' +
+            '<div class="mybuddy-applicant-time" style="font-size:11.5px;color:#64748b;margin-top:1px;">' + escapeHtml(metaText) + ' · ' + createdStr + '</div>' +
+            '</div>' +
+            '</div>' +
+            '<span class="mybuddy-applicant-status ' + cls + '">' + label + '</span>' +
+            '</div>' +
+            introHtml +
+            actBtns +
+            '</div>';
+        }).join("");
+
+        containerEl.querySelectorAll(".mybuddy-applicant-btn.approve").forEach(function (btn) {
+          btn.addEventListener("click", async function (e) {
+            e.stopPropagation();
+            var appId = btn.getAttribute("data-app-id");
+            var targetApp = null;
+            for (var i = 0; i < apps.length; i++) {
+              if (String(apps[i].id) === String(appId)) { targetApp = apps[i]; break; }
+            }
+            btn.disabled = true;
+            var sb = getSb();
+            var res = await sb.from("buddy_applications").update({ status: "APPROVED" }).eq("id", appId);
+            if (!res.error) {
+              if (currentHostPost) {
+                var syncRes = await syncPostParticipantCount(currentHostPost.id);
+                if (syncRes) {
+                  currentHostPost.current_count = syncRes.totalCount;
+                  currentHostPost.status = syncRes.status;
+                  updateHostDetailPostUI(currentHostPost);
+                }
+              }
+
+              // 신청자에게 참가 승인 알림 생성
+              // TEST: 동일 user_id로 테스트 중인 경우에도 알림 INSERT 허용 (운영 시 분기 가능)
+              if (targetApp && targetApp.applicant_user_id) {
+                try {
+                  var pName = currentHostPost ? currentHostPost.point_name : "버디";
+                  var postId = currentHostPost ? currentHostPost.id : "";
+                  var insApproveRes = await sb.from("user_notifications").insert([{
+                    user_id: String(targetApp.applicant_user_id),
+                    type: "buddy_application_approved",
+                    title: "버디 참가가 승인되었습니다",
+                    content: pName + " 버디 일정 참가가 승인되었습니다.",
+                    buddy_post_id: currentHostPost ? Number(currentHostPost.id) : null,
+                    buddy_application_id: Number(appId),
+                    point_name: pName,
+                    link_url: "./my-buddy.html?tab=myApps&post_id=" + postId,
+                    is_read: false
+                  }]);
+                  if (insApproveRes.error) {
+                    console.error("[my-buddy] Error inserting approve notification:", insApproveRes.error);
+                  }
+                } catch (notiErr) {
+                  console.error("[my-buddy] Approve notification catch:", notiErr);
+                }
+              }
+
+              showToast("승인되었습니다.");
+              await loadAndRenderApplicants(Number(currentHostPost && currentHostPost.id), containerEl);
+              window.SNORKYBuddyProfileCard.renderConfirmedParticipants(
+                document.getElementById("hdetailConfirmedProfiles"),
+                currentHostPost,
+                resolveCardAuthor(currentHostPost)
+              );
+            } else {
+              showToast("처리 중 오류가 발생했습니다.");
+              btn.disabled = false;
+            }
+          });
+        });
+
+        // 승인 취소 핸들러
+        containerEl.querySelectorAll(".mybuddy-applicant-btn.cancel-approve").forEach(function (btn) {
+          btn.addEventListener("click", async function (e) {
+            e.stopPropagation();
+            if (!confirm("참가 승인을 취소하시겠습니까?")) return;
+            var appId = btn.getAttribute("data-app-id");
+            var targetApp = null;
+            for (var i = 0; i < apps.length; i++) {
+              if (String(apps[i].id) === String(appId)) { targetApp = apps[i]; break; }
+            }
+            btn.disabled = true;
+            var sb = getSb();
+            var res = await sb.from("buddy_applications").update({ status: "CANCELED" }).eq("id", appId);
+            if (!res.error) {
+              if (currentHostPost) {
+                var syncRes = await syncPostParticipantCount(currentHostPost.id);
+                if (syncRes) {
+                  currentHostPost.current_count = syncRes.totalCount;
+                  currentHostPost.status = syncRes.status;
+                  updateHostDetailPostUI(currentHostPost);
+                }
+              }
+
+              // 승인 취소 알림 발송: "버디 참가 승인이 취소되었습니다." (TEST: 동일 user_id라도 허용)
+              if (targetApp && targetApp.applicant_user_id) {
+                try {
+                  var pName = currentHostPost ? currentHostPost.point_name : "버디";
+                  var postId = currentHostPost ? currentHostPost.id : "";
+                  var insCancelRes = await sb.from("user_notifications").insert([{
+                    user_id: String(targetApp.applicant_user_id),
+                    type: "buddy_approval_canceled",
+                    title: "버디 참가 승인이 취소되었습니다",
+                    content: pName + " 버디 참가 승인이 취소되었습니다.",
+                    buddy_post_id: currentHostPost ? Number(currentHostPost.id) : null,
+                    buddy_application_id: Number(appId),
+                    point_name: pName,
+                    link_url: "./my-buddy.html?tab=myApps&post_id=" + postId,
+                    is_read: false
+                  }]);
+                  if (insCancelRes.error) {
+                    console.error("[my-buddy] Error inserting cancel approval notification:", insCancelRes.error);
+                  }
+                } catch (notiErr) {
+                  console.error("[my-buddy] Cancel approval notification catch:", notiErr);
+                }
+              }
+
+              showToast("승인이 취소되었습니다.");
+              await loadAndRenderApplicants(Number(currentHostPost && currentHostPost.id), containerEl);
+              window.SNORKYBuddyProfileCard.renderConfirmedParticipants(
+                document.getElementById("hdetailConfirmedProfiles"),
+                currentHostPost,
+                resolveCardAuthor(currentHostPost)
+              );
+            } else {
+              showToast("처리 중 오류가 발생했습니다.");
+              btn.disabled = false;
+            }
+          });
+        });
+
+        containerEl.querySelectorAll(".mybuddy-applicant-btn.reject").forEach(function (btn) {
+          btn.addEventListener("click", async function (e) {
+            e.stopPropagation();
+            var appId = btn.getAttribute("data-app-id");
+            var targetApp = null;
+            for (var i = 0; i < apps.length; i++) {
+              if (String(apps[i].id) === String(appId)) { targetApp = apps[i]; break; }
+            }
+            btn.disabled = true;
+            var sb = getSb();
+            var res = await sb.from("buddy_applications").update({ status: "REJECTED" }).eq("id", appId);
+            if (!res.error) {
+              showToast("거절되었습니다.");
+              await loadAndRenderApplicants(Number(currentHostPost && currentHostPost.id), containerEl);
+            } else {
+              showToast("처리 중 오류가 발생했습니다.");
+              btn.disabled = false;
+            }
+          });
+        });
+      } catch (err) {
+        containerEl.innerHTML = '<div style="font-size:13px;color:#dc2626">오류: ' + escapeHtml(String(err)) + '</div>';
+      }
+    }
+
+    // ── 내가 신청한 공고 ──
+    async function loadMyApps(retryCount) {
+      retryCount = retryCount || 0;
+      var sb = getSb();
+      if (!sb) {
+        if (retryCount < 6) {
+          await new Promise(function (r) { setTimeout(r, 250); });
+          return loadMyApps(retryCount + 1);
+        }
+        console.error("[my-buddy] Supabase client unavailable.");
+        contentEl.innerHTML = '<div class="mybuddy-empty"><strong>서버 연결 중입니다. 잠시 후 새로고침해 주세요.</strong></div>';
+        myAppsData = [];
+        return;
+      }
+      try {
+        var appRes = await sb.from("buddy_applications").select("id, buddy_post_id, status, created_at").eq("applicant_user_id", currentUserId).order("created_at", { ascending: false });
+        if (appRes.error) {
+          console.error("[my-buddy] loadMyApps applications error:", appRes.error);
+          contentEl.innerHTML = '<div class="mybuddy-empty"><strong>신청 내역 조회 오류: ' + escapeHtml(appRes.error.message || '') + '</strong></div>';
+          myAppsData = [];
+          return;
+        }
+        var rawApps = appRes.data || [];
+        var apps = rawApps.filter(function (a) { return a.status !== "CANCELED"; });
+        if (!apps.length) { myAppsData = []; return; }
+
+        var postIds = apps.map(function (a) { return a.buddy_post_id; });
+        var postRes = await sb.from("buddy_posts").select("id, user_id, activity_type, region, point_id, point_name, is_snorky_point, event_date, entry_time, capacity, current_count, difficulty, status, host_gender, host_aida_level, preferred_gender, description, open_chat_url, contact_method, created_at").in("id", postIds);
+        if (postRes.error) {
+          console.error("[my-buddy] loadMyApps posts query error:", postRes.error);
+        }
+        var posts = postRes.data || [];
+        var postsMap = {};
+        posts.forEach(function (p) { postsMap[Number(p.id)] = p; });
+
+        var hostIds = posts.map(function (p) { return p.user_id; }).filter(Boolean);
+        var unique = hostIds.filter(function (id, i) { return hostIds.indexOf(id) === i; });
+        await fetchProfiles(unique);
+
+        myAppsData = apps.map(function (app) {
+          return { app: app, post: postsMap[Number(app.buddy_post_id)] || null };
+        }).filter(function (item) { return item.post !== null; });
+      } catch (err) {
+        console.error("[my-buddy] loadMyApps catch:", err);
+        myAppsData = [];
+      }
+    }
+
+    var MY_APP_STATUS_LABELS = {
+      PENDING: "신청 진행중",
+      APPROVED: "참가 확정",
+      CANCELED: "신청 취소",
+      REJECTED: "참가 거절"
+    };
+
+    var MY_APP_STATUS_CLASSES = {
+      PENDING: "pending",
+      APPROVED: "approved",
+      CANCELED: "canceled",
+      REJECTED: "rejected"
+    };
+
+    function renderMyApps() {
+      if (!myAppsData.length) {
+        contentEl.innerHTML = '<div class="mybuddy-empty"><svg viewBox="0 0 24 24" width="48" height="48" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg><strong>신청한 버디 공고가 없습니다.</strong><small>버디찾기에서 공고를 찾아 신청해보세요.</small></div>';
+        return;
+      }
+      var html = myAppsData.map(function (entry) {
+        var app = entry.app; var post = entry.post;
+        var appStatus = app.status || "PENDING";
+        var statusLabel = MY_APP_STATUS_LABELS[appStatus] || appStatus;
+        var statusClass = "buddy-post-status-" + (MY_APP_STATUS_CLASSES[appStatus] || "pending");
+
+        return window.SNORKYBuddyCard.render({
+          post: post,
+          author: resolveCardAuthor(post),
+          formattedDate: formatDate(post.event_date),
+          statusText: statusLabel,
+          statusClass: statusClass,
+          attributes: {
+            "data-app-id": app.id,
+            "data-post-id": post.id,
+            role: "button",
+            tabindex: "0"
+          }
+        });
+      }).join("");
+      contentEl.innerHTML = html;
+
+      contentEl.querySelectorAll(".buddy-post-card").forEach(function (card) {
+        var appId = Number(card.getAttribute("data-app-id"));
+        var postId = Number(card.getAttribute("data-post-id"));
+        card.addEventListener("click", function () { openAppModal(appId, postId); });
+        card.addEventListener("keydown", function (e) {
+          if (e.target.closest("[data-buddy-profile-user-id]")) return;
+          if (e.key === "Enter") openAppModal(appId, postId);
+        });
+      });
+    }
+
+    // ── 신청자 상세 모달 ──
+    var appModal = document.getElementById("applicantDetailModal");
+    var currentAppEntry = null;
+    var pendingBlockUserId = null;
+
+    document.getElementById("btnCloseAppModal").addEventListener("click", function () { appModal.style.display = "none"; });
+    appModal.addEventListener("click", function (e) { if (e.target === appModal) appModal.style.display = "none"; });
+
+    async function openAppModal(appId, postId) {
+      var entry = null;
+      for (var i = 0; i < myAppsData.length; i++) {
+        if (Number(myAppsData[i].app.id) === appId && Number(myAppsData[i].post.id) === postId) { entry = myAppsData[i]; break; }
+      }
+      if (!entry) return;
+      currentAppEntry = entry;
+      var app = entry.app; var post = entry.post;
+
+      // DB에서 해당 신청의 최신 상태 조회 (승인/취소 등 실시간 반영)
+      try {
+        var sb = getSb();
+        if (sb && appId) {
+          var appFreshRes = await sb.from("buddy_applications").select("status").eq("id", appId).single();
+          if (!appFreshRes.error && appFreshRes.data && appFreshRes.data.status) {
+            app.status = appFreshRes.data.status;
+          }
+        }
+      } catch (_) {}
+
+      // 최신 승인자 수 기반으로 인원/상태 즉시 보정 (주최자 1 + 승인자 수)
+      var syncRes = await syncPostParticipantCount(post.id);
+      if (syncRes) {
+        post.current_count = syncRes.totalCount;
+        post.status = syncRes.status;
+      }
+
+      var isClosed = post.status === "CLOSED";
+      var badgeClass = getBadgeClass(post.activity_type);
+      var appStatus = app.status || "PENDING";
+      var myStatusText = MY_APP_STATUS_LABELS[appStatus] || appStatus;
+      var myStatusClass = MY_APP_STATUS_CLASSES[appStatus] || "pending";
+
+      document.getElementById("adetailActivity").className = "mybuddy-badge " + badgeClass;
+      document.getElementById("adetailActivity").textContent = post.activity_type;
+
+      // 메인 상태 배지: 내 신청 상태 (신청 진행중 / 참가 확정 / 신청 취소 / 참가 거절)
+      var aStatusBadge = document.getElementById("adetailStatus");
+      aStatusBadge.className = "mybuddy-app-status " + myStatusClass;
+      aStatusBadge.textContent = myStatusText;
+
+      // 보조 상태 배지: 공고 자체 모집상태
+      var aMyStatus = document.getElementById("adetailMyStatus");
+      if (aMyStatus) {
+        aMyStatus.className = "mybuddy-card-status" + (isClosed ? " closed" : "");
+        aMyStatus.textContent = isClosed ? "공고 마감" : "공고 모집중";
+      }
+
+      document.getElementById("adetailPointName").textContent = post.point_name;
+      document.getElementById("adetailRegion").textContent = post.region;
+      document.getElementById("adetailDateTime").textContent = formatDate(post.event_date) + " · " + (post.entry_time || "시간미정");
+      document.getElementById("adetailCapacity").textContent = (post.current_count || 1) + " / " + (post.capacity || 2) + "명";
+      document.getElementById("adetailDifficulty").textContent = post.difficulty || "무관";
+      document.getElementById("adetailPreferredGender").textContent = post.preferred_gender || "성별 무관";
+      var appHostAuthor = renderHostProfileRow(document.getElementById("adetailHostInfo"), post);
+      window.SNORKYBuddyProfileCard.renderConfirmedParticipants(document.getElementById("adetailConfirmedProfiles"), post, appHostAuthor);
+      document.getElementById("adetailDesc").textContent = post.description || "작성된 모집 내용이 없습니다.";
+
+      var abtnChat = document.getElementById("abtnChat");
+      if (app.status === "APPROVED" && post.open_chat_url) {
+        abtnChat.style.display = "flex";
+        abtnChat.onclick = function () {
+          var chatUrl = post.open_chat_url;
+          var modal = document.getElementById("mybuddyOpenChatModal");
+          var btnConfirm = document.getElementById("myBtnConfirmOpenChat");
+          var btnCancel = document.getElementById("myBtnCancelOpenChat");
+          var btnClose = document.getElementById("myBtnCloseOpenChat");
+          if (modal) {
+            modal.style.display = "flex";
+            btnConfirm.onclick = function () { modal.style.display = "none"; window.open(chatUrl, "_blank", "noopener,noreferrer"); };
+            btnCancel.onclick = function () { modal.style.display = "none"; };
+            btnClose.onclick = function () { modal.style.display = "none"; };
+            modal.onclick = function (e) { if (e.target === modal) modal.style.display = "none"; };
+          } else {
+            window.open(chatUrl, "_blank", "noopener,noreferrer");
+          }
+        };
+      } else { abtnChat.style.display = "none"; }
+
+      var abtnCancel = document.getElementById("abtnCancel");
+      var canCancel = (app.status === "PENDING" || app.status === "APPROVED");
+      abtnCancel.disabled = !canCancel;
+      abtnCancel.textContent = "신청 취소";
+      abtnCancel.onclick = async function () {
+        if (!canCancel) return;
+        if (!confirm("신청을 취소하시겠습니까?")) return;
+        abtnCancel.disabled = true;
+        var sb = getSb();
+        var isApproved = (app.status === "APPROVED");
+        if (isApproved) {
+          // 승인된 참가자가 취소했을 때만 모임장에게 알림 생성 (규칙 3, 4)
+          if (post.user_id && String(post.user_id) !== String(currentUserId)) {
+            try {
+              var session = window.SNORKYAuthSession?.get?.();
+              var myNickname = (session && session.user && (session.user.customNickname || session.user.nickname)) || getDisplayName(currentUserId, "참가자");
+              var notiRes = await sb.from("user_notifications").insert([{
+                user_id: String(post.user_id),
+                type: "buddy_participant_canceled",
+                title: "승인된 참가자가 참가를 취소했습니다",
+                content: "승인된 참가자 " + myNickname + "님이 참가를 취소했습니다.",
+                buddy_post_id: Number(post.id),
+                applicant_user_id: String(currentUserId),
+                applicant_nickname: myNickname,
+                point_name: post.point_name || "버디",
+                link_url: "./my-buddy.html?tab=myPosts&post_id=" + post.id,
+                is_read: false
+              }]);
+              if (notiRes.error) {
+                console.error("[my-buddy] Cancel notification insert error:", notiRes.error);
+              }
+            } catch (notiErr) {
+              console.error("[my-buddy] Cancel notification catch:", notiErr);
+            }
+          }
+        }
+        var res = await sb.from("buddy_applications").delete().eq("id", app.id);
+        if (!res.error) {
+          // 승인자 수 기반으로 모집인원/상태 실시간 동기화 및 원복
+          await syncPostParticipantCount(post.id);
+          myAppsData = myAppsData.filter(function (item) { return Number(item.app.id) !== Number(app.id); });
+          showToast("신청이 취소되었습니다.");
+          appModal.style.display = "none";
+          renderMyApps();
+        } else {
+          showToast("취소 처리 중 오류가 발생했습니다.");
+          abtnCancel.disabled = false;
+        }
+      };
+
+      document.getElementById("abtnBlock").onclick = function () {
+        pendingBlockUserId = String(post.user_id);
+        document.getElementById("blockConfirmModal").style.display = "flex";
+      };
+
+      appModal.style.display = "flex";
+    }
+
+    // ── 차단 확인 ──
+    document.getElementById("btnBlockCancel").addEventListener("click", function () {
+      document.getElementById("blockConfirmModal").style.display = "none";
+      pendingBlockUserId = null;
+    });
+    document.getElementById("btnBlockConfirm").addEventListener("click", async function () {
+      document.getElementById("blockConfirmModal").style.display = "none";
+      if (!pendingBlockUserId) return;
+      if (pendingBlockUserId === currentUserId) { showToast("자기 자신을 차단할 수 없습니다."); pendingBlockUserId = null; return; }
+      var sb = getSb();
+      if (!sb) return;
+      try {
+        var res = await sb.from("buddy_blocks").insert([{ blocker_user_id: currentUserId, blocked_user_id: pendingBlockUserId }]);
+        if (res.error) {
+          showToast(res.error.code === "23505" ? "이미 차단된 사용자입니다." : "차단 처리 중 오류가 발생했습니다.");
+        } else {
+          showToast("모임장이 차단되었습니다. 해당 사용자의 공고가 목록에서 숨겨집니다.");
+          appModal.style.display = "none";
+        }
+      } catch (_) { showToast("차단 처리 중 오류가 발생했습니다."); }
+      pendingBlockUserId = null;
+    });
+
+    // ── 알림 목록 조회 & 뱃지 ──
+    function formatNotiTime(isoStr) {
+      if (!isoStr) return "";
+      try {
+        var d = new Date(isoStr);
+        var now = new Date();
+        var diffMin = Math.floor((now.getTime() - d.getTime()) / 60000);
+        if (diffMin < 1) return "방금 전";
+        if (diffMin < 60) return diffMin + "분 전";
+        var diffHr = Math.floor(diffMin / 60);
+        if (diffHr < 24) return diffHr + "시간 전";
+        return (d.getMonth() + 1) + "월 " + d.getDate() + "일";
+      } catch (_) { return ""; }
+    }
+
+    async function loadUserNotifications(retryCount) {
+      retryCount = retryCount || 0;
+      var btnNoti = document.getElementById("btnBuddyNoti");
+      var badge = document.getElementById("buddyNotiBadge");
+      var notiListEl = document.getElementById("buddyNotiList");
+      if (!btnNoti) return;
+
+      if (!currentUserId) {
+        if (badge) badge.style.display = "none";
+        if (notiListEl) {
+          notiListEl.innerHTML = '<div style="padding:28px 0;text-align:center;color:#64748b;font-size:13px;">로그인 후 알림을 확인할 수 있습니다.</div>';
+        }
+        return;
+      }
+
+      var sb = getSb();
+      if (!sb) {
+        if (retryCount < 5) {
+          await new Promise(function (r) { setTimeout(r, 300); });
+          return loadUserNotifications(retryCount + 1);
+        }
+        if (notiListEl) {
+          notiListEl.innerHTML = '<div style="padding:28px 0;text-align:center;color:#64748b;font-size:13px;">서버 연결 중입니다. 잠시 후 다시 시도해 주세요.</div>';
+        }
+        return;
+      }
+
+      try {
+        var thirtyDaysAgoIso = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
+        var res = await sb
+          .from("user_notifications")
+          .select("id, type, title, content, buddy_post_id, link_url, is_read, created_at")
+          .eq("user_id", currentUserId)
+          .gte("created_at", thirtyDaysAgoIso)
+          .order("created_at", { ascending: false })
+          .limit(50);
+
+        if (res.error) {
+          console.error("[my-buddy] loadUserNotifications error:", res.error);
+          if (badge) badge.style.display = "none";
+          if (notiListEl) notiListEl.innerHTML = '<div style="padding:28px 0;text-align:center;color:#64748b;font-size:13px;">새로운 알림이 없습니다.</div>';
+          return;
+        }
+
+        var notiArr = res.data || [];
+        var unreadCount = notiArr.filter(function (n) { return !n.is_read; }).length;
+        if (badge) {
+          if (unreadCount > 0) {
+            badge.style.display = "inline-block";
+            badge.textContent = unreadCount >= 10 ? "10+" : String(unreadCount);
+          } else {
+            badge.style.display = "none";
+          }
+        }
+
+        if (notiListEl) {
+          if (notiArr.length === 0) {
+            notiListEl.innerHTML = '<div style="padding:28px 0;text-align:center;color:#64748b;font-size:13px;">새로운 알림이 없습니다.</div>';
+          } else {
+            notiListEl.innerHTML = notiArr.map(function (n) {
+              var isDeleted = (n.type === "buddy_canceled" || (!n.link_url && !n.buddy_post_id));
+              return '<div class="buddy-noti-item ' + (n.is_read ? 'is-read' : 'is-unread') + '" data-noti-id="' + n.id + '" data-link-url="' + escapeHtml(n.link_url || '') + '" data-post-id="' + (n.buddy_post_id || '') + '" data-noti-type="' + escapeHtml(n.type || '') + '" style="padding:12px;border-radius:12px;background:' + (n.is_read ? '#f8fafc' : '#f0f9ff') + ';border:1px solid ' + (n.is_read ? '#e2e8f0' : '#bae6fd') + ';cursor:pointer;transition:background .15s;">' +
+                '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;">' +
+                  '<strong style="font-size:13px;color:' + (n.is_read ? '#64748b' : '#0284c7') + ';font-weight:700;">' + escapeHtml(n.title) + '</strong>' +
+                  (!n.is_read ? '<span style="width:6px;height:6px;border-radius:50%;background:#0284c7;display:inline-block;"></span>' : '') +
+                '</div>' +
+                '<p style="margin:0 0 6px;font-size:12.5px;line-height:1.45;color:' + (n.is_read ? '#475467' : '#1e293b') + ';word-break:keep-all;">' + escapeHtml(n.content) + '</p>' +
+                '<div style="display:flex;align-items:center;justify-content:space-between;font-size:11px;color:#94a3b8;">' +
+                  '<span>' + formatNotiTime(n.created_at) + '</span>' +
+                  '<span style="color:' + (isDeleted ? '#94a3b8' : (n.is_read ? '#64748b' : '#0284c7')) + ';font-weight:600;">' + (isDeleted ? '(삭제된 공고)' : '내역 보기 ›') + '</span>' +
+                '</div>' +
+              '</div>';
+            }).join("");
+
+            notiListEl.querySelectorAll(".buddy-noti-item").forEach(function (item) {
+              item.addEventListener("click", async function (e) {
+                if (e) e.stopPropagation();
+                var notiId = Number(item.getAttribute("data-noti-id") || item.dataset.notiId);
+                var linkUrl = item.getAttribute("data-link-url") || item.dataset.linkUrl || "";
+                var rawPostId = item.getAttribute("data-post-id") || item.dataset.postId;
+                var postId = rawPostId ? Number(rawPostId) : null;
+                var notiType = item.getAttribute("data-noti-type") || item.dataset.notiType || "";
+
+                if (sb && notiId) {
+                  try {
+                    await sb.from("user_notifications").update({ is_read: true, read_at: new Date().toISOString() }).eq("id", notiId);
+                  } catch (_) {}
+                }
+
+                var notiModal = document.getElementById("buddyNotiModal");
+                if (notiModal) notiModal.style.display = "none";
+
+                loadUserNotifications();
+
+                if (notiType === "buddy_canceled" || (!linkUrl && !postId)) {
+                  showToast("삭제된 버디 모임 공고입니다.");
+                  return;
+                }
+
+                // 타입별 이동 목적지 분기
+                var HOST_NOTI_TYPES = ["buddy_application", "buddy_participant_canceled"];
+                var APPLICANT_NOTI_TYPES = ["buddy_application_approved", "buddy_schedule_changed", "buddy_approval_canceled"];
+
+                if (HOST_NOTI_TYPES.indexOf(notiType) !== -1) {
+                  location.href = linkUrl || ("./my-buddy.html?tab=myPosts&post_id=" + (postId || ""));
+                  return;
+                }
+                if (APPLICANT_NOTI_TYPES.indexOf(notiType) !== -1) {
+                  location.href = linkUrl || ("./my-buddy.html?tab=myApps&post_id=" + (postId || ""));
+                  return;
+                }
+
+                var targetUrl = linkUrl || (postId ? "./my-buddy.html?post_id=" + postId : "");
+                if (targetUrl) {
+                  location.href = targetUrl;
+                }
+              });
+            });
+          }
+        }
+      } catch (err) {
+        console.error("[my-buddy] loadUserNotifications catch:", err);
+      }
+    }
+
+    var btnBuddyNoti = document.getElementById("btnBuddyNoti");
+    var notiModal = document.getElementById("buddyNotiModal");
+    var btnCloseNotiModal = document.getElementById("btnCloseNotiModal");
+
+    if (btnBuddyNoti) {
+      btnBuddyNoti.addEventListener("click", function () {
+        if (!notiModal) return;
+        notiModal.style.display = "flex";
+        loadUserNotifications();
+      });
+    }
+
+    if (btnCloseNotiModal) {
+      btnCloseNotiModal.addEventListener("click", function () {
+        if (notiModal) notiModal.style.display = "none";
+      });
+    }
+
+    if (notiModal) {
+      notiModal.addEventListener("click", function (e) {
+        if (e.target === notiModal) notiModal.style.display = "none";
+      });
+    }
+
+    // ── 초기 로드 ──
+    async function initialize() {
+      loadUserNotifications();
+      var urlParams = new URLSearchParams(window.location.search);
+      var tabParam = urlParams.get("tab");
+      if (tabParam === "myPosts" || tabParam === "posts") {
+        activeTab = "myPosts";
+      } else if (tabParam === "myApps" || tabParam === "apps") {
+        activeTab = "myApps";
+      }
+
+      updateTabUI();
+      if (activeTab === "myPosts") {
+        contentEl.innerHTML = '<div class="mybuddy-empty"><strong>불러오는 중...</strong></div>';
+        await loadMyPosts();
+        renderMyPosts();
+
+        var targetPostId = Number(urlParams.get("post_id"));
+        if (targetPostId) {
+          openHostModal(targetPostId);
+        }
+      } else {
+        contentEl.innerHTML = '<div class="mybuddy-empty"><strong>불러오는 중...</strong></div>';
+        await loadMyApps();
+        renderMyApps();
+
+        var targetPostId = Number(urlParams.get("post_id"));
+        var targetAppId = Number(urlParams.get("app_id"));
+        if (targetPostId) {
+          var matched = null;
+          for (var i = 0; i < myAppsData.length; i++) {
+            if (Number(myAppsData[i].post.id) === targetPostId && (!targetAppId || Number(myAppsData[i].app.id) === targetAppId)) {
+              matched = myAppsData[i];
+              break;
+            }
+          }
+          if (matched) {
+            openAppModal(Number(matched.app.id), Number(matched.post.id));
+          }
+        }
+      }
+    }
+
+    if (window.supabase) {
+      initialize();
+    } else {
+      window.addEventListener("snorky:supabase-ready", initialize, { once: true });
+      setTimeout(function () {
+        if (window.supabase) initialize();
+      }, 800);
+    }
+
+    window.addEventListener("pageshow", function () {
+      initialize();
+    });
+  })();
+  </script>
+</body>
+</html>

@@ -1,15 +1,21 @@
 const CACHE_PREFIX = 'snorky-static-';
-const CACHE_NAME = `${CACHE_PREFIX}v82`;
+const CACHE_NAME = `${CACHE_PREFIX}v116`;
 const APP_SHELL = [
   './',
   './index.html',
+  './mypage.html',
+  './my-buddy.html',
+  './buddy.html',
+  './buddy-create.html',
   './manifest.webmanifest',
+  './public/css/buddy.css',
   './public/css/today-condition-detail.css',
   './public/css/point-video.css',
   './public/images/snorky-symbol.png',
   './public/images/snorky-hero-freediving.jpg',
   './public/images/snorky-home-hero-v3.jpg',
   './public/images/snorky-home-hero-v2.png',
+  './public/images/buddy-banner-clean.png',
   './public/images/pwa/icon-192.png',
   './public/images/pwa/icon-512.png',
   './public/images/pwa/icon-192-maskable.png',
@@ -32,7 +38,8 @@ const APP_SHELL = [
   './public/js/point-search.js',
   './public/js/point-gear.js',
   './public/js/today-condition-detail.js',
-  './public/js/point-video.js'
+  './public/js/point-video.js',
+  './public/js/buddy-create.js'
 ];
 
 self.addEventListener('install', event => {

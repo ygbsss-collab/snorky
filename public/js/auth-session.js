@@ -12,6 +12,9 @@
       customNickname: user.customNickname !== undefined && user.customNickname !== null && String(user.customNickname).trim() ? String(user.customNickname).trim() : null,
       customAvatarUrl: user.customAvatarUrl ? String(user.customAvatarUrl) : null,
       avatarType: user.avatarType ? String(user.avatarType) : "default", // 'default' | 'custom' | 'none'
+      aidaLevel: user.aidaLevel ? String(user.aidaLevel) : "없음",
+      gender: ["남성", "여성", "비공개"].includes(String(user.gender || "")) ? String(user.gender) : "비공개",
+      bio: user.bio !== undefined && user.bio !== null && String(user.bio).trim() ? String(user.bio).trim() : null,
     };
   }
 
@@ -100,6 +103,17 @@
     }
     if (profileUpdates.avatarType !== undefined) {
       session.user.avatarType = String(profileUpdates.avatarType);
+    }
+    if (profileUpdates.aidaLevel !== undefined) {
+      session.user.aidaLevel = String(profileUpdates.aidaLevel);
+    }
+    if (profileUpdates.gender !== undefined) {
+      session.user.gender = ["남성", "여성", "비공개"].includes(String(profileUpdates.gender))
+        ? String(profileUpdates.gender)
+        : "비공개";
+    }
+    if (profileUpdates.bio !== undefined) {
+      session.user.bio = profileUpdates.bio ? String(profileUpdates.bio).trim() : null;
     }
     save(session);
     try {
