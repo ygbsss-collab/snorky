@@ -69,9 +69,23 @@
     return overlay;
   }
 
+  function hideChrome(host) {
+    document.querySelector(".home-bottom-nav")?.classList.add("snorky-nav-hidden-by-analysis");
+    const header = host.querySelector(".tc-top-app-bar") || host.closest(".today-condition-modal")?.querySelector(".tc-top-app-bar");
+    if (header) header.classList.add("snorky-header-hidden-by-analysis");
+  }
+
+  function restoreChrome(host) {
+    document.querySelector(".home-bottom-nav")?.classList.remove("snorky-nav-hidden-by-analysis");
+    const header = host.querySelector(".tc-top-app-bar") || host.closest(".today-condition-modal")?.querySelector(".tc-top-app-bar");
+    if (header) header.classList.remove("snorky-header-hidden-by-analysis");
+  }
+
   function start(host) {
     if (!host) return null;
     activeByHost.get(host)?.cancel();
+
+    hideChrome(host);
 
     const overlay = createOverlay();
     const status = overlay.querySelector(".snorky-analysis-status");
@@ -104,6 +118,7 @@
     }
 
     function remove() {
+      restoreChrome(host);
       overlay.remove();
       if (activeByHost.get(host) === controller) activeByHost.delete(host);
     }

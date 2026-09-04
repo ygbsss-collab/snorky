@@ -1,4 +1,5 @@
 :root {
+  --bottom-nav-height: 68px;
   --snorky-bottom-nav-offset: 0px;
 }
 
@@ -23,7 +24,7 @@
 
   .home-bottom-nav {
     position: fixed;
-    z-index: 1500;
+    z-index: 2500;
     inset: auto 0 0;
     display: grid;
     grid-template-columns: repeat(4, 1fr);
@@ -35,9 +36,11 @@
     backdrop-filter: blur(14px);
     -webkit-backdrop-filter: blur(14px);
     box-sizing: border-box;
+    pointer-events: auto !important;
   }
 
   .home-bottom-nav button {
+    pointer-events: auto !important;
     display: flex;
     flex-direction: column;
     align-items: center;

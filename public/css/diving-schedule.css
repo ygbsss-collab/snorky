@@ -19,7 +19,7 @@ body {
   display: flex;
   flex-direction: column;
   align-items: center;
-  padding: 0 0 calc(40px + env(safe-area-inset-bottom, 0px));
+  padding: 0;
 }
 
 .schedule-app {
@@ -40,9 +40,9 @@ body {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  height: 56px;
-  padding: calc(env(safe-area-inset-top, 0px) + 8px) 16px 8px;
-  background: rgba(255, 255, 255, .94);
+  height: 52px;
+  padding: 0 16px;
+  background: rgba(255, 255, 255, .96);
   backdrop-filter: blur(10px);
   -webkit-backdrop-filter: blur(10px);
   border-bottom: 1px solid #edf2f5;
@@ -51,27 +51,28 @@ body {
 .schedule-back {
   display: grid;
   place-items: center;
-  width: 40px;
-  height: 40px;
+  width: 36px;
+  height: 36px;
   padding: 0;
-  border: 1px solid #e2eaed;
+  border: 0;
   border-radius: 50%;
-  background: #f8fafb;
-  color: #183048;
+  background: transparent;
+  color: #101828;
   font-size: 24px;
-  font-weight: 900;
+  font-weight: 300;
   text-decoration: none;
   line-height: 1;
+  cursor: pointer;
   transition: background .15s;
 }
 
 .schedule-back:hover {
-  background: #edf3f6;
+  background: #f1f5f9;
 }
 
 .schedule-header h1 {
   margin: 0;
-  font-size: 17.5px;
+  font-size: 17px;
   font-weight: 800;
   letter-spacing: -.02em;
   color: #0e2032;
@@ -97,7 +98,7 @@ body {
 
 .schedule-content {
   flex: 1;
-  padding: 16px;
+  padding: 16px 16px calc(24px + var(--snorky-bottom-nav-offset, 80px));
 }
 
 /* 캘린더 상단 컨트롤 (월 네비게이션) */
@@ -619,22 +620,23 @@ body {
 }
 
 .schedule-modal-close {
-  width: 34px;
-  height: 34px;
+  width: 32px;
+  height: 32px;
   border: 0;
   border-radius: 50%;
-  background: #f0f4f6;
-  color: #55707d;
-  font-size: 20px;
+  background: #f1f5f9;
+  color: #64748b;
+  font-size: 18px;
   cursor: pointer;
   display: grid;
   place-items: center;
   line-height: 1;
+  transition: background .12s;
 }
 
 .schedule-modal-close:hover {
-  background: #e4ebef;
-  color: #0e2032;
+  background: #e2e8f0;
+  color: #1e293b;
 }
 
 /* 폼 요소 */

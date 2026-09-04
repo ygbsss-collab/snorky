@@ -939,7 +939,7 @@
         <main class="df-content tc-body">
           <div class="df-title-section">
             <div>
-              <h2>SNORKY 예보</h2>
+              <h2>6일 컨디션 예보</h2>
               <p>날짜별 바다 컨디션을 비교해보세요</p>
             </div>
             <div class="df-title-date-range">

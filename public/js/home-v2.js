@@ -26,7 +26,7 @@ const bottom=window.SNORKYBottomNav.mount({active:"home",navigation:false,spacer
 const setBottomActive=target=>window.SNORKYBottomNav.setActive(target);
 
 document.getElementById("quickNavMySpots")?.addEventListener("click",()=>{location.href="./my-spots.html";});
-document.getElementById("quickNavIndoorDiving")?.addEventListener("click",()=>{if(typeof window.SNORKYIndoorDiving?.open==="function"){window.SNORKYIndoorDiving.open();}else{alert("실내 다이빙 기능은 준비 중입니다.");}});
+document.getElementById("quickNavIndoorDiving")?.addEventListener("click",()=>{location.href="./indoor-diving.html";});
 document.getElementById("quickNavBuddy")?.addEventListener("click",()=>{location.href="./buddy.html";});
 
 
@@ -415,6 +415,8 @@ let snorkyMapExpanded=false;
 let snorkyMapPreviewRequestId=0;
 let lastMapExpandedState=false;
 let snorkyMapLayerType="roadmap";
+let snorkyMapActiveWarningIndex=0;
+let snorkyMapWarningOverlays=[];
 
 function resetSnorkyMapToGeneral(){
   snorkyMapWarningMode=false;
@@ -423,6 +425,9 @@ function resetSnorkyMapToGeneral(){
   snorkyMapSelectedPoint=null;
   snorkyMapExpanded=false;
   lastMapExpandedState=false;
+  snorkyMapActiveWarningIndex=0;
+  snorkyMapWarningOverlays.forEach(o=>o.setMap(null));
+  snorkyMapWarningOverlays=[];
 
   const preview=document.getElementById("snorkyMapPreviewCard");
   const nearestBox=document.getElementById("snorkyMapNearestBox");
@@ -542,6 +547,17 @@ function applySnorkyMapInitialViewport(includeUser=false){
   if(!valid.length)return;
 
   const bounds=new kakao.maps.LatLngBounds();
+
+  if(snorkyMapWarningMode&&snorkyMapActiveFilter==="해상특보"){
+    const warningCards=getSnorkyMapWarningCards(filtered);
+    const activeCard=warningCards[snorkyMapActiveWarningIndex]||warningCards[0];
+    const targetPoints=activeCard?.points?.length?activeCard.points:filtered;
+    if(targetPoints.length>0){
+      targetPoints.forEach(p=>bounds.extend(new kakao.maps.LatLng(Number(p.lat),Number(p.lng))));
+      snorkyMap.setBounds(bounds,115,40,225,40);
+    }
+    return;
+  }
 
   if(snorkyMapActiveFilter==="즐겨찾기"){
     if(filtered.length>0){
@@ -696,6 +712,7 @@ function openWarningPointsOnMap(){
   snorkyMapWarningMode=true;
   snorkyMapActiveFilter="해상특보";
   snorkyMapSelectedRegion="";
+  snorkyMapActiveWarningIndex=0;
   const regionLabel=document.getElementById("snorkyMapRegionLabel");
   if(regionLabel)regionLabel.textContent="지역";
   snorkyMapSelectedPoint=null;
@@ -709,6 +726,7 @@ function openWarningPointsOnMap(){
   openMapScreen();
   renderSnorkyMapMarkers();
   renderSnorkyMapBottomCards();
+  applySnorkyMapInitialViewport(false);
 }
 
 window.openMapScreen=openMapScreen;
@@ -757,6 +775,22 @@ function makeBlueMarkerSvg(active){
     <path fill="url(#blueG)" stroke="#ffffff" stroke-width="3" d="M24 3C14.1 3 6 11.1 6 21c0 12.4 18 24 18 24s18-11.6 18-24C42 11.1 33.9 3 24 3z"/>
     <circle cx="24" cy="20" r="6.5" fill="#ffffff"/>
     <circle cx="24" cy="20" r="3" fill="#1d4ed8"/>
+  </svg>`;
+  return new kakao.maps.MarkerImage(`data:image/svg+xml;charset=UTF-8,${encodeURIComponent(svg)}`,new kakao.maps.Size(size,size),{offset:new kakao.maps.Point(size/2,size)});
+}
+
+function makeWarningMarkerSvg(active){
+  const size=active?48:36;
+  const svg=`<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" viewBox="0 0 48 48">
+    <defs>
+      <linearGradient id="warnG_${active?'act':'std'}" x1="0%" y1="0%" x2="100%" y2="100%">
+        <stop offset="0%" stop-color="${active?'#ef4444':'#f87171'}"/>
+        <stop offset="100%" stop-color="${active?'#b91c1c':'#dc2626'}"/>
+      </linearGradient>
+    </defs>
+    <path fill="url(#warnG_${active?'act':'std'})" stroke="#ffffff" stroke-width="${active?3.5:2.5}" d="M24 3C14.1 3 6 11.1 6 21c0 12.4 18 24 18 24s18-11.6 18-24C42 11.1 33.9 3 24 3z"/>
+    <circle cx="24" cy="20" r="${active?8:6}" fill="#ffffff"/>
+    <text x="24" y="${active?25:23}" font-family="-apple-system,BlinkMacSystemFont,sans-serif" font-size="${active?14:11}" font-weight="900" fill="${active?'#b91c1c':'#dc2626'}" text-anchor="middle">!</text>
   </svg>`;
   return new kakao.maps.MarkerImage(`data:image/svg+xml;charset=UTF-8,${encodeURIComponent(svg)}`,new kakao.maps.Size(size,size),{offset:new kakao.maps.Point(size/2,size)});
 }
@@ -945,8 +979,76 @@ function renderSnorkyMapMarkers(){
   if(!snorkyMap||!window.kakao?.maps)return;
   snorkyMapMarkers.forEach(m=>m.setMap(null));
   snorkyMapMarkers=[];
+  snorkyMapWarningOverlays.forEach(o=>o.setMap(null));
+  snorkyMapWarningOverlays=[];
 
   const filtered=getFilteredPoints();
+
+  if(snorkyMapWarningMode&&snorkyMapActiveFilter==="해상특보"){
+    const warningCards=getSnorkyMapWarningCards(filtered);
+    if(snorkyMapActiveWarningIndex>=warningCards.length){
+      snorkyMapActiveWarningIndex=0;
+    }
+    
+    warningCards.forEach((card,cardIdx)=>{
+      const isActiveCard=cardIdx===snorkyMapActiveWarningIndex;
+      let sumLat=0,sumLng=0,validCount=0;
+
+      card.points.forEach(point=>{
+        const lat=Number(point.lat),lng=Number(point.lng);
+        if(!Number.isFinite(lat)||!Number.isFinite(lng))return;
+        sumLat+=lat;
+        sumLng+=lng;
+        validCount++;
+
+        const isSelected=snorkyMapSelectedPoint&&String(snorkyMapSelectedPoint.supabaseId||snorkyMapSelectedPoint.id)===String(point.supabaseId||point.id);
+        const markerImage=makeWarningMarkerSvg(isActiveCard||isSelected);
+        const marker=new kakao.maps.Marker({
+          map:snorkyMap,
+          position:new kakao.maps.LatLng(lat,lng),
+          image:markerImage,
+          title:`[${card.typeLevel}] ${point.name}`,
+          zIndex:isActiveCard?35:(isSelected?30:10)
+        });
+        kakao.maps.event.addListener(marker,"click",()=>{
+          setActiveWarningIndex(cardIdx,true,false);
+        });
+        snorkyMapMarkers.push(marker);
+      });
+
+      if(validCount>0){
+        const centerLat=sumLat/validCount;
+        const centerLng=sumLng/validCount;
+        const badgeDiv=document.createElement("div");
+        badgeDiv.className=`snorky-map-warning-overlay-badge${isActiveCard?' is-active':''}`;
+        badgeDiv.setAttribute("role","button");
+        badgeDiv.setAttribute("tabindex","0");
+        badgeDiv.style.cssText=isActiveCard
+          ? "display:inline-flex;align-items:center;gap:5px;padding:6px 12px;background:#b42318;color:#fff;border:2px solid #fff;border-radius:20px;font-size:12.5px;font-weight:900;box-shadow:0 4px 16px rgba(180,35,24,.4);cursor:pointer;transform:scale(1.06);transition:all .15s ease;white-space:nowrap;user-select:none;"
+          : "display:inline-flex;align-items:center;gap:4px;padding:4px 9px;background:rgba(255,255,255,.94);color:#b42318;border:1.5px solid #fecdca;border-radius:16px;font-size:11.5px;font-weight:800;box-shadow:0 2px 8px rgba(0,0,0,.15);cursor:pointer;transition:all .15s ease;white-space:nowrap;user-select:none;";
+        badgeDiv.innerHTML=`<span style="font-size:13px;line-height:1;">⚠️</span><span>${escapeHtml(card.typeLevel)}</span><small style="opacity:${isActiveCard?'.9':'.75'};font-size:${isActiveCard?'11px':'10.5px'};margin-left:2px;">${escapeHtml(card.areaName)}</small>`;
+
+        badgeDiv.addEventListener("click",(e)=>{
+          e.stopPropagation();
+          setActiveWarningIndex(cardIdx,true,true);
+        });
+
+        const overlay=new kakao.maps.CustomOverlay({
+          map:snorkyMap,
+          position:new kakao.maps.LatLng(centerLat,centerLng),
+          content:badgeDiv,
+          yAnchor:1.4,
+          xAnchor:0.5,
+          zIndex:isActiveCard?100:20
+        });
+        snorkyMapWarningOverlays.push(overlay);
+      }
+    });
+
+    renderSnorkyUserLocation();
+    return;
+  }
+
   const selectedId=snorkyMapSelectedPoint?String(snorkyMapSelectedPoint.supabaseId||snorkyMapSelectedPoint.id):null;
   const selectedHasCoordinates=snorkyMapSelectedPoint&&Number.isFinite(Number(snorkyMapSelectedPoint.lat))&&Number.isFinite(Number(snorkyMapSelectedPoint.lng));
   const markerPoints=selectedHasCoordinates&&!filtered.some(point=>String(point.supabaseId||point.id)===selectedId)
@@ -1364,8 +1466,7 @@ function mapRankRow(point,index){
 }
 
 function getSnorkyMapWarningCards(points){
-  const seen=new Set();
-  const cards=[];
+  const cardMap=new Map();
   for(const point of points||[]){
     const safety=window.SNORKYMarineSafety?.statusForPoint(point);
     if(safety?.status!=="BLOCK")continue;
@@ -1375,11 +1476,85 @@ function getSnorkyMapWarningCards(points){
     const typeLevel=level&&type&&!type.endsWith(level)?`${type} ${level}`:type||level;
     const areaName=String(warning.areaName||safety.areaName||warning.regKo||warning.regUpKo||"").trim();
     const key=`${typeLevel}\u0000${areaName}`;
-    if(!typeLevel||!areaName||seen.has(key))continue;
-    seen.add(key);
-    cards.push({typeLevel,areaName});
+    if(!typeLevel||!areaName)continue;
+    if(!cardMap.has(key)){
+      cardMap.set(key,{
+        key,
+        typeLevel,
+        areaName,
+        points:[]
+      });
+    }
+    cardMap.get(key).points.push(point);
   }
-  return cards;
+  return Array.from(cardMap.values());
+}
+
+function setActiveWarningIndex(index, shouldScrollCard=true, shouldPanMap=true){
+  snorkyMapActiveWarningIndex=index;
+  const cardsHost=document.getElementById("snorkyMapWarningCards");
+  if(cardsHost){
+    const cards=cardsHost.querySelectorAll(".snorky-map-warning-card");
+    cards.forEach((card,idx)=>{
+      const isActive=idx===index;
+      card.style.borderColor=isActive?"#b42318":"#e0eaed";
+      card.style.background=isActive?"#fffbfa":"#fff";
+      card.style.boxShadow=isActive?"0 4px 16px rgba(180,35,24,.16)":"0 3px 12px rgba(20,48,70,.06)";
+      card.style.transform=isActive?"translateY(-1px)":"none";
+      if(isActive)card.classList.add("is-active");
+      else card.classList.remove("is-active");
+    });
+    if(shouldScrollCard&&cards[index]){
+      cards[index].scrollIntoView({behavior:"smooth",block:"nearest"});
+    }
+  }
+
+  renderSnorkyMapMarkers();
+
+  if(shouldPanMap&&snorkyMap&&window.kakao?.maps){
+    const warningCards=getSnorkyMapWarningCards(getFilteredPoints());
+    const activeCard=warningCards[index];
+    if(activeCard&&activeCard.points&&activeCard.points.length){
+      let sumLat=0,sumLng=0,cnt=0;
+      activeCard.points.forEach(p=>{
+        const lat=Number(p.lat),lng=Number(p.lng);
+        if(Number.isFinite(lat)&&Number.isFinite(lng)){
+          sumLat+=lat;sumLng+=lng;cnt++;
+        }
+      });
+      if(cnt>0){
+        const targetCenter=new kakao.maps.LatLng(sumLat/cnt,sumLng/cnt);
+        snorkyMap.panTo(targetCenter);
+      }
+    }
+  }
+}
+
+function syncActiveWarningFromScroll(){
+  const cardsHost=document.getElementById("snorkyMapWarningCards");
+  if(!cardsHost)return;
+  const cards=cardsHost.querySelectorAll(".snorky-map-warning-card");
+  if(!cards.length)return;
+
+  const hostRect=cardsHost.getBoundingClientRect();
+  const targetY=hostRect.top + Math.min(100, hostRect.height / 2);
+
+  let closestIndex=0;
+  let minDiff=Infinity;
+
+  cards.forEach((card,idx)=>{
+    const rect=card.getBoundingClientRect();
+    const cardCenter=rect.top + rect.height/2;
+    const diff=Math.abs(targetY - cardCenter);
+    if(diff < minDiff){
+      minDiff=diff;
+      closestIndex=idx;
+    }
+  });
+
+  if(snorkyMapActiveWarningIndex!==closestIndex){
+    setActiveWarningIndex(closestIndex,false,true);
+  }
 }
 
 function renderSnorkyMapWarningCards(){
@@ -1392,10 +1567,63 @@ function renderSnorkyMapWarningCards(){
   if(!warningBox||!cardsHost)return;
   warningBox.hidden=!isWarning||Boolean(preview?.classList.contains("open"));
   if(nearestBox)nearestBox.style.display=isWarning?"none":"";
-  if(panel&&!isWarning)panel.classList.toggle("expanded",snorkyMapExpanded);
+  if(panel){
+    panel.classList.toggle("warning-mode",isWarning);
+    if(!isWarning)panel.classList.toggle("expanded",snorkyMapExpanded);
+  }
   if(!isWarning)return;
+
   const cards=getSnorkyMapWarningCards(getFilteredPoints());
-  cardsHost.innerHTML=cards.length?cards.map(card=>`<div class="snorky-map-warning-card" role="status" style="display:flex;flex-direction:column;gap:4px;width:100%;min-height:64px;padding:12px 14px;border:1px solid #e0eaed;border-radius:16px;background:#fff;box-sizing:border-box;box-shadow:0 3px 12px rgba(20,48,70,.06);"><strong style="font-size:14px;font-weight:900;color:#b42318;">${escapeHtml(card.typeLevel)}</strong><small style="font-size:12px;color:#d92d20;">${escapeHtml(card.areaName)}</small></div>`).join(""):'<div class="snorky-map-empty-cards">현재 발효 중인 특보가 없습니다.</div>';
+  if(!cards.length){
+    cardsHost.innerHTML='<div class="snorky-map-empty-cards">현재 발효 중인 특보가 없습니다.</div>';
+    return;
+  }
+
+  if(snorkyMapActiveWarningIndex>=cards.length){
+    snorkyMapActiveWarningIndex=0;
+  }
+
+  cardsHost.innerHTML=cards.map((card,idx)=>{
+    const isActive=idx===snorkyMapActiveWarningIndex;
+    const borderStyle=isActive?"#b42318":"#e0eaed";
+    const bgStyle=isActive?"#fffbfa":"#fff";
+    const shadowStyle=isActive?"0 4px 16px rgba(180,35,24,.16)":"0 3px 12px rgba(20,48,70,.06)";
+    return `<div class="snorky-map-warning-card${isActive?' is-active':''}" data-warning-idx="${idx}" role="status" tabindex="0" style="display:flex;flex-direction:column;gap:4px;width:100%;min-height:64px;padding:12px 14px;border:1.5px solid ${borderStyle};border-radius:16px;background:${bgStyle};box-sizing:border-box;box-shadow:${shadowStyle};cursor:pointer;transition:all .15s ease;">
+      <div style="display:flex;align-items:center;justify-content:space-between;">
+        <strong style="font-size:14px;font-weight:900;color:#b42318;display:flex;align-items:center;gap:4px;">
+          <span>⚠️</span>
+          <span>${escapeHtml(card.typeLevel)}</span>
+        </strong>
+        <span style="font-size:11px;font-weight:700;color:${isActive?'#b42318':'#667085'};background:${isActive?'#fee4e2':'#f2f4f7'};padding:2px 7px;border-radius:10px;">포인트 ${card.points.length}개</span>
+      </div>
+      <small style="font-size:12px;color:#d92d20;font-weight:600;">${escapeHtml(card.areaName)}</small>
+    </div>`;
+  }).join("");
+
+  cardsHost.querySelectorAll(".snorky-map-warning-card").forEach(cardEl=>{
+    cardEl.addEventListener("click",()=>{
+      const idx=parseInt(cardEl.dataset.warningIdx,10);
+      if(Number.isFinite(idx)){
+        setActiveWarningIndex(idx,true,true);
+      }
+    });
+  });
+
+  if(!cardsHost.dataset.scrollBound){
+    cardsHost.dataset.scrollBound="true";
+    let isTicking=false;
+    const onScroll=()=>{
+      if(!isTicking){
+        window.requestAnimationFrame(()=>{
+          syncActiveWarningFromScroll();
+          isTicking=false;
+        });
+        isTicking=true;
+      }
+    };
+    cardsHost.addEventListener("scroll",onScroll,{passive:true});
+    if(panel)panel.addEventListener("scroll",onScroll,{passive:true});
+  }
 }
 
 function renderSnorkyMapBottomCards(){
@@ -1406,11 +1634,15 @@ function renderSnorkyMapBottomCards(){
   if(!track)return;
 
   if(snorkyMapWarningMode&&snorkyMapActiveFilter==="해상특보"){
-    if(panel)panel.classList.remove("expanded");
+    if(panel){
+      panel.classList.remove("expanded");
+      panel.classList.add("warning-mode");
+    }
     if(toggleBtn)toggleBtn.hidden=true;
     renderSnorkyMapWarningCards();
     return;
   }
+  if(panel)panel.classList.remove("warning-mode");
   const warningBox=document.getElementById("snorkyMapWarningBox");
   if(warningBox)warningBox.hidden=true;
 

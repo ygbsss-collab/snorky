@@ -20,12 +20,10 @@
   --tc-font: 'Hanken Grotesk', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   
   position: fixed;
-  inset: 0;
+  inset: 0 0 var(--snorky-bottom-nav-offset, 0px) 0;
   z-index: 2100;
   display: none;
-  background: rgba(15, 23, 42, 0.6);
-  backdrop-filter: blur(6px);
-  -webkit-backdrop-filter: blur(6px);
+  background: var(--tc-surface-low, #f2f4f6);
   font-family: var(--tc-font);
   color: var(--tc-on-surface);
   overflow: hidden;
@@ -47,7 +45,7 @@
   width: 100%;
   max-width: 540px;
   height: 100%;
-  max-height: 100vh;
+  max-height: 100%;
   background: var(--tc-surface-low);
   display: flex;
   flex-direction: column;
@@ -57,12 +55,13 @@
 
 @media (min-width: 701px) {
   .today-condition-modal {
-    padding: 24px;
+    padding: 0;
   }
   .today-condition-sheet {
-    max-height: 92vh;
-    border-radius: 24px;
-    border: 1px solid rgba(194, 198, 211, 0.4);
+    max-height: 100%;
+    border-radius: 0;
+    border-left: 1px solid rgba(194, 198, 211, 0.4);
+    border-right: 1px solid rgba(194, 198, 211, 0.4);
   }
 }
 
@@ -76,10 +75,12 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 12px 18px;
-  background: rgba(247, 249, 251, 0.92);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
+  height: 52px;
+  min-height: 52px;
+  padding: 0 16px;
+  background: rgba(255, 255, 255, 0.96);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
   border-bottom: 1px solid rgba(194, 198, 211, 0.3);
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03);
   flex-shrink: 0;
@@ -89,24 +90,24 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 42px;
-  height: 42px;
+  width: 36px;
+  height: 36px;
   padding: 0;
-  border: 1px solid #d9e1e5;
+  border: 0;
   border-radius: 50%;
-  background: #eef2f4;
-  color: #526b76;
+  background: transparent;
+  color: #101828;
   cursor: pointer;
-  transition: transform 0.15s ease, background 0.15s ease, color 0.15s ease;
+  transition: background 0.15s ease;
 }
 
 .tc-icon-btn:hover {
-  background: var(--tc-surface-container);
-  color: var(--tc-on-surface);
+  background: #f1f5f9;
+  color: #101828;
 }
 
 .tc-icon-btn:active {
-  transform: scale(0.92);
+  transform: scale(0.95);
 }
 
 .tc-app-title {
@@ -126,8 +127,8 @@
 
 .tc-top-app-bar-spacer {
   display: inline-block;
-  width: 42px;
-  height: 42px;
+  width: 36px;
+  height: 36px;
   flex-shrink: 0;
   visibility: hidden;
   pointer-events: none;
@@ -141,27 +142,6 @@
   fill: #ef4444;
   stroke: #ef4444;
 }
-.tc-top-app-bar.tc-title-compact { padding-left: 14px; padding-right: 14px; }
-.tc-top-app-bar.tc-title-tight { padding-left: 10px; padding-right: 10px; }
-.tc-top-app-bar.tc-title-overflow { padding-left: 6px; padding-right: 6px; }
-.tc-title-compact .tc-icon-btn, .tc-title-compact .tc-top-app-bar-spacer { width: 38px; height: 38px; }
-.tc-title-tight .tc-icon-btn, .tc-title-tight .tc-top-app-bar-spacer { width: 34px; height: 34px; }
-.tc-title-overflow .tc-icon-btn, .tc-title-overflow .tc-top-app-bar-spacer { width: 30px; height: 30px; }
-.tc-title-compact .tc-app-title { font-size: 16px; }
-.tc-title-tight .tc-app-title { font-size: 14px; }
-.tc-title-overflow .tc-app-title { font-size: 12px; }
-.tc-top-app-bar,.point-modal-head { min-height:72px; }
-.tc-top-app-bar .tc-icon-btn, .tc-top-app-bar .tc-top-app-bar-spacer, .point-modal-head .point-modal-close, .point-modal-head .point-modal-favorite { width:46px; height:46px; }
-.point-modal-head .point-modal-title-row h2 { width:100%; max-width:calc(100vw - 124px); font-size:18px; white-space:nowrap; overflow:visible; text-overflow:clip; }
-@media (max-width:700px) {
-  .point-modal-head .point-modal-title-row h2 { max-width:calc(100vw - 124px); font-size:18px!important; }
-}
-@media (max-width:360px) {
-  .point-modal-head .point-modal-title-row h2 { font-size:16px!important; }
-}
-@media (max-width: 380px) {
-  .tc-title-overflow .tc-app-title { overflow: hidden; text-overflow: ellipsis; }
-}
 
 /* ─────────────────────────────────────────────────────────────
    Scrollable Body Container
@@ -171,7 +151,7 @@
   overflow-y: auto;
   overflow-x: hidden;
   -webkit-overflow-scrolling: touch;
-  padding: 14px 16px 36px;
+  padding: 14px 16px calc(24px + var(--snorky-bottom-nav-offset, 80px));
   display: flex;
   flex-direction: column;
   gap: 14px;
