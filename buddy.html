@@ -1387,7 +1387,11 @@
           } catch (_) {}
         }
 
+        const isExpired = window.SNORKYBuddyCard ? window.SNORKYBuddyCard.isPostExpired(post) : false;
         const isClosed = post.status === "CLOSED";
+        const statusInfo = window.SNORKYBuddyCard
+          ? window.SNORKYBuddyCard.getPostStatusInfo(post)
+          : { text: isExpired ? "신청 불가" : (isClosed ? "마감" : "모집중"), className: isExpired ? "buddy-post-status-expired" : (isClosed ? "buddy-post-status-closed" : "") };
         const isIndoor = post.activity_type === "실내다이빙";
         const isFreediving = post.activity_type === "프리다이빙";
         const badgeClass = isIndoor ? "buddy-badge-indoor" : (isFreediving ? "buddy-badge-freediving" : "buddy-badge-snorkeling");
@@ -1399,8 +1403,8 @@
           detailActivityBadge.textContent = post.activity_type;
         }
         if (detailStatusBadge) {
-          detailStatusBadge.className = `buddy-post-status-text ${isClosed ? 'buddy-post-status-closed' : ''}`;
-          detailStatusBadge.textContent = isClosed ? "마감" : "모집중";
+          detailStatusBadge.className = `buddy-post-status-text ${statusInfo.className}`;
+          detailStatusBadge.textContent = statusInfo.text;
         }
         if (detailPointName) detailPointName.textContent = post.point_name;
 
@@ -1521,6 +1525,10 @@
             btnDetailApply.onclick = null;
           } else if (myAppStatus === "REJECTED") {
             btnDetailApply.textContent = "신청 거절됨";
+            btnDetailApply.disabled = true;
+            btnDetailApply.onclick = null;
+          } else if (isExpired) {
+            btnDetailApply.textContent = "신청 불가";
             btnDetailApply.disabled = true;
             btnDetailApply.onclick = null;
           } else if (isClosed) {
@@ -1662,7 +1670,7 @@
               query = query.gte("event_date", getKstDateStr(firstDay)).lte("event_date", getKstDateStr(lastDay));
             }
           }
-          query = query.order("id", { ascending: false }).limit(20);
+          query = query.order("id", { ascending: false }).limit(40);
         }
 
         try {
@@ -1673,6 +1681,16 @@
               console.error("[BuddyPosts] Query error:", error);
             } else if (data) {
               posts = data;
+            }
+          }
+
+          if (posts.length > 0) {
+            // 30일 보존 기간 필터 (입수 일시 기준 30일 이내 공고만 유지, 30일 초과 지난 공고는 목록 제외)
+            posts = posts.filter(p => window.SNORKYBuddyCard ? window.SNORKYBuddyCard.isPostWithinRetention(p, 30) : true);
+
+            // 모집중 상태 검색 시 만료(신청 불가) 공고 제외
+            if (filters.status === "RECRUITING") {
+              posts = posts.filter(p => !(window.SNORKYBuddyCard && window.SNORKYBuddyCard.isPostExpired(p)));
             }
           }
 

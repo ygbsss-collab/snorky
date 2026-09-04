@@ -519,7 +519,10 @@
           myPostsData = [];
           return;
         }
-        myPostsData = res.data || [];
+        var allPosts = res.data || [];
+        myPostsData = allPosts.filter(function (p) {
+          return window.SNORKYBuddyCard ? window.SNORKYBuddyCard.isPostWithinRetention(p, 30) : true;
+        });
         var postIds = myPostsData.map(function (p) { return Number(p.id); }).filter(Boolean);
         if (postIds.length > 0) {
           try {
@@ -610,11 +613,20 @@
 
     function updateHostDetailPostUI(post) {
       if (!post) return;
+      var isExpired = window.SNORKYBuddyCard ? window.SNORKYBuddyCard.isPostExpired(post) : false;
       var isClosed = post.status === "CLOSED";
       var statusBadge = document.getElementById("hdetailStatus");
       if (statusBadge) {
-        statusBadge.className = "mybuddy-card-status" + (isClosed ? " closed" : "");
-        statusBadge.textContent = isClosed ? "마감" : "모집중";
+        if (isExpired) {
+          statusBadge.className = "mybuddy-card-status closed";
+          statusBadge.textContent = "신청 불가";
+        } else if (isClosed) {
+          statusBadge.className = "mybuddy-card-status closed";
+          statusBadge.textContent = "마감";
+        } else {
+          statusBadge.className = "mybuddy-card-status";
+          statusBadge.textContent = "모집중";
+        }
       }
       var capEl = document.getElementById("hdetailCapacity");
       if (capEl) {
@@ -622,8 +634,13 @@
       }
       var hbtnClosePost = document.getElementById("hbtnClosePost");
       if (hbtnClosePost) {
-        hbtnClosePost.textContent = isClosed ? "마감 완료" : "모집 마감";
-        hbtnClosePost.disabled = isClosed;
+        if (isExpired) {
+          hbtnClosePost.textContent = "기한 만료";
+          hbtnClosePost.disabled = true;
+        } else {
+          hbtnClosePost.textContent = isClosed ? "마감 완료" : "모집 마감";
+          hbtnClosePost.disabled = isClosed;
+        }
       }
     }
 
@@ -639,14 +656,25 @@
         post.status = syncRes.status;
       }
 
+      var isExpired = window.SNORKYBuddyCard ? window.SNORKYBuddyCard.isPostExpired(post) : false;
       var isClosed = post.status === "CLOSED";
       var badgeClass = getBadgeClass(post.activity_type);
       var statusBadge = document.getElementById("hdetailStatus");
 
       document.getElementById("hdetailActivity").className = "mybuddy-badge " + badgeClass;
       document.getElementById("hdetailActivity").textContent = post.activity_type;
-      statusBadge.className = "mybuddy-card-status" + (isClosed ? " closed" : "");
-      statusBadge.textContent = isClosed ? "마감" : "모집중";
+      if (statusBadge) {
+        if (isExpired) {
+          statusBadge.className = "mybuddy-card-status closed";
+          statusBadge.textContent = "신청 불가";
+        } else if (isClosed) {
+          statusBadge.className = "mybuddy-card-status closed";
+          statusBadge.textContent = "마감";
+        } else {
+          statusBadge.className = "mybuddy-card-status";
+          statusBadge.textContent = "모집중";
+        }
+      }
       var hPointNameEl = document.getElementById("hdetailPointName");
       var hPlaceLinkBtn = document.getElementById("hdetailPlaceLinkBtn");
       if (hPointNameEl) hPointNameEl.textContent = post.point_name;
@@ -697,8 +725,13 @@
       document.getElementById("hdetailDesc").textContent = post.description || "작성된 모집 내용이 없습니다.";
 
       var hbtnClosePost = document.getElementById("hbtnClosePost");
-      hbtnClosePost.textContent = isClosed ? "마감 완료" : "모집 마감";
-      hbtnClosePost.disabled = isClosed;
+      if (isExpired) {
+        hbtnClosePost.textContent = "기한 만료";
+        hbtnClosePost.disabled = true;
+      } else {
+        hbtnClosePost.textContent = isClosed ? "마감 완료" : "모집 마감";
+        hbtnClosePost.disabled = isClosed;
+      }
 
       // 공고 수정
       document.getElementById("hbtnEdit").onclick = function () {
@@ -1054,7 +1087,10 @@
         if (postRes.error) {
           console.error("[my-buddy] loadMyApps posts query error:", postRes.error);
         }
-        var posts = postRes.data || [];
+        var rawPosts = postRes.data || [];
+        var posts = rawPosts.filter(function (p) {
+          return window.SNORKYBuddyCard ? window.SNORKYBuddyCard.isPostWithinRetention(p, 30) : true;
+        });
         var validPostIds = posts.map(function (p) { return Number(p.id); }).filter(Boolean);
         if (validPostIds.length > 0) {
           try {
@@ -1176,6 +1212,7 @@
         post.status = syncRes.status;
       }
 
+      var isExpired = window.SNORKYBuddyCard ? window.SNORKYBuddyCard.isPostExpired(post) : false;
       var isClosed = post.status === "CLOSED";
       var badgeClass = getBadgeClass(post.activity_type);
       var appStatus = app.status || "PENDING";
@@ -1193,8 +1230,16 @@
       // 보조 상태 배지: 공고 자체 모집상태
       var aMyStatus = document.getElementById("adetailMyStatus");
       if (aMyStatus) {
-        aMyStatus.className = "mybuddy-card-status" + (isClosed ? " closed" : "");
-        aMyStatus.textContent = isClosed ? "공고 마감" : "공고 모집중";
+        if (isExpired) {
+          aMyStatus.className = "mybuddy-card-status closed";
+          aMyStatus.textContent = "공고 신청 불가";
+        } else if (isClosed) {
+          aMyStatus.className = "mybuddy-card-status closed";
+          aMyStatus.textContent = "공고 마감";
+        } else {
+          aMyStatus.className = "mybuddy-card-status";
+          aMyStatus.textContent = "공고 모집중";
+        }
       }
 
       var aPointNameEl = document.getElementById("adetailPointName");

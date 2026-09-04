@@ -219,7 +219,218 @@ function bindSecretEntry(){
   });
 }
 
-window.SNORKYAdmin={login,logout,addRegion,renameRegion,deleteRegion,saveNew,saveDetail,persistCoordinates,deletePoint,uploadPhotos,restoreSession,bindSecretEntry};
+// 실내 다이빙 센터 관리자 기능
+async function loadIndoorCentersAdmin() {
+  await requireAdmin();
+  const { data, error } = await sb()
+    .from("indoor_diving_centers")
+    .select("*")
+    .order("sort_order", { ascending: true })
+    .order("name", { ascending: true });
+  if (error) throw error;
+
+  let imagesMap = {};
+  try {
+    const { data: imgData } = await sb().from("indoor_center_images").select("*").order("sort_order", { ascending: true });
+    if (Array.isArray(imgData)) {
+      imgData.forEach((img) => {
+        if (!imagesMap[img.center_id]) imagesMap[img.center_id] = [];
+        imagesMap[img.center_id].push(img);
+      });
+    }
+  } catch (_) {}
+
+  return (data || []).map((row) => ({
+    ...row,
+    images: imagesMap[row.id] || []
+  }));
+}
+
+async function saveIndoorCenterAdmin(centerData) {
+  await requireAdmin();
+  if (!centerData.name || !centerData.region) {
+    throw new Error("센터명과 광역지역은 필수입니다.");
+  }
+  let centerId = (centerData.id || "").trim();
+  if (!centerId) {
+    centerId = `indoor-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
+  }
+  const payload = {
+    id: centerId,
+    name: centerData.name.trim(),
+    region: centerData.region.trim(),
+    sub_region: (centerData.sub_region || "").trim(),
+    address: (centerData.address || "").trim(),
+    lat: Number.isFinite(centerData.lat) ? centerData.lat : null,
+    lng: Number.isFinite(centerData.lng) ? centerData.lng : null,
+    max_depth: centerData.max_depth ? Number(centerData.max_depth) : null,
+    has_freediving: centerData.has_freediving !== undefined ? Boolean(centerData.has_freediving) : Boolean(centerData.freediving_available),
+    has_scuba: centerData.has_scuba !== undefined ? Boolean(centerData.has_scuba) : Boolean(centerData.scuba_available),
+    has_parking: centerData.has_parking !== undefined ? Boolean(centerData.has_parking) : Boolean(centerData.parking_available),
+    status: centerData.status || "운영중",
+    business_hours: (centerData.business_hours || centerData.businessHours || "").trim(),
+    holiday: (centerData.holiday || centerData.closed_days || "").trim(),
+    parking_info: (centerData.parking_info || centerData.parkingInfo || "").trim(),
+    phone: (centerData.phone || "").trim(),
+    homepage: (centerData.homepage || centerData.website_url || "").trim(),
+    map_guide: (centerData.map_guide || centerData.map_url || "").trim(),
+    facilities: (centerData.facilities || centerData.facility_info || "").trim(),
+    feature_short: (centerData.feature_short || (Array.isArray(centerData.facility_features) ? centerData.facility_features.join(", ") : "") || "").trim(),
+    feature_full: (centerData.feature_full || (Array.isArray(centerData.facility_features) ? centerData.facility_features.join(", ") : "") || "").trim(),
+    description: (centerData.description || "").trim(),
+    pool_temp: (centerData.pool_temp || "").trim(),
+    pool_specs: (centerData.pool_specs || "").trim(),
+    price_short: (centerData.price_short || "").trim(),
+    price_full: (centerData.price_full || centerData.pricing_info || "").trim(),
+    rental_info: (centerData.rental_info || "").trim(),
+    reservation_info: (centerData.reservation_info || centerData.booking_info || "").trim(),
+    buddy_condition: (centerData.buddy_condition || "").trim(),
+    image_url: (centerData.image_url || "").trim() || null,
+    sort_order: Number.isInteger(centerData.sort_order) ? centerData.sort_order : 0,
+    updated_at: new Date().toISOString()
+  };
+
+  const { data, error } = await sb().from("indoor_diving_centers").upsert(payload).select("id").single();
+  if (error) throw error;
+
+  if (window.SNORKYIndoor?.loadIndoorCenters) {
+    await window.SNORKYIndoor.loadIndoorCenters();
+  }
+  return data;
+}
+
+async function deleteIndoorCenterAdmin(centerId) {
+  await requireAdmin();
+  if (!centerId) return;
+
+  const { data: center, error: fetchErr } = await sb().from("indoor_diving_centers").select("id, name").eq("id", centerId).single();
+  if (fetchErr || !center) throw new Error("삭제할 센터를 찾을 수 없습니다.");
+
+  // 버디 공고 연결 여부 검사 (무조건 cascade 방지)
+  const { count, error: countErr } = await sb()
+    .from("buddy_posts")
+    .select("id", { count: "exact", head: true })
+    .or(`point_id.eq.${center.id},point_name.eq.${center.name}`);
+  if (!countErr && count && count > 0) {
+    throw new Error(`해당 실내센터와 연결된 버디 모집 공고가 ${count}건 존재합니다. 공고가 종료되거나 연결이 변경된 후 삭제할 수 있습니다.`);
+  }
+
+  const { data: imgRows } = await sb().from("indoor_center_images").select("storage_path").eq("center_id", centerId);
+  const paths = (imgRows || []).map((r) => r.storage_path).filter(Boolean);
+  if (paths.length > 0) {
+    await sb().storage.from(PHOTO_BUCKET).remove(paths);
+  }
+
+  const { error: delErr } = await sb().from("indoor_diving_centers").delete().eq("id", centerId);
+  if (delErr) throw delErr;
+
+  if (window.SNORKYIndoor?.loadIndoorCenters) {
+    await window.SNORKYIndoor.loadIndoorCenters();
+  }
+}
+
+async function uploadCenterPhotosAdmin(centerId, files) {
+  await requireAdmin();
+  for (const original of files) {
+    const file = await compress(original);
+    const ext = (file.name.split(".").pop() || "jpg").toLowerCase();
+    const path = `centers/${centerId}/${crypto.randomUUID()}.${ext}`;
+    const upload = await sb().storage.from(PHOTO_BUCKET).upload(path, file, { contentType: file.type, upsert: false });
+    if (upload.error) throw upload.error;
+    const count = await sb().from("indoor_center_images").select("id", { count: "exact", head: true }).eq("center_id", centerId);
+    if (count.error) throw count.error;
+    const isPrimary = (count.count || 0) === 0;
+    const saved = await sb().from("indoor_center_images").insert({
+      center_id: centerId,
+      storage_path: path,
+      file_name: file.name,
+      mime_type: file.type,
+      is_primary: isPrimary,
+      sort_order: count.count || 0
+    });
+    if (saved.error) {
+      await sb().storage.from(PHOTO_BUCKET).remove([path]);
+      throw saved.error;
+    }
+    if (isPrimary) {
+      const pubUrl = sb().storage.from(PHOTO_BUCKET).getPublicUrl(path).data?.publicUrl;
+      if (pubUrl) {
+        await sb().from("indoor_diving_centers").update({ image_url: pubUrl }).eq("id", centerId);
+      }
+    }
+  }
+  if (window.SNORKYIndoor?.loadIndoorCenters) {
+    await window.SNORKYIndoor.loadIndoorCenters();
+  }
+}
+
+async function deleteCenterPhotoAdmin(centerId, imageId) {
+  await requireAdmin();
+  const { data: row, error: fetchErr } = await sb().from("indoor_center_images").select("storage_path, is_primary").eq("id", imageId).single();
+  if (fetchErr) throw fetchErr;
+  if (row?.storage_path) {
+    await sb().storage.from(PHOTO_BUCKET).remove([row.storage_path]);
+  }
+  const { error: delErr } = await sb().from("indoor_center_images").delete().eq("id", imageId);
+  if (delErr) throw delErr;
+
+  if (row?.is_primary) {
+    const { data: nextImages } = await sb()
+      .from("indoor_center_images")
+      .select("id, storage_path")
+      .eq("center_id", centerId)
+      .order("sort_order", { ascending: true })
+      .limit(1);
+    if (nextImages && nextImages.length > 0) {
+      await sb().from("indoor_center_images").update({ is_primary: true }).eq("id", nextImages[0].id);
+      const pubUrl = sb().storage.from(PHOTO_BUCKET).getPublicUrl(nextImages[0].storage_path).data?.publicUrl;
+      await sb().from("indoor_diving_centers").update({ image_url: pubUrl }).eq("id", centerId);
+    } else {
+      await sb().from("indoor_diving_centers").update({ image_url: null }).eq("id", centerId);
+    }
+  }
+
+  if (window.SNORKYIndoor?.loadIndoorCenters) {
+    await window.SNORKYIndoor.loadIndoorCenters();
+  }
+}
+
+async function primaryCenterPhotoAdmin(centerId, imageId) {
+  await requireAdmin();
+  await sb().from("indoor_center_images").update({ is_primary: false }).eq("center_id", centerId);
+  const { data: updated, error } = await sb().from("indoor_center_images").update({ is_primary: true }).eq("id", imageId).select("storage_path").single();
+  if (error) throw error;
+  if (updated?.storage_path) {
+    const pubUrl = sb().storage.from(PHOTO_BUCKET).getPublicUrl(updated.storage_path).data?.publicUrl;
+    if (pubUrl) {
+      await sb().from("indoor_diving_centers").update({ image_url: pubUrl }).eq("id", centerId);
+    }
+  }
+  if (window.SNORKYIndoor?.loadIndoorCenters) {
+    await window.SNORKYIndoor.loadIndoorCenters();
+  }
+}
+
+window.SNORKYAdmin = {
+  login,
+  logout,
+  addRegion,
+  renameRegion,
+  deleteRegion,
+  saveNew,
+  saveDetail,
+  persistCoordinates,
+  deletePoint,
+  uploadPhotos,
+  restoreSession,
+  bindSecretEntry,
+  loadIndoorCentersAdmin,
+  saveIndoorCenterAdmin,
+  deleteIndoorCenterAdmin,
+  uploadCenterPhotosAdmin,
+  deleteCenterPhotoAdmin,
+  primaryCenterPhotoAdmin
+};
 addAdminRegion=function(){return addRegion()};renameAdminRegion=function(id){return renameRegion(id)};deleteAdminRegion=function(id){return deleteRegion(id)};
 saveNewPoint=function(){return saveNew()};savePointDetailOverride=function(){return saveDetail()};persistPointCoordinate=function(regionName,point){return persistCoordinates(regionName,point)};
 saveCoordinateEdit=function(){return savePin()};

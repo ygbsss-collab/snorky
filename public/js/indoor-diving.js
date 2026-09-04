@@ -5,7 +5,7 @@
 (function () {
   "use strict";
 
-  // 1. 임시 테스트 데이터 (3개 센터)
+  // 1. 임시/폴백 기본 테스트 데이터 (3개 센터)
   const INDOOR_CENTERS = [
     {
       id: "deepstation",
@@ -26,6 +26,7 @@
       phone: "031-333-8888",
       facilities: "국내 최대 36m 딥다이빙 풀, 수온 29~30℃ 유지, 프리다이빙/스쿠버 장비 렌탈샵, 핀샤워실/드라이기 완비, 카페테리아, 관람 라운지",
       homepage: "https://www.deepstation.kr",
+      mapGuide: "에버랜드 인근, 전용 주차장 무료 이용 가능",
       imageUrl: "https://images.unsplash.com/photo-1544551763-46a013bb70d5?w=800&auto=format&fit=crop&q=80",
       description: "수심 36m 아시아 최고 수준의 딥다이빙 시설과 쾌적한 전용 라운지",
       featureShort: "수심 36m 아시아 최고 수준의 딥다이빙풀 및 전용 라운지",
@@ -58,6 +59,7 @@
       phone: "031-585-5757",
       facilities: "아시아 최초 26m 잠수풀, 단계별 플랫폼(1.3m, 2.5m, 5m, 10m, 26m), 에어포켓 트레이닝 룸, 청평호 전망 라운지",
       homepage: "http://k-26.com",
+      mapGuide: "청평호 인근 위치, 자차 이동 권장",
       imageUrl: "https://images.unsplash.com/photo-1682687220063-4742bd7fd538?w=800&auto=format&fit=crop&q=80",
       description: "26m 수심과 다양한 수심별 트레이닝 플랫폼을 갖춘 국내 대표 잠수풀",
       featureShort: "26m 수심과 계단식 트레이닝 플랫폼을 갖춘 국내 대표 잠수풀",
@@ -90,6 +92,7 @@
       phone: "031-432-3535",
       facilities: "35m 초심도 딥풀, 30℃ 사계절 항온 유지, 수중 동굴/터널 코스, 최신 스쿠버/프리다이빙 렌탈 장비, 스마트 락커 시스템",
       homepage: "https://paradive35.com",
+      mapGuide: "시흥 거북섬 웨이브파크 인근 위치",
       imageUrl: "https://images.unsplash.com/photo-1518837695005-2083093ee35b?w=800&auto=format&fit=crop&q=80",
       description: "35m 딥풀과 수중 터널/동굴 어트랙션이 마련된 신규 복합 다이빙 시설",
       featureShort: "35m 초심도 딥풀과 인공 해저동굴 및 수중 터널 어트랙션",
@@ -105,7 +108,101 @@
     }
   ];
 
-  // 2. 상태 관리
+  window.SNORKYIndoorCenters = window.SNORKYIndoorCenters || INDOOR_CENTERS;
+
+  // DB 행 데이터를 JS 센터 객체로 변환
+  function mapDbRowToCenter(row) {
+    if (!row) return null;
+    return {
+      id: row.id,
+      name: row.name,
+      region: row.region,
+      subRegion: row.sub_region || "",
+      lat: row.lat,
+      lng: row.lng,
+      maxDepth: row.max_depth ? Number(row.max_depth) : null,
+      hasFreediving: Boolean(row.has_freediving),
+      hasScuba: Boolean(row.has_scuba),
+      hasParking: Boolean(row.has_parking),
+      status: row.status || "운영중",
+      businessHours: row.business_hours || "",
+      holiday: row.holiday || "",
+      address: row.address || "",
+      parkingInfo: row.parking_info || "",
+      phone: row.phone || "",
+      facilities: row.facilities || "",
+      homepage: row.homepage || "",
+      mapGuide: row.map_guide || "",
+      imageUrl: row.image_url || "",
+      description: row.description || "",
+      featureShort: row.feature_short || "",
+      featureFull: row.feature_full || "",
+      buddyCondition: row.buddy_condition || "",
+      facilityShort: row.feature_short || "",
+      poolTemp: row.pool_temp || "",
+      poolSpecs: row.pool_specs || "",
+      priceShort: row.price_short || "",
+      priceFull: row.price_full || "",
+      rentalInfo: row.rental_info || "",
+      reservationInfo: row.reservation_info || "",
+      sortOrder: row.sort_order || 0,
+      images: []
+    };
+  }
+
+  // Supabase 실내센터 데이터 비동기 로드
+  async function loadIndoorCenters(sbClient) {
+    const sb = sbClient || (window.getSnorkySupabase ? window.getSnorkySupabase() : window.snorkySupabase);
+    if (!sb) {
+      return window.SNORKYIndoorCenters || INDOOR_CENTERS;
+    }
+
+    try {
+      const { data, error } = await sb
+        .from("indoor_diving_centers")
+        .select("*")
+        .order("sort_order", { ascending: true })
+        .order("name", { ascending: true });
+
+      if (!error && Array.isArray(data) && data.length > 0) {
+        let imagesMap = {};
+        try {
+          const { data: imgData } = await sb
+            .from("indoor_center_images")
+            .select("*")
+            .order("sort_order", { ascending: true });
+          if (Array.isArray(imgData)) {
+            imgData.forEach((img) => {
+              if (!imagesMap[img.center_id]) imagesMap[img.center_id] = [];
+              imagesMap[img.center_id].push(img);
+            });
+          }
+        } catch (_) {}
+
+        const loaded = data.map((row) => {
+          const c = mapDbRowToCenter(row);
+          c.images = imagesMap[row.id] || [];
+          if (c.images.length > 0) {
+            const primaryImg = c.images.find((im) => im.is_primary) || c.images[0];
+            if (primaryImg && primaryImg.storage_path) {
+              const pubUrl = sb.storage.from("point-images").getPublicUrl(primaryImg.storage_path).data?.publicUrl;
+              if (pubUrl) c.imageUrl = pubUrl;
+            }
+          }
+          return c;
+        });
+
+        window.SNORKYIndoorCenters = loaded;
+        window.dispatchEvent(new CustomEvent("snorky:indoor-centers-updated", { detail: loaded }));
+        return loaded;
+      }
+    } catch (err) {
+      console.warn("[SNORKYIndoor] Supabase centers load error:", err);
+    }
+
+    window.SNORKYIndoorCenters = window.SNORKYIndoorCenters || INDOOR_CENTERS;
+    return window.SNORKYIndoorCenters;
+  }
   const state = {
     searchQuery: "",
     selectedRegion: "전체",
@@ -144,9 +241,9 @@
       countEl, sortSelect, cardsGrid, emptyState, detailModal, toastEl;
 
   // Selected Center for Modal
-  let activeCenter = null;
+  async function init() {
+    await loadIndoorCenters();
 
-  function init() {
     if (!document.getElementById("indoorCardsGrid") && !document.getElementById("indoorSearchInput")) {
       return;
     }
@@ -164,7 +261,11 @@
     } catch (_) {}
   }
 
-  window.SNORKYIndoorCenters = INDOOR_CENTERS;
+  window.SNORKYIndoor = {
+    loadIndoorCenters,
+    mapDbRowToCenter,
+    getCenters: () => window.SNORKYIndoorCenters || INDOOR_CENTERS
+  };
 
   function bindDOMElements() {
     searchInput = document.getElementById("indoorSearchInput");

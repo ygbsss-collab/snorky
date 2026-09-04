@@ -29,12 +29,71 @@
       .join(" ");
   }
 
+  function parseEventDateTime(eventDate, entryTime) {
+    if (!eventDate) return null;
+    const dateParts = String(eventDate).split("-").map(Number);
+    if (dateParts.length !== 3 || dateParts.some(isNaN)) return null;
+
+    let hours = 23, minutes = 59, seconds = 59;
+    if (entryTime && typeof entryTime === "string") {
+      const match = entryTime.match(/(\d{1,2}):(\d{2})/);
+      if (match) {
+        hours = parseInt(match[1], 10);
+        minutes = parseInt(match[2], 10);
+        seconds = 0;
+      }
+    }
+    return new Date(dateParts[0], dateParts[1] - 1, dateParts[2], hours, minutes, seconds);
+  }
+
+  function isPostExpired(post) {
+    const eventDt = parseEventDateTime(post?.event_date, post?.entry_time);
+    if (!eventDt) return false;
+    return Date.now() > eventDt.getTime();
+  }
+
+  function isPostWithinRetention(post, maxDays = 30) {
+    const eventDt = parseEventDateTime(post?.event_date, post?.entry_time);
+    if (!eventDt) return true;
+    const now = Date.now();
+    const eventTime = eventDt.getTime();
+    if (now <= eventTime) return true;
+    const retentionMs = maxDays * 24 * 60 * 60 * 1000;
+    return (now - eventTime) <= retentionMs;
+  }
+
+  function getPostStatusInfo(post) {
+    if (isPostExpired(post)) {
+      return {
+        text: "신청 불가",
+        className: "buddy-post-status-expired",
+        code: "EXPIRED",
+        isExpired: true,
+        canApply: false
+      };
+    }
+    if (post?.status === "CLOSED") {
+      return {
+        text: "모집마감",
+        className: "buddy-post-status-closed",
+        code: "CLOSED",
+        isExpired: false,
+        canApply: false
+      };
+    }
+    return {
+      text: "모집중",
+      className: "",
+      code: "RECRUITING",
+      isExpired: false,
+      canApply: true
+    };
+  }
+
   function render({ post, author, formattedDate, attributes, statusText, statusClass }) {
-    const isClosed = post?.status === "CLOSED";
-    const finalStatusText = statusText || (isClosed ? "마감" : "모집중");
-    const finalStatusClass = statusClass !== undefined
-      ? statusClass
-      : (isClosed ? "buddy-post-status-closed" : "");
+    const statusInfo = getPostStatusInfo(post);
+    const finalStatusText = statusText !== undefined ? statusText : statusInfo.text;
+    const finalStatusClass = statusClass !== undefined ? statusClass : statusInfo.className;
     const displayName = author?.displayName || "다이버";
     const aidaLevel = author?.aidaLevel && author.aidaLevel !== "없음" ? author.aidaLevel : "레벨 없음";
     const gender = post?.host_gender || author?.gender || "비공개";
@@ -89,5 +148,12 @@
     `;
   }
 
-  global.SNORKYBuddyCard = Object.freeze({ render, getThumbUrl });
+  global.SNORKYBuddyCard = Object.freeze({
+    render,
+    getThumbUrl,
+    parseEventDateTime,
+    isPostExpired,
+    isPostWithinRetention,
+    getPostStatusInfo
+  });
 })(window);
