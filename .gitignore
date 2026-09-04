@@ -34,3 +34,6 @@ verification.png
 test_cache_data.json
 
 /.env
+
+# Dev/test pages ? exclude from production
+test-snorky-eval.html

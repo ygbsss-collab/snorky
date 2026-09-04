@@ -1815,21 +1815,6 @@
   });
 
   /* ──────────────────────────────────────────────────────────
-     ?testDaily=ID 자동 오픈
-  ────────────────────────────────────────────────────────── */
-  function checkAutoOpen() {
-    try {
-      const params = new URLSearchParams(window.location.search);
-      const testId = params.get("testDaily");
-      if (!testId) return;
-      setTimeout(() => open({ id: Number(testId), supabaseId: Number(testId), name: "테스트 포인트" }), 800);
-    } catch (_) { /* noop */ }
-  }
-
-  if (document.readyState === "loading") window.addEventListener("DOMContentLoaded", checkAutoOpen);
-  else checkAutoOpen();
-
-  /* ──────────────────────────────────────────────────────────
      Public API
   ────────────────────────────────────────────────────────── */
   window.SNORKYDailyForecast = Object.freeze({
