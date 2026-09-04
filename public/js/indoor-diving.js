@@ -147,11 +147,24 @@
   let activeCenter = null;
 
   function init() {
+    if (!document.getElementById("indoorCardsGrid") && !document.getElementById("indoorSearchInput")) {
+      return;
+    }
     bindDOMElements();
     bindEvents();
     renderFilterUi();
     render();
+
+    try {
+      const urlParams = new URLSearchParams(window.location.search);
+      const targetCenterId = urlParams.get("centerId") || urlParams.get("id");
+      if (targetCenterId) {
+        setTimeout(() => openDetailModal(targetCenterId), 100);
+      }
+    } catch (_) {}
   }
+
+  window.SNORKYIndoorCenters = INDOOR_CENTERS;
 
   function bindDOMElements() {
     searchInput = document.getElementById("indoorSearchInput");

@@ -100,14 +100,6 @@
         groups[major].push(r);
       });
 
-      // 수도권/실내 다이빙 등 DB에 없는 부가 지역 보충
-      if (!groups["수도권"]) {
-        groups["수도권"] = [
-          { id: "extra-seoul", name: "서울" },
-          { id: "extra-gyeonggi", name: "경기" }
-        ];
-      }
-
       cachedGroups = groups;
       return { regions: cachedRegions, groups: cachedGroups };
     })();
@@ -146,12 +138,185 @@
     return cachedRegions || [];
   }
 
+  // 실내 다이빙 센터 지역 트리 추출 (실제 등록된 실내센터 데이터 기준)
+  function getIndoorCenterRegions() {
+    const centers = (window.SNORKYIndoorCenters && Array.isArray(window.SNORKYIndoorCenters))
+      ? window.SNORKYIndoorCenters
+      : [
+          { id: "deepstation", name: "딥스테이션", region: "경기", subRegion: "용인시" },
+          { id: "k26", name: "K26 잠수풀", region: "경기", subRegion: "가평군" },
+          { id: "paradive35", name: "파라다이브35", region: "경기", subRegion: "시흥시" }
+        ];
+
+    const majorOrder = ["경기", "서울", "인천", "강원", "충북", "충남", "전북", "전남", "경북", "경남", "제주", "부산", "울산", "대구", "대전", "광주", "세종"];
+    const groups = {};
+
+    centers.forEach((c) => {
+      const reg = (c.region || "기타").trim();
+      const sub = (c.subRegion || "").trim().replace(/(시|군|구)$/, "");
+      const centerName = (c.name || "").trim();
+      const labelText = sub ? `${sub} - ${centerName}` : centerName;
+
+      if (!groups[reg]) groups[reg] = [];
+      groups[reg].push({
+        id: c.id,
+        name: labelText,
+        centerId: c.id,
+        centerName: c.name,
+        region: reg,
+        subRegion: c.subRegion || ""
+      });
+    });
+
+    const majors = [];
+    majorOrder.forEach((m) => {
+      if (groups[m] && groups[m].length > 0) majors.push(m);
+    });
+    Object.keys(groups).forEach((m) => {
+      if (!majors.includes(m)) majors.push(m);
+    });
+
+    return { majors, groups };
+  }
+
+  // 활동 구분별 지역 데이터 반환 (스노클링/프리다이빙 vs 실내다이빙)
+  function getRegionsForActivity(activityType) {
+    if (activityType === "실내다이빙") {
+      return getIndoorCenterRegions();
+    }
+    return {
+      majors: getMajorRegionNames(),
+      groups: cachedGroups || {}
+    };
+  }
+
+  // 한 줄 계층형 <select> 렌더링 헬퍼 (등록/검색/알림 화면 공통 재사용)
+  function populateHierarchicalRegionSelect(selectElement, activityType, options = {}) {
+    if (!selectElement) return;
+
+    const {
+      selectedValue = "",
+      placeholder = "지역을 선택해 주세요",
+      includeMajorOption = false
+    } = options;
+
+    selectElement.innerHTML = "";
+
+    // 1) 기본 플레이스홀더 옵션
+    const defaultOpt = document.createElement("option");
+    defaultOpt.value = "";
+    defaultOpt.textContent = placeholder;
+    selectElement.appendChild(defaultOpt);
+
+    // 활동 구분이 미선택인 경우 플레이스홀더만 유지
+    if (!activityType) {
+      return;
+    }
+
+    const { majors, groups } = getRegionsForActivity(activityType);
+    const isIndoor = activityType === "실내다이빙";
+
+    majors.forEach((major) => {
+      const items = groups[major] || [];
+      if (items.length === 0) return;
+
+      const optgroup = document.createElement("optgroup");
+      optgroup.label = major;
+
+      // 검색/알림에서 광역 단위 선택(예: 경기 전체, 강원 전체) 지원
+      if (includeMajorOption) {
+        const majorOpt = document.createElement("option");
+        majorOpt.value = major;
+        majorOpt.setAttribute("data-is-major", "true");
+        majorOpt.textContent = `${major} 전체`;
+        if (selectedValue === major) {
+          majorOpt.selected = true;
+        }
+        optgroup.appendChild(majorOpt);
+      }
+
+      items.forEach((item) => {
+        const opt = document.createElement("option");
+        const val = isIndoor ? (item.centerId || item.id) : (typeof item === "string" ? item : item.name);
+        opt.value = val;
+        if (item.id !== undefined && item.id !== null) {
+          opt.setAttribute("data-region-id", item.id);
+        }
+        if (item.centerId) {
+          opt.setAttribute("data-center-id", item.centerId);
+        }
+        if (item.centerName) {
+          opt.setAttribute("data-center-name", item.centerName);
+        }
+        if (item.region) {
+          opt.setAttribute("data-region", item.region);
+        }
+        if (item.subRegion) {
+          opt.setAttribute("data-sub-region", item.subRegion);
+        }
+
+        opt.textContent = item.name || val;
+
+        if (selectedValue) {
+          if (
+            selectedValue === val ||
+            (item.centerId && selectedValue === item.centerId) ||
+            (item.centerName && selectedValue === item.centerName) ||
+            (item.name && selectedValue === item.name)
+          ) {
+            opt.selected = true;
+          }
+        }
+        optgroup.appendChild(opt);
+      });
+
+      selectElement.appendChild(optgroup);
+    });
+
+    if (selectedValue) {
+      selectElement.value = selectedValue;
+    }
+  }
+
+  // 활동 미선택 상태에서 지역 클릭 시 안내 이벤트 바인딩
+  function bindActivityGuard(selectElement, getActivityFn, onWarnFn) {
+    if (!selectElement) return;
+
+    const checkAndWarn = (e) => {
+      const act = typeof getActivityFn === "function" ? getActivityFn() : "";
+      if (!act) {
+        if (typeof onWarnFn === "function") {
+          onWarnFn("먼저 활동 구분을 선택해 주세요.");
+        }
+        selectElement.blur();
+        if (e && typeof e.preventDefault === "function") {
+          e.preventDefault();
+          e.stopPropagation();
+        }
+      }
+    };
+
+    selectElement.addEventListener("mousedown", (e) => {
+      const act = typeof getActivityFn === "function" ? getActivityFn() : "";
+      if (!act) checkAndWarn(e);
+    });
+
+    selectElement.addEventListener("focus", () => {
+      const act = typeof getActivityFn === "function" ? getActivityFn() : "";
+      if (!act) checkAndWarn();
+    });
+  }
+
   global.SNORKYBuddyRegions = {
     loadRegions,
     resolveMajorRegion,
     getMajorRegionNames,
     getSubRegionNames,
     getSubRegionRecords,
-    getAllRegions
+    getAllRegions,
+    getIndoorCenterRegions,
+    getRegionsForActivity,
+    populateHierarchicalRegionSelect,
+    bindActivityGuard
   };
 })(window);

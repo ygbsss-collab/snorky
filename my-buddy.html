@@ -156,7 +156,10 @@
           <span id="hdetailActivity" class="mybuddy-badge"></span>
           <span id="hdetailStatus" class="mybuddy-card-status"></span>
         </div>
-        <h3 id="hdetailPointName" class="mybuddy-detail-heading"></h3>
+        <div class="mybuddy-detail-place-header">
+          <h3 id="hdetailPointName" class="mybuddy-detail-heading"></h3>
+          <a id="hdetailPlaceLinkBtn" href="#" class="buddy-place-detail-btn" style="display:none;">포인트 상세보기 ›</a>
+        </div>
         <div class="mybuddy-info-grid">
           <div class="mybuddy-info-item"><span class="mybuddy-info-label">지역</span><strong id="hdetailRegion" class="mybuddy-info-val">-</strong></div>
           <div class="mybuddy-info-item"><span class="mybuddy-info-label">일시</span><strong id="hdetailDateTime" class="mybuddy-info-val">-</strong></div>
@@ -198,7 +201,10 @@
           <span id="adetailStatus" class="mybuddy-card-status"></span>
           <span id="adetailMyStatus" class="mybuddy-app-status"></span>
         </div>
-        <h3 id="adetailPointName" class="mybuddy-detail-heading"></h3>
+        <div class="mybuddy-detail-place-header">
+          <h3 id="adetailPointName" class="mybuddy-detail-heading"></h3>
+          <a id="adetailPlaceLinkBtn" href="#" class="buddy-place-detail-btn" style="display:none;">포인트 상세보기 ›</a>
+        </div>
         <div class="mybuddy-info-grid">
           <div class="mybuddy-info-item"><span class="mybuddy-info-label">지역</span><strong id="adetailRegion" class="mybuddy-info-val">-</strong></div>
           <div class="mybuddy-info-item"><span class="mybuddy-info-label">일시</span><strong id="adetailDateTime" class="mybuddy-info-val">-</strong></div>
@@ -285,8 +291,8 @@
   <script src="./public/js/supabase-client.js?v=20260820_stitch_v76"></script>
   <script async src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" onload="window.dispatchEvent(new Event('snorky:supabase-ready'))"></script>
   <script src="./public/js/auth-session.js?v=20260903_v2"></script>
-  <script src="./public/js/buddy-profile-card.js?v=20260903_v3"></script>
-  <script src="./public/js/buddy-card.js?v=20260903_v5"></script>
+  <script src="./public/js/buddy-profile-card.js?v=20260904_v4"></script>
+  <script src="./public/js/buddy-card.js?v=20260904_v4"></script>
   <script>
   (function () {
     "use strict";
@@ -514,6 +520,24 @@
           return;
         }
         myPostsData = res.data || [];
+        var postIds = myPostsData.map(function (p) { return Number(p.id); }).filter(Boolean);
+        if (postIds.length > 0) {
+          try {
+            var appRes = await sb.from("buddy_applications").select("buddy_post_id").in("buddy_post_id", postIds).eq("status", "APPROVED");
+            if (appRes && appRes.data) {
+              var countMap = {};
+              appRes.data.forEach(function (a) {
+                var pid = Number(a.buddy_post_id);
+                countMap[pid] = (countMap[pid] || 0) + 1;
+              });
+              myPostsData.forEach(function (p) {
+                p.current_count = 1 + (countMap[Number(p.id)] || 0);
+              });
+            }
+          } catch (cntErr) {
+            console.warn("[my-buddy] Failed to fetch approved counts for myPosts:", cntErr);
+          }
+        }
       } catch (err) {
         console.error("[my-buddy] loadMyPosts catch:", err);
         myPostsData = [];
@@ -623,7 +647,46 @@
       document.getElementById("hdetailActivity").textContent = post.activity_type;
       statusBadge.className = "mybuddy-card-status" + (isClosed ? " closed" : "");
       statusBadge.textContent = isClosed ? "마감" : "모집중";
-      document.getElementById("hdetailPointName").textContent = post.point_name;
+      var hPointNameEl = document.getElementById("hdetailPointName");
+      var hPlaceLinkBtn = document.getElementById("hdetailPlaceLinkBtn");
+      if (hPointNameEl) hPointNameEl.textContent = post.point_name;
+
+      var isOfficialPlaceH = post.is_snorky_point === true || (!post.is_snorky_point && !!post.point_id);
+      if (isOfficialPlaceH && post.point_id) {
+        var isIndoorPostH = post.activity_type === "실내다이빙";
+        var targetUrlH = isIndoorPostH
+          ? "./indoor-diving.html?centerId=" + encodeURIComponent(post.point_id)
+          : "./index.html?point=" + encodeURIComponent(post.point_id);
+        var btnLabelH = isIndoorPostH ? "센터 상세보기 ›" : "포인트 상세보기 ›";
+
+        if (hPlaceLinkBtn) {
+          hPlaceLinkBtn.style.display = "inline-flex";
+          hPlaceLinkBtn.textContent = btnLabelH;
+          hPlaceLinkBtn.href = targetUrlH;
+          hPlaceLinkBtn.onclick = function (e) {
+            e.preventDefault();
+            window.location.href = targetUrlH;
+          };
+        }
+        if (hPointNameEl) {
+          hPointNameEl.classList.add("clickable");
+          hPointNameEl.title = isIndoorPostH ? "센터 상세페이지로 이동" : "포인트 상세정보로 이동";
+          hPointNameEl.onclick = function () {
+            window.location.href = targetUrlH;
+          };
+        }
+      } else {
+        if (hPlaceLinkBtn) {
+          hPlaceLinkBtn.style.display = "none";
+          hPlaceLinkBtn.href = "#";
+          hPlaceLinkBtn.onclick = null;
+        }
+        if (hPointNameEl) {
+          hPointNameEl.classList.remove("clickable");
+          hPointNameEl.title = "";
+          hPointNameEl.onclick = null;
+        }
+      }
       document.getElementById("hdetailRegion").textContent = post.region;
       document.getElementById("hdetailDateTime").textContent = formatDate(post.event_date) + " · " + (post.entry_time || "시간미정");
       document.getElementById("hdetailCapacity").textContent = (post.current_count || 1) + " / " + (post.capacity || 2) + "명";
@@ -992,6 +1055,24 @@
           console.error("[my-buddy] loadMyApps posts query error:", postRes.error);
         }
         var posts = postRes.data || [];
+        var validPostIds = posts.map(function (p) { return Number(p.id); }).filter(Boolean);
+        if (validPostIds.length > 0) {
+          try {
+            var appCntRes = await sb.from("buddy_applications").select("buddy_post_id").in("buddy_post_id", validPostIds).eq("status", "APPROVED");
+            if (appCntRes && appCntRes.data) {
+              var cntMap = {};
+              appCntRes.data.forEach(function (a) {
+                var pid = Number(a.buddy_post_id);
+                cntMap[pid] = (cntMap[pid] || 0) + 1;
+              });
+              posts.forEach(function (p) {
+                p.current_count = 1 + (cntMap[Number(p.id)] || 0);
+              });
+            }
+          } catch (cntErr) {
+            console.warn("[my-buddy] Failed to fetch approved counts for myApps:", cntErr);
+          }
+        }
         var postsMap = {};
         posts.forEach(function (p) { postsMap[Number(p.id)] = p; });
 
@@ -1116,7 +1197,46 @@
         aMyStatus.textContent = isClosed ? "공고 마감" : "공고 모집중";
       }
 
-      document.getElementById("adetailPointName").textContent = post.point_name;
+      var aPointNameEl = document.getElementById("adetailPointName");
+      var aPlaceLinkBtn = document.getElementById("adetailPlaceLinkBtn");
+      if (aPointNameEl) aPointNameEl.textContent = post.point_name;
+
+      var isOfficialPlaceA = post.is_snorky_point === true || (!post.is_snorky_point && !!post.point_id);
+      if (isOfficialPlaceA && post.point_id) {
+        var isIndoorPostA = post.activity_type === "실내다이빙";
+        var targetUrlA = isIndoorPostA
+          ? "./indoor-diving.html?centerId=" + encodeURIComponent(post.point_id)
+          : "./index.html?point=" + encodeURIComponent(post.point_id);
+        var btnLabelA = isIndoorPostA ? "센터 상세보기 ›" : "포인트 상세보기 ›";
+
+        if (aPlaceLinkBtn) {
+          aPlaceLinkBtn.style.display = "inline-flex";
+          aPlaceLinkBtn.textContent = btnLabelA;
+          aPlaceLinkBtn.href = targetUrlA;
+          aPlaceLinkBtn.onclick = function (e) {
+            e.preventDefault();
+            window.location.href = targetUrlA;
+          };
+        }
+        if (aPointNameEl) {
+          aPointNameEl.classList.add("clickable");
+          aPointNameEl.title = isIndoorPostA ? "센터 상세페이지로 이동" : "포인트 상세정보로 이동";
+          aPointNameEl.onclick = function () {
+            window.location.href = targetUrlA;
+          };
+        }
+      } else {
+        if (aPlaceLinkBtn) {
+          aPlaceLinkBtn.style.display = "none";
+          aPlaceLinkBtn.href = "#";
+          aPlaceLinkBtn.onclick = null;
+        }
+        if (aPointNameEl) {
+          aPointNameEl.classList.remove("clickable");
+          aPointNameEl.title = "";
+          aPointNameEl.onclick = null;
+        }
+      }
       document.getElementById("adetailRegion").textContent = post.region;
       document.getElementById("adetailDateTime").textContent = formatDate(post.event_date) + " · " + (post.entry_time || "시간미정");
       document.getElementById("adetailCapacity").textContent = (post.current_count || 1) + " / " + (post.capacity || 2) + "명";

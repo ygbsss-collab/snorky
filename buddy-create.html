@@ -8,7 +8,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Pretendard:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="./public/css/buddy.css?v=20260903_v18">
+  <link rel="stylesheet" href="./public/css/buddy.css?v=20260904_v2">
   <link rel="stylesheet" href="./public/css/bottom-nav.css?v=20260903_v1">
   <script src="./public/js/bottom-nav.js?v=20260903_v1"></script>
 </head>
@@ -67,6 +67,22 @@
           </div>
           <input type="hidden" id="difficultyInput" value="무관">
         </div>
+
+        <!-- 참석자 레벨 -->
+        <div class="buddy-field" style="margin-top:14px">
+          <label class="buddy-label" for="hostAidaLevelSelect">참석자 레벨<span class="required">*</span></label>
+          <select id="hostAidaLevelSelect" class="buddy-select">
+            <option value="무관">무관 (전체)</option>
+            <option value="없음">없음</option>
+            <option value="AIDA 1">AIDA 1</option>
+            <option value="AIDA 2">AIDA 2</option>
+            <option value="AIDA 3">AIDA 3</option>
+            <option value="AIDA 4">AIDA 4</option>
+            <option value="Instructor">Instructor</option>
+            <option value="기타">기타 (직접 입력)</option>
+          </select>
+          <input id="hostAidaCustomInput" class="buddy-input" type="text" maxlength="30" placeholder="예: PADI Freediver, SSI Level 2 등" style="display:none;margin-top:6px;">
+        </div>
       </section>
 
       <!-- 섹션 2: 일시 및 장소 -->
@@ -93,11 +109,11 @@
           </select>
         </div>
 
-        <!-- 3. 포인트명 -->
+        <!-- 3. 포인트명 / 센터명 -->
         <div class="buddy-field" style="margin-top:14px">
-          <label class="buddy-label">포인트명<span class="required">*</span></label>
+          <label class="buddy-label" id="placeFieldLabel">포인트명<span class="required">*</span></label>
           <div class="buddy-point-tabs">
-            <button type="button" id="tabSnorkyPoint" class="buddy-point-tab active">스노키 포인트 선택</button>
+            <button type="button" id="tabOfficialPlace" class="buddy-point-tab active">SNORKY 포인트 선택</button>
             <button type="button" id="tabCustomPoint" class="buddy-point-tab">직접 입력</button>
           </div>
 
@@ -106,13 +122,27 @@
             <select id="snorkyPointSelect" class="buddy-select">
               <option value="">지역을 먼저 선택해 주세요</option>
             </select>
-            <span class="buddy-helper">선택한 지역에 등록된 스노키 공식 포인트를 불러옵니다.</span>
+            <span class="buddy-helper" id="snorkyPointHelper">선택한 지역에 등록된 스노키 공식 포인트를 불러옵니다.</span>
+          </div>
+
+          <!-- 실내 다이빙센터 선택 영역 -->
+          <div id="indoorCenterArea" style="display:none">
+            <select id="indoorCenterSelect" class="buddy-select">
+              <option value="">실내 다이빙센터를 선택해 주세요</option>
+            </select>
+            <span class="buddy-helper" id="indoorCenterHelper">등록된 실내 다이빙센터 목록을 불러옵니다.</span>
           </div>
 
           <!-- 직접 입력 영역 -->
           <div id="customPointArea" style="display:none">
             <input id="customPointInput" class="buddy-input" type="text" placeholder="예: K-26 잠수풀, 삼척 갈남항 등" maxlength="50">
-            <span class="buddy-helper">실내 다이빙 풀장 또는 지도에 없는 스팟 이름을 직접 입력하세요.</span>
+            <span class="buddy-helper" id="customPointHelper">지도에 없거나 비공식 스팟 이름을 직접 입력하세요.</span>
+          </div>
+
+          <!-- 안내 각주 -->
+          <div id="placeNoticeHelper" class="buddy-place-notice" style="margin-top:8px;font-size:12px;color:#0284c7;line-height:1.45;display:flex;align-items:flex-start;gap:5px;">
+            <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;margin-top:2px;" aria-hidden="true"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>
+            <span id="placeNoticeText">SNORKY 포인트 선택 시 참가자도 포인트 상세예보를 바로 확인할 수 있어요.</span>
           </div>
         </div>
       </section>
@@ -153,22 +183,6 @@
             <button type="button" class="buddy-chip-btn" data-val="비공개">비공개</button>
           </div>
           <input type="hidden" id="hostGenderInput" value="남성">
-        </div>
-
-        <!-- 주최자 프리다이빙 레벨 -->
-        <div class="buddy-field" style="margin-top:14px">
-          <label class="buddy-label">프리다이빙 레벨</label>
-          <select id="hostAidaLevelSelect" class="buddy-select">
-            <option value="없음">없음</option>
-            <option value="AIDA 1">AIDA 1</option>
-            <option value="AIDA 2">AIDA 2</option>
-            <option value="AIDA 3">AIDA 3</option>
-            <option value="AIDA 4">AIDA 4</option>
-            <option value="Instructor">Instructor</option>
-            <option value="기타">기타 (직접 입력)</option>
-          </select>
-          <input id="hostAidaCustomInput" class="buddy-input" type="text" maxlength="30" placeholder="예: PADI Freediver, SSI Level 2 등" style="display:none;margin-top:6px;">
-          <span class="buddy-helper">프로필에 등록된 레벨이 자동 선택됩니다. (수정 가능)</span>
         </div>
       </section>
 
@@ -285,7 +299,8 @@
   <script src="./public/js/supabase-client.js?v=20260820_stitch_v76"></script>
   <script src="./public/js/auth-session.js?v=20260903_v2"></script>
   <script src="./public/js/buddy-regions.js?v=20260903_v1"></script>
-  <script src="./public/js/buddy-create.js?v=20260903_v8"></script>
+  <script src="./public/js/indoor-diving.js?v=20260904_v2"></script>
+  <script src="./public/js/buddy-create.js?v=20260904_v1"></script>
   <script async src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" onload="window.dispatchEvent(new Event('snorky:supabase-ready'))"></script>
 </body>
 </html>

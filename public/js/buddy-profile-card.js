@@ -184,9 +184,10 @@
       try {
         const { data, error } = await sb
           .from("buddy_applications")
-          .select("applicant_user_id, applicant_gender, applicant_aida_level, introduction")
+          .select("id, applicant_user_id, applicant_gender, applicant_aida_level, introduction, created_at")
           .eq("buddy_post_id", post.id)
-          .eq("status", "APPROVED");
+          .eq("status", "APPROVED")
+          .order("created_at", { ascending: true });
         if (error) throw error;
         approvedApplications = data || [];
         await fetchProfiles(approvedApplications.map((application) => application.applicant_user_id));
@@ -197,21 +198,25 @@
 
     if (container.dataset.buddyParticipantPostId !== postId) return [];
 
-    // TEST 모드: 테스트 기간에는 주최자와 동일 user_id라도 승인 신청 건이 있으면 참가자 프로필 표시 허용
-    // 운영 전환 시: const ALLOW_SELF_TEST = false; 로 변경
-    const ALLOW_SELF_TEST = true;
+    // TEST 모드: 테스트 기간에는 동일 user_id 중복 신청이나 주최자 본인의 승인 application도 모두 별도 참가자 프로필로 표시
+    // 운영 전환 시: const TEST_MODE_ALLOW_DUPLICATE_USERS = false; 로 변경하여 1인 1프로필 제한 적용
+    const TEST_MODE_ALLOW_DUPLICATE_USERS = true;
     const hostId = String(post.user_id || "");
     const participants = [];
-    const seenIds = new Set();
-    if (!ALLOW_SELF_TEST && hostId) {
-      seenIds.add(hostId);
+    const seenUserIds = new Set();
+    if (!TEST_MODE_ALLOW_DUPLICATE_USERS && hostId) {
+      seenUserIds.add(hostId);
     }
 
     approvedApplications.forEach((application) => {
       const userId = String(application.applicant_user_id || "");
-      if (!userId || seenIds.has(userId)) return;
-      seenIds.add(userId);
+      if (!userId) return;
+      if (!TEST_MODE_ALLOW_DUPLICATE_USERS) {
+        if (seenUserIds.has(userId)) return;
+        seenUserIds.add(userId);
+      }
       participants.push({
+        applicationId: application.id,
         userId,
         profile: resolveProfile(userId, {
           gender: application.applicant_gender || "비공개",

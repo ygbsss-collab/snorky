@@ -93,11 +93,36 @@ html, body {
 .buddy-quick-icon-wrap { width: 30px; height: 30px; border-radius: 50%; background: var(--primary-blue-light); display: grid; place-items: center; color: var(--primary-blue); flex-shrink: 0; }
 .buddy-quick-title { font-size: 13.5px; font-weight: 700; color: var(--ink); letter-spacing: -0.01em; }
 .buddy-quick-arrow { display: grid; place-items: center; color: var(--primary-blue); }
-/* Search Panel (열릴 때 스크롤 가능) */
+/* 통합 세로 스크롤 영역 (공고찾기 필터 ~ 최근 등록된 버디 모집 카드 목록) */
+.buddy-scroll-wrap {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto !important;
+  overflow-x: hidden !important;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior-y: contain;
+  touch-action: pan-y;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding-bottom: calc(var(--snorky-bottom-nav-offset, 80px) + 20px);
+  box-sizing: border-box;
+}
+.buddy-scroll-wrap::-webkit-scrollbar {
+  width: 4px;
+}
+.buddy-scroll-wrap::-webkit-scrollbar-thumb {
+  background: rgba(0, 0, 0, 0.15);
+  border-radius: 4px;
+}
+.buddy-scroll-wrap::-webkit-scrollbar-track {
+  background: transparent;
+}
+/* Search Panel (통합 스크롤 영역 안에서 자연스럽게 전체 영역 노출) */
 .buddy-search-card {
   flex-shrink: 0;
-  max-height: 45vh;
-  overflow-y: auto;
+  max-height: none;
+  overflow: visible;
   display: none;
   background: var(--card-bg);
   border: 1px solid var(--line);
@@ -202,28 +227,15 @@ html, body {
 .buddy-btn-reset:hover { background: #f8fafc; }
 .buddy-btn-search { height: 44px; border: 0; border-radius: 10px; background: var(--primary-blue); color: #fff; font-size: 14px; font-weight: 800; display: flex; align-items: center; justify-content: center; gap: 6px; cursor: pointer; font-family: inherit; transition: opacity .12s; box-shadow: 0 2px 8px rgba(21,112,239,.25); }
 .buddy-btn-search:hover { opacity: .92; }
-/* Post List (상단 배너/버튼 고정, 최근 등록된 버디 모집 제목 포함 목록 영역만 세로 스크롤) */
+/* Post List Section (통합 스크롤 영역 안에서 자연스럽게 렌더링) */
 .buddy-list-section {
-  flex: 1;
-  min-height: 0;
+  flex-shrink: 0;
   display: flex;
   flex-direction: column;
   gap: 8px;
-  overflow-y: auto;
-  overflow-x: hidden;
-  -webkit-overflow-scrolling: touch;
-  padding-bottom: calc(var(--snorky-bottom-nav-offset, 80px) + 20px);
+  overflow: visible;
+  padding-bottom: 0;
   box-sizing: border-box;
-}
-.buddy-list-section::-webkit-scrollbar {
-  width: 4px;
-}
-.buddy-list-section::-webkit-scrollbar-thumb {
-  background: rgba(0, 0, 0, 0.15);
-  border-radius: 4px;
-}
-.buddy-list-section::-webkit-scrollbar-track {
-  background: transparent;
 }
 .buddy-list-header {
   flex-shrink: 0;
@@ -278,6 +290,18 @@ html, body {
 .buddy-toast { position: fixed; top: 65px; left: 50%; transform: translateX(-50%) translateY(-16px); opacity: 0; visibility: hidden; z-index: 1000; background: rgba(14,38,56,.94); color: #fff; padding: 9px 16px; border-radius: 999px; font-size: 13px; font-weight: 700; box-shadow: 0 4px 16px rgba(0,0,0,.16); transition: all .22s cubic-bezier(.16,1,.3,1); white-space: nowrap; }
 .buddy-toast.show { opacity: 1; visibility: visible; transform: translateX(-50%) translateY(0); }
 /* === buddy-create === */
+#createFormWrap.buddy-content,
+#loginPrompt.buddy-content {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto !important;
+  overflow-x: hidden !important;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior-y: contain;
+  touch-action: pan-y;
+  padding-bottom: calc(32px + var(--snorky-bottom-nav-offset, 0px));
+  box-sizing: border-box;
+}
 .buddy-login-prompt { text-align: center; padding: 60px 20px; background: var(--card-bg); border: 1px solid var(--line); border-radius: 16px; }
 .buddy-login-prompt h3 { margin: 0 0 8px; font-size: 18px; font-weight: 800; color: var(--deep); }
 .buddy-login-prompt p { margin: 0 0 20px; font-size: 14px; color: var(--muted); line-height: 1.5; }
@@ -333,16 +357,19 @@ html, body {
   position: fixed; inset: 0 0 var(--snorky-bottom-nav-offset, 0px); z-index: 1000;
   background: rgba(14,38,56,0.55); backdrop-filter: blur(5px); -webkit-backdrop-filter: blur(5px);
   display: flex; align-items: flex-end; justify-content: center;
+  overflow: hidden;
 }
 .buddy-modal-card {
   background: #fff; border-radius: 22px 22px 0 0; width: 100%; max-width: 520px;
-  max-height: 92vh; overflow-y: auto; box-shadow: 0 -4px 32px rgba(0,0,0,0.13);
-  display: flex; flex-direction: column;
+  max-height: calc(100dvh - 30px - var(--snorky-bottom-nav-offset, 0px));
+  display: flex; flex-direction: column; overflow: hidden !important;
+  box-shadow: 0 -4px 32px rgba(0,0,0,0.13); box-sizing: border-box;
 }
 .buddy-modal-head {
+  flex-shrink: 0;
   padding: 13px 16px 11px; border-bottom: 1px solid var(--line);
   display: flex; align-items: center; justify-content: space-between;
-  position: sticky; top: 0; background: #fff; z-index: 2;
+  background: #fff; z-index: 2;
 }
 .buddy-modal-title { margin: 0; font-size: 15px; font-weight: 800; color: var(--deep); }
 .buddy-modal-close {
@@ -352,8 +379,10 @@ html, body {
 }
 .buddy-modal-close:hover { background: #e2e8f0; color: #1e293b; }
 .buddy-modal-body {
+  flex: 1 1 auto; min-height: 0; overflow-y: auto !important; overflow-x: hidden !important;
+  -webkit-overflow-scrolling: touch; overscroll-behavior-y: contain; touch-action: pan-y;
   padding: 14px 16px; display: flex; flex-direction: column; gap: 10px;
-  font-size: 12.5px; color: #344054; line-height: 1.55;
+  font-size: 12.5px; color: #344054; line-height: 1.55; box-sizing: border-box;
 }
 .buddy-modal-list {
   margin: 0; padding-left: 18px; display: flex; flex-direction: column; gap: 7px;
@@ -370,8 +399,10 @@ html, body {
   width: 17px; height: 17px; accent-color: var(--primary-blue); cursor: pointer;
 }
 .buddy-modal-foot {
+  flex-shrink: 0;
   padding: 10px 16px 14px; border-top: 1px solid var(--line);
   display: grid; grid-template-columns: 1fr 1.5fr; gap: 8px;
+  background: #fff; box-sizing: border-box;
 }
 .buddy-btn-cancel {
   height: 40px; border: 1px solid var(--line); border-radius: 10px;
@@ -391,14 +422,22 @@ html, body {
 /* ─── Detail Modal (버디 모집 상세) ─── */
 .buddy-detail-modal-card {
   max-width: 520px;
-  max-height: 92vh;
+  max-height: calc(100dvh - 30px - var(--snorky-bottom-nav-offset, 0px));
   display: flex;
   flex-direction: column;
+  overflow: hidden !important;
 }
 .buddy-detail-body {
-  overflow-y: auto;
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto !important;
+  overflow-x: hidden !important;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior-y: contain;
+  touch-action: pan-y;
   gap: 10px;
-  padding-bottom: 4px;
+  padding: 14px 16px 16px;
+  box-sizing: border-box;
 }
 /* 배지 */
 .buddy-detail-badges {
@@ -412,8 +451,17 @@ html, body {
   padding: 2px 8px; border-radius: 99px;
   font-size: 11px; font-weight: 700; color: #fff; white-space: nowrap;
 }
-/* 포인트명 (제목) */
-.buddy-detail-heading {
+/* 포인트명 / 센터명 영역 */
+.buddy-detail-place-header,
+.mybuddy-detail-place-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+.buddy-detail-heading,
+.mybuddy-detail-heading {
   margin: 0;
   font-size: 16px;
   font-weight: 800;
@@ -421,6 +469,42 @@ html, body {
   line-height: 1.35;
   word-break: keep-all;
   letter-spacing: -0.02em;
+}
+.buddy-detail-heading.clickable,
+.mybuddy-detail-heading.clickable {
+  cursor: pointer;
+  color: #0284c7;
+  transition: opacity .15s ease;
+}
+.buddy-detail-heading.clickable:hover,
+.mybuddy-detail-heading.clickable:hover {
+  opacity: 0.85;
+  text-decoration: underline;
+}
+.buddy-place-detail-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  padding: 3px 8px;
+  border-radius: 6px;
+  background: #f0f9ff;
+  border: 1px solid #bae6fd;
+  color: #0284c7;
+  font-size: 11.5px;
+  font-weight: 700;
+  text-decoration: none;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all .15s ease;
+  flex-shrink: 0;
+}
+.buddy-place-detail-btn:hover {
+  background: #e0f2fe;
+  border-color: #7dd3fc;
+  color: #0369a1;
+}
+.buddy-place-detail-btn:active {
+  transform: scale(0.97);
 }
 /* 정보 2열 그리드 */
 .buddy-detail-info-grid {
@@ -525,8 +609,8 @@ html, body {
 .buddy-detail-desc-box {
   font-size: 12.5px; line-height: 1.55; color: #334155;
   background: #f8fafc; border: 1px solid #eef2f7; border-radius: 10px;
-  padding: 9px 11px; min-height: 44px; max-height: 120px;
-  overflow-y: auto; white-space: pre-wrap; word-break: keep-all;
+  padding: 9px 11px; min-height: 44px;
+  white-space: pre-wrap; word-break: keep-all;
 }
 
 /* 하단 버튼 Footer */
@@ -592,3 +676,41 @@ html, body {
 .mybuddy-action-btn.buddy-chat-btn svg {
   stroke: #191600;
 }
+
+/* ─────────────────────────────────────────────────────────────
+   공고 검색 필터 내 알림 설정 체크박스
+   ───────────────────────────────────────────────────────────── */
+.buddy-search-alert-row {
+  display: flex;
+  align-items: center;
+  padding: 10px 12px;
+  background: #f0f9ff;
+  border: 1px solid #bae6fd;
+  border-radius: 10px;
+  margin-top: 2px;
+}
+.buddy-search-alert-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  user-select: none;
+  font-size: 13px;
+  font-weight: 700;
+  color: #0369a1;
+  width: 100%;
+}
+.buddy-search-alert-checkbox {
+  width: 17px;
+  height: 17px;
+  accent-color: var(--primary-blue);
+  cursor: pointer;
+  margin: 0;
+  flex-shrink: 0;
+}
+.buddy-search-alert-text {
+  flex: 1;
+  line-height: 1.35;
+}
+
+

@@ -41,12 +41,17 @@
   const eventDateInput = document.getElementById("eventDateInput");
   const entryTimeInput = document.getElementById("entryTimeInput");
   const regionSelect = document.getElementById("regionSelect");
-  const tabSnorkyPoint = document.getElementById("tabSnorkyPoint");
+  const tabOfficialPlace = document.getElementById("tabOfficialPlace") || document.getElementById("tabSnorkyPoint");
   const tabCustomPoint = document.getElementById("tabCustomPoint");
+  const placeFieldLabel = document.getElementById("placeFieldLabel");
   const snorkyPointArea = document.getElementById("snorkyPointArea");
+  const indoorCenterArea = document.getElementById("indoorCenterArea");
   const customPointArea = document.getElementById("customPointArea");
   const snorkyPointSelect = document.getElementById("snorkyPointSelect");
+  const indoorCenterSelect = document.getElementById("indoorCenterSelect");
   const customPointInput = document.getElementById("customPointInput");
+  const placeNoticeHelper = document.getElementById("placeNoticeHelper");
+  const placeNoticeText = document.getElementById("placeNoticeText");
   const capacityInput = document.getElementById("capacityInput");
   const capacityMinusBtn = document.getElementById("capacityMinusBtn");
   const capacityPlusBtn = document.getElementById("capacityPlusBtn");
@@ -94,6 +99,128 @@
   let allPoints = [];
   let originalEditPostData = null;
 
+  // 실내 다이빙 센터 기본/폴백 데이터 목록
+  function getIndoorCenters() {
+    if (window.SNORKYIndoorCenters && Array.isArray(window.SNORKYIndoorCenters) && window.SNORKYIndoorCenters.length > 0) {
+      return window.SNORKYIndoorCenters;
+    }
+    return [
+      { id: "deepstation", name: "딥스테이션", region: "경기", subRegion: "용인시", maxDepth: 36 },
+      { id: "k26", name: "K26 잠수풀", region: "경기", subRegion: "가평군", maxDepth: 26 },
+      { id: "paradive35", name: "파라다이브35", region: "전북", subRegion: "전주시", maxDepth: 35 }
+    ];
+  }
+
+  // 활동 구분 및 탭 모드에 따른 장소 선택 UI 동적 전환 함수
+  function updatePlaceSelectionUI() {
+    const activity = document.getElementById("activityTypeInput")?.value?.trim() || "";
+    const isIndoor = activity === "실내다이빙";
+
+    // 1) 탭 1 텍스트 및 라벨 변경
+    if (tabOfficialPlace) {
+      tabOfficialPlace.textContent = isIndoor ? "실내 다이빙센터 선택" : "SNORKY 포인트 선택";
+    }
+    if (placeFieldLabel) {
+      placeFieldLabel.innerHTML = isIndoor ? '다이빙센터명<span class="required">*</span>' : '포인트명<span class="required">*</span>';
+    }
+
+    // 2) 탭 액티브 상태 및 노출 영역 전환
+    if (isSnorkyPointMode) {
+      tabOfficialPlace?.classList.add("active");
+      tabCustomPoint?.classList.remove("active");
+      if (customPointArea) customPointArea.style.display = "none";
+
+      if (isIndoor) {
+        if (snorkyPointArea) snorkyPointArea.style.display = "none";
+        if (indoorCenterArea) indoorCenterArea.style.display = "block";
+      } else {
+        if (snorkyPointArea) snorkyPointArea.style.display = "block";
+        if (indoorCenterArea) indoorCenterArea.style.display = "none";
+      }
+    } else {
+      tabCustomPoint?.classList.add("active");
+      tabOfficialPlace?.classList.remove("active");
+      if (snorkyPointArea) snorkyPointArea.style.display = "none";
+      if (indoorCenterArea) indoorCenterArea.style.display = "none";
+      if (customPointArea) customPointArea.style.display = "block";
+    }
+
+    // 3) 직접 입력 placeholder 설정
+    if (customPointInput) {
+      customPointInput.placeholder = isIndoor
+        ? "예: 송도 해양스포츠센터, 성남 아쿠아라인 등"
+        : "예: 삼척 갈남항, 제주 판포포구 등";
+    }
+
+    // 4) 안내 각주 문구 전환
+    if (placeNoticeText) {
+      placeNoticeText.textContent = isIndoor
+        ? "실내 다이빙센터 선택 시 참가자도 센터 상세정보를 바로 확인할 수 있어요."
+        : "SNORKY 포인트 선택 시 참가자도 포인트 상세예보를 바로 확인할 수 있어요.";
+    }
+  }
+
+  // 실내 다이빙 센터 셀렉트 옵션 채우기
+  function populateIndoorCenters(selectedRegionName = "") {
+    if (!indoorCenterSelect) return;
+    const centers = getIndoorCenters();
+    const currentVal = indoorCenterSelect.value;
+
+    indoorCenterSelect.innerHTML = '<option value="">실내 다이빙센터를 선택해 주세요</option>';
+
+    let targetCenters = centers;
+    if (selectedRegionName) {
+      const filtered = centers.filter(c =>
+        c.id === selectedRegionName ||
+        c.subRegion === selectedRegionName ||
+        c.region === selectedRegionName ||
+        (c.subRegion && selectedRegionName.includes(c.subRegion)) ||
+        (c.region && selectedRegionName.includes(c.region))
+      );
+      if (filtered.length > 0) {
+        targetCenters = filtered;
+      }
+    }
+
+    targetCenters.forEach(c => {
+      const opt = document.createElement("option");
+      opt.value = c.id;
+      opt.setAttribute("data-center-name", c.name);
+      opt.setAttribute("data-region", c.region || "");
+      opt.setAttribute("data-sub-region", c.subRegion || "");
+      const depthText = c.maxDepth ? ` · ${c.maxDepth}m` : "";
+      const subText = c.subRegion ? ` · ${c.subRegion}` : "";
+      opt.textContent = `${c.name} (${c.region || "지역미정"}${subText}${depthText})`;
+      indoorCenterSelect.appendChild(opt);
+    });
+
+    if (currentVal && targetCenters.some(c => c.id === currentVal)) {
+      indoorCenterSelect.value = currentVal;
+    } else if (targetCenters.length === 1 && selectedRegionName) {
+      // 해당 지역/센터 1개 매칭 시 자동 선택
+      indoorCenterSelect.selectedIndex = 1;
+    }
+  }
+
+  // 실내센터 선택 시 지역 자동 매칭 동기화
+  indoorCenterSelect?.addEventListener("change", () => {
+    const selectedOpt = indoorCenterSelect.options[indoorCenterSelect.selectedIndex];
+    const centerSubRegion = selectedOpt?.getAttribute("data-sub-region");
+    const centerRegion = selectedOpt?.getAttribute("data-region");
+    if (regionSelect && (centerSubRegion || centerRegion)) {
+      for (let i = 0; i < regionSelect.options.length; i++) {
+        const opt = regionSelect.options[i];
+        if (centerSubRegion && opt.value === centerSubRegion) {
+          regionSelect.selectedIndex = i;
+          break;
+        } else if (centerRegion && (opt.value === centerRegion || opt.text.includes(centerRegion))) {
+          regionSelect.selectedIndex = i;
+          break;
+        }
+      }
+    }
+  });
+
   // 토스트 표시 함수
   function showToast(msg, duration = 2500) {
     if (!toastEl) return;
@@ -112,9 +239,38 @@
 
     group.querySelectorAll(".buddy-chip-btn").forEach((btn) => {
       btn.addEventListener("click", () => {
+        const prevVal = input.value;
+        const newVal = btn.getAttribute("data-val") || "";
+
         group.querySelectorAll(".buddy-chip-btn").forEach((b) => b.classList.remove("active"));
         btn.classList.add("active");
-        input.value = btn.getAttribute("data-val") || "";
+        input.value = newVal;
+
+        // 활동 구분 변경 시 기존 선택값 초기화 및 해당 활동 지역 목록 즉시 다시 로드
+        if (inputId === "activityTypeInput") {
+          if (prevVal !== newVal) {
+            if (regionSelect) regionSelect.value = "";
+            if (snorkyPointSelect) {
+              snorkyPointSelect.innerHTML = '<option value="">지역을 먼저 선택해 주세요</option>';
+              snorkyPointSelect.value = "";
+            }
+            if (indoorCenterSelect) {
+              indoorCenterSelect.innerHTML = '<option value="">실내 다이빙센터를 선택해 주세요</option>';
+              indoorCenterSelect.value = "";
+            }
+            if (customPointInput) {
+              customPointInput.value = "";
+            }
+          }
+
+          if (window.SNORKYBuddyRegions) {
+            window.SNORKYBuddyRegions.populateHierarchicalRegionSelect(regionSelect, newVal, {
+              placeholder: "지역을 선택해 주세요",
+              includeMajorOption: false
+            });
+          }
+          updatePlaceSelectionUI();
+        }
       });
     });
   }
@@ -128,7 +284,18 @@
       const match = btn.getAttribute("data-val") === value;
       btn.classList.toggle("active", match);
     });
-    if (input) input.value = value;
+    if (input) {
+      input.value = value;
+      if (inputId === "activityTypeInput") {
+        if (window.SNORKYBuddyRegions) {
+          window.SNORKYBuddyRegions.populateHierarchicalRegionSelect(regionSelect, value, {
+            placeholder: "지역을 선택해 주세요",
+            includeMajorOption: false
+          });
+        }
+        updatePlaceSelectionUI();
+      }
+    }
   }
 
   bindChipGroup("activityTypeGroup", "activityTypeInput");
@@ -168,20 +335,10 @@
   // 4. 포인트 선택 모드 전환 함수
   function setPointMode(isSnorky) {
     isSnorkyPointMode = !!isSnorky;
-    if (isSnorkyPointMode) {
-      tabSnorkyPoint?.classList.add("active");
-      tabCustomPoint?.classList.remove("active");
-      if (snorkyPointArea) snorkyPointArea.style.display = "block";
-      if (customPointArea) customPointArea.style.display = "none";
-    } else {
-      tabCustomPoint?.classList.add("active");
-      tabSnorkyPoint?.classList.remove("active");
-      if (snorkyPointArea) snorkyPointArea.style.display = "none";
-      if (customPointArea) customPointArea.style.display = "block";
-    }
+    updatePlaceSelectionUI();
   }
 
-  tabSnorkyPoint?.addEventListener("click", () => setPointMode(true));
+  tabOfficialPlace?.addEventListener("click", () => setPointMode(true));
   tabCustomPoint?.addEventListener("click", () => setPointMode(false));
 
   // 5. 인원 수 스텝퍼 (+, -)
@@ -233,37 +390,22 @@
       const ptRes = await sb.from("points").select("id, legacy_id, region_id, name").order("name");
       allPoints = ptRes.data || [];
 
-      // 지역 셀렉트 옵션 채우기 (대분류 optgroup별로 자동 분류)
-      if (regionSelect) {
-        regionSelect.innerHTML = '<option value="">지역을 선택해 주세요</option>';
-        if (window.SNORKYBuddyRegions) {
-          const majors = window.SNORKYBuddyRegions.getMajorRegionNames();
-          majors.forEach((major) => {
-            const subRecords = window.SNORKYBuddyRegions.getSubRegionRecords(major);
-            if (subRecords.length > 0) {
-              const optgroup = document.createElement("optgroup");
-              optgroup.label = major;
-              subRecords.forEach((r) => {
-                const opt = document.createElement("option");
-                opt.value = r.name;
-                if (r.id !== undefined && r.id !== null) {
-                  opt.setAttribute("data-region-id", r.id);
-                }
-                opt.textContent = r.name;
-                optgroup.appendChild(opt);
-              });
-              regionSelect.appendChild(optgroup);
-            }
-          });
-        } else {
-          allRegions.forEach((r) => {
-            const opt = document.createElement("option");
-            opt.value = r.name;
-            opt.setAttribute("data-region-id", r.id);
-            opt.textContent = r.name;
-            regionSelect.appendChild(opt);
-          });
-        }
+      // 지역 셀렉트 가드 바인딩 (활동 미선택 시 클릭 방지 및 안내)
+      if (regionSelect && window.SNORKYBuddyRegions) {
+        window.SNORKYBuddyRegions.bindActivityGuard(
+          regionSelect,
+          () => document.getElementById("activityTypeInput")?.value?.trim() || "",
+          (msg) => showToast(msg)
+        );
+      }
+
+      // 현재 선택된 활동 구분에 맞추어 계층형 지역 목록 생성
+      const currentActivity = document.getElementById("activityTypeInput")?.value?.trim() || "";
+      if (regionSelect && window.SNORKYBuddyRegions) {
+        window.SNORKYBuddyRegions.populateHierarchicalRegionSelect(regionSelect, currentActivity, {
+          placeholder: "지역을 선택해 주세요",
+          includeMajorOption: false
+        });
       }
     } catch (err) {
       console.error("[BuddyCreate] Error loading points/regions:", err);
@@ -273,14 +415,30 @@
   // 지역 변경 시 해당 지역 포인트 목록 갱신
   regionSelect?.addEventListener("change", () => {
     const selectedOpt = regionSelect.options[regionSelect.selectedIndex];
-    const regionId = selectedOpt?.getAttribute("data-region-id");
+    let regionId = selectedOpt?.getAttribute("data-region-id");
     const regionName = regionSelect.value;
+    const currentActivity = document.getElementById("activityTypeInput")?.value?.trim() || "";
+
+    if (currentActivity === "실내다이빙") {
+      const centerId = selectedOpt?.getAttribute("data-center-id") || regionName;
+      const centerRegion = selectedOpt?.getAttribute("data-region") || "";
+      populateIndoorCenters(centerRegion || regionName);
+      if (indoorCenterSelect && centerId) {
+        indoorCenterSelect.value = centerId;
+      }
+      return;
+    }
 
     if (!snorkyPointSelect) return;
 
     if (!regionName) {
       snorkyPointSelect.innerHTML = '<option value="">지역을 먼저 선택해 주세요</option>';
       return;
+    }
+
+    if (!regionId && allRegions.length > 0) {
+      const foundReg = allRegions.find((r) => r.name === regionName);
+      if (foundReg) regionId = foundReg.id;
     }
 
     const filtered = allPoints.filter((p) => String(p.region_id) === String(regionId));
@@ -331,7 +489,7 @@
     const difficulty = document.getElementById("difficultyInput")?.value?.trim();
     const eventDate = eventDateInput?.value?.trim();
     const entryTime = entryTimeInput?.value?.trim();
-    const region = regionSelect?.value?.trim();
+    let region = regionSelect?.value?.trim();
     const preferredGender = document.getElementById("preferredGenderInput")?.value?.trim();
     const hostGender = document.getElementById("hostGenderInput")?.value?.trim();
     const capacity = parseInt(capacityInput?.value, 10);
@@ -361,35 +519,66 @@
       entryTimeInput?.focus();
       return;
     }
-    if (!region) {
-      showToast("지역을 선택해 주세요.");
-      regionSelect?.focus();
-      return;
-    }
 
     let pointId = null;
     let pointName = "";
     let isSnorkyPoint = isSnorkyPointMode;
 
-    if (isSnorkyPointMode) {
-      const selectedPointOpt = snorkyPointSelect?.options[snorkyPointSelect?.selectedIndex];
-      pointId = snorkyPointSelect?.value || null;
-      pointName = selectedPointOpt?.getAttribute("data-point-name") || "";
+    if (activityType === "실내다이빙") {
+      if (isSnorkyPointMode) {
+        const selectedCenterId = indoorCenterSelect?.value;
+        const centers = getIndoorCenters();
+        const centerObj = centers.find(c => c.id === selectedCenterId);
 
-      if (!pointId || !pointName) {
-        showToast("스노키 포인트를 선택해 주시거나 [직접 입력]을 이용해 주세요.");
-        snorkyPointSelect?.focus();
-        return;
+        if (!selectedCenterId || !centerObj) {
+          showToast("실내 다이빙센터를 선택해 주시거나 [직접 입력]을 이용해 주세요.");
+          indoorCenterSelect?.focus();
+          return;
+        }
+        pointId = centerObj.id;
+        pointName = centerObj.name;
+        isSnorkyPoint = true;
+        if (!region && centerObj.region) {
+          region = centerObj.region;
+        }
+      } else {
+        pointName = customPointInput?.value?.trim() || "";
+        if (!pointName) {
+          showToast("다이빙센터명을 직접 입력해 주세요.");
+          customPointInput?.focus();
+          return;
+        }
+        pointId = null;
+        isSnorkyPoint = false;
       }
     } else {
-      pointName = customPointInput?.value?.trim() || "";
-      if (!pointName) {
-        showToast("포인트명을 직접 입력해 주세요.");
-        customPointInput?.focus();
-        return;
+      // 스노클링 / 프리다이빙
+      if (isSnorkyPointMode) {
+        const selectedPointOpt = snorkyPointSelect?.options[snorkyPointSelect?.selectedIndex];
+        pointId = snorkyPointSelect?.value || null;
+        pointName = selectedPointOpt?.getAttribute("data-point-name") || "";
+
+        if (!pointId || !pointName) {
+          showToast("스노키 포인트를 선택해 주시거나 [직접 입력]을 이용해 주세요.");
+          snorkyPointSelect?.focus();
+          return;
+        }
+      } else {
+        pointName = customPointInput?.value?.trim() || "";
+        if (!pointName) {
+          showToast("포인트명을 직접 입력해 주세요.");
+          customPointInput?.focus();
+          return;
+        }
+        pointId = null;
+        isSnorkyPoint = false;
       }
-      pointId = null;
-      isSnorkyPoint = false;
+    }
+
+    if (!region) {
+      showToast("지역을 선택해 주세요.");
+      regionSelect?.focus();
+      return;
     }
 
     if (isNaN(capacity) || capacity < 2) {
@@ -418,11 +607,11 @@
       }
     }
 
-    let finalHostAida = hostAidaLevelSelect ? hostAidaLevelSelect.value : "없음";
+    let finalHostAida = hostAidaLevelSelect ? hostAidaLevelSelect.value : "무관";
     if (finalHostAida === "기타") {
       finalHostAida = hostAidaCustomInput ? hostAidaCustomInput.value.trim() : "";
       if (!finalHostAida) {
-        showToast("프리다이빙 레벨을 직접 입력해 주세요.");
+        showToast("참석자 레벨을 직접 입력해 주세요.");
         hostAidaCustomInput?.focus();
         return;
       }
@@ -607,6 +796,9 @@
         const { data, error } = await sb.from("buddy_posts").insert([postPayload]).select("id").single();
         if (error) throw error;
         targetPostId = data?.id;
+
+        // 신규 등록 공고 맞춤 알림 발송 (TEST 기간 동일 작성자 포함, 조건 일치 시 알림 생성)
+        dispatchBuddyPostAlertNotifications(sb, { ...postPayload, id: targetPostId }).catch(e => console.warn("[BuddyCreate] Alert dispatch error:", e));
       }
 
       // 프로필 정보 동기화 (user_profiles 테이블에 작성자의 닉네임/아바타가 없으면 자동 upsert)
@@ -786,37 +978,72 @@
         }
       }
 
-      // 8. 포인트 모드 (is_snorky_point), 포인트 ID (point_id), 포인트명 (point_name) 복원
+      // 8. 포인트/센터 모드, ID, 이름 복원
       const isSnorky = post.is_snorky_point === true || (!post.is_snorky_point && !!post.point_id);
-      if (isSnorky) {
-        setPointMode(true);
-        if (snorkyPointSelect) {
-          let found = false;
-          for (let i = 0; i < snorkyPointSelect.options.length; i++) {
-            const opt = snorkyPointSelect.options[i];
-            const optVal = String(opt.value);
-            const optName = opt.getAttribute("data-point-name") || opt.textContent;
-            if ((post.point_id && optVal === String(post.point_id)) || (post.point_name && optName === post.point_name)) {
-              snorkyPointSelect.selectedIndex = i;
-              found = true;
-              break;
+      if (post.activity_type === "실내다이빙") {
+        if (isSnorky) {
+          setPointMode(true);
+          populateIndoorCenters(post.region || "");
+          if (indoorCenterSelect) {
+            let found = false;
+            for (let i = 0; i < indoorCenterSelect.options.length; i++) {
+              const opt = indoorCenterSelect.options[i];
+              const optVal = String(opt.value);
+              const optName = opt.getAttribute("data-center-name") || opt.textContent;
+              if ((post.point_id && optVal === String(post.point_id)) || (post.point_name && optName === post.point_name)) {
+                indoorCenterSelect.selectedIndex = i;
+                found = true;
+                break;
+              }
+            }
+            if (!found && (post.point_name || post.point_id)) {
+              const preservedOpt = document.createElement("option");
+              preservedOpt.value = post.point_id || post.point_name;
+              preservedOpt.setAttribute("data-center-name", post.point_name || post.point_id);
+              preservedOpt.textContent = post.point_name || post.point_id;
+              preservedOpt.selected = true;
+              indoorCenterSelect.appendChild(preservedOpt);
+              indoorCenterSelect.value = preservedOpt.value;
             }
           }
-          // 포인트 목록에서 일치하는 옵션을 못 찾았더라도 기존 저장된 포인트 정보를 새 옵션으로 주입하여 복원
-          if (!found && (post.point_name || post.point_id)) {
-            const preservedOpt = document.createElement("option");
-            preservedOpt.value = post.point_id || post.point_name;
-            preservedOpt.setAttribute("data-point-name", post.point_name || post.point_id);
-            preservedOpt.textContent = post.point_name || post.point_id;
-            preservedOpt.selected = true;
-            snorkyPointSelect.appendChild(preservedOpt);
-            snorkyPointSelect.value = preservedOpt.value;
+        } else {
+          setPointMode(false);
+          if (customPointInput && post.point_name) {
+            customPointInput.value = post.point_name;
           }
         }
       } else {
-        setPointMode(false);
-        if (customPointInput && post.point_name) {
-          customPointInput.value = post.point_name;
+        // 스노클링 / 프리다이빙
+        if (isSnorky) {
+          setPointMode(true);
+          if (snorkyPointSelect) {
+            let found = false;
+            for (let i = 0; i < snorkyPointSelect.options.length; i++) {
+              const opt = snorkyPointSelect.options[i];
+              const optVal = String(opt.value);
+              const optName = opt.getAttribute("data-point-name") || opt.textContent;
+              if ((post.point_id && optVal === String(post.point_id)) || (post.point_name && optName === post.point_name)) {
+                snorkyPointSelect.selectedIndex = i;
+                found = true;
+                break;
+              }
+            }
+            // 포인트 목록에서 일치하는 옵션을 못 찾았더라도 기존 저장된 포인트 정보를 새 옵션으로 주입하여 복원
+            if (!found && (post.point_name || post.point_id)) {
+              const preservedOpt = document.createElement("option");
+              preservedOpt.value = post.point_id || post.point_name;
+              preservedOpt.setAttribute("data-point-name", post.point_name || post.point_id);
+              preservedOpt.textContent = post.point_name || post.point_id;
+              preservedOpt.selected = true;
+              snorkyPointSelect.appendChild(preservedOpt);
+              snorkyPointSelect.value = preservedOpt.value;
+            }
+          }
+        } else {
+          setPointMode(false);
+          if (customPointInput && post.point_name) {
+            customPointInput.value = post.point_name;
+          }
         }
       }
 
@@ -831,8 +1058,8 @@
         setChipGroupValue("hostGenderGroup", "hostGenderInput", post.host_gender);
       }
       if (hostAidaLevelSelect) {
-        const standardLevels = ["없음", "AIDA 1", "AIDA 2", "AIDA 3", "AIDA 4", "Instructor"];
-        const savedLvl = post.host_aida_level || "없음";
+        const standardLevels = ["무관", "없음", "AIDA 1", "AIDA 2", "AIDA 3", "AIDA 4", "Instructor"];
+        const savedLvl = post.host_aida_level || "무관";
         if (standardLevels.includes(savedLvl)) {
           hostAidaLevelSelect.value = savedLvl;
           if (hostAidaCustomInput) { hostAidaCustomInput.style.display = "none"; hostAidaCustomInput.value = ""; }
@@ -880,9 +1107,170 @@
     }
   }
 
+  // ── 신규 버디 공고 맞춤 알림 발송 ──
+  async function dispatchBuddyPostAlertNotifications(sb, post) {
+    if (!sb || !post || !post.id) return;
+    try {
+      const { data: subscribers, error } = await sb
+        .from("buddy_alert_settings")
+        .select("user_id, enabled, date_filter, region, sub_region, activity_type, difficulty, recruit_gender, host_gender, participant_level")
+        .eq("enabled", true);
+
+      if (error || !subscribers || subscribers.length === 0) return;
+
+      const postDate = (post.event_date || "").trim();
+      const postRegion = (post.region || "").trim();
+      const postActivity = (post.activity_type || "").trim();
+      const postDifficulty = (post.difficulty || "").trim();
+      const postPrefGender = (post.preferred_gender || "").trim();
+      const postHostGender = (post.host_gender || "").trim();
+      const postLevel = (post.host_aida_level || "").trim();
+
+      // KST 오늘/주말/이번달 계산
+      const now = new Date();
+      const utc = now.getTime() + (now.getTimezoneOffset() * 60000);
+      const kstDate = new Date(utc + (9 * 3600000));
+      const todayStr = `${kstDate.getFullYear()}-${String(kstDate.getMonth() + 1).padStart(2, "0")}-${String(kstDate.getDate()).padStart(2, "0")}`;
+      const currentMonthStr = `${kstDate.getFullYear()}-${String(kstDate.getMonth() + 1).padStart(2, "0")}`;
+
+      const dayOfWeek = kstDate.getDay();
+      const daysToSaturday = (6 - dayOfWeek + 7) % 7;
+      const satDate = new Date(kstDate);
+      satDate.setDate(kstDate.getDate() + daysToSaturday);
+      const sunDate = new Date(satDate);
+      sunDate.setDate(satDate.getDate() + 1);
+      const satStr = `${satDate.getFullYear()}-${String(satDate.getMonth() + 1).padStart(2, "0")}-${String(satDate.getDate()).padStart(2, "0")}`;
+      const sunStr = `${sunDate.getFullYear()}-${String(sunDate.getMonth() + 1).padStart(2, "0")}-${String(sunDate.getDate()).padStart(2, "0")}`;
+
+      const matchedUserIds = [];
+
+      for (const sub of subscribers) {
+        const uid = String(sub.user_id);
+        const condRegion = (sub.region || "").trim();
+        const condSubRegion = (sub.sub_region || "").trim();
+        const condDateFilter = (sub.date_filter || "").trim();
+        const condActivity = (sub.activity_type || "").trim();
+        const condDifficulty = (sub.difficulty || "").trim();
+        const condRecruitGender = (sub.recruit_gender || "").trim();
+        const condHostGender = (sub.host_gender || "").trim();
+        const condLevel = (sub.participant_level || "").trim();
+
+        // 1) 지역 조건 검사
+        if (condRegion) {
+          if (condSubRegion) {
+            let fullPostLocation = `${postRegion} ${post.point_name || ""}`;
+            if (postActivity === "실내다이빙" && post.point_id) {
+              const centers = window.SNORKYIndoorCenters || [];
+              const cObj = centers.find(c => c.id === post.point_id);
+              if (cObj) {
+                fullPostLocation += ` ${cObj.subRegion || ""} ${cObj.address || ""}`;
+              }
+            }
+            if (!fullPostLocation.includes(condRegion) || !fullPostLocation.includes(condSubRegion)) {
+              continue;
+            }
+          } else {
+            if (!postRegion.includes(condRegion)) {
+              continue;
+            }
+          }
+        }
+
+        // 2) 활동 구분 조건 검사
+        if (condActivity && condActivity !== "전체" && condActivity !== "") {
+          if (postActivity !== condActivity) continue;
+        }
+
+        // 3) 날짜 조건 검사
+        if (condDateFilter) {
+          const isSpecificDate = /^\d{4}-\d{2}-\d{2}$/.test(condDateFilter);
+          if (isSpecificDate) {
+            if (postDate !== condDateFilter) continue;
+          } else if (condDateFilter === "today") {
+            if (postDate !== todayStr) continue;
+          } else if (condDateFilter === "weekend") {
+            if (postDate !== satStr && postDate !== sunStr) continue;
+          } else if (condDateFilter === "this_month") {
+            if (!postDate.startsWith(currentMonthStr)) continue;
+          }
+        }
+
+        // 4) 난이도 조건 검사 (공고가 '무관'이거나 조건이 '무관/전체'이면 일치)
+        if (condDifficulty && condDifficulty !== "무관" && condDifficulty !== "전체" && condDifficulty !== "") {
+          if (postDifficulty !== "무관" && postDifficulty !== condDifficulty) continue;
+        }
+
+        // 5) 모집 성별 조건 검사 (공고가 '성별 무관'이거나 조건이 '성별 무관/전체'이면 일치)
+        if (condRecruitGender && condRecruitGender !== "성별 무관" && condRecruitGender !== "전체" && condRecruitGender !== "") {
+          if (postPrefGender !== "성별 무관" && postPrefGender !== condRecruitGender) continue;
+        }
+
+        // 6) 주최자 성별 조건 검사
+        if (condHostGender && condHostGender !== "전체" && condHostGender !== "") {
+          if (postHostGender !== condHostGender) continue;
+        }
+
+        // 7) 참여 레벨 조건 검사 (buddy_posts의 host_aida_level과 비교)
+        if (condLevel && condLevel !== "전체" && condLevel !== "" && condLevel !== "무관") {
+          const standardLevels = ["없음", "AIDA 1", "AIDA 2", "AIDA 3", "AIDA 4", "Instructor"];
+          if (condLevel === "없음") {
+            if (postLevel && postLevel !== "없음") continue;
+          } else if (condLevel === "기타") {
+            if (!postLevel || standardLevels.includes(postLevel)) continue;
+          } else {
+            if (postLevel !== condLevel) continue;
+          }
+        }
+
+        // TEST 기간: 작성자 본인(user_id === uid)이어도 알림 수신 허용
+        matchedUserIds.push(uid);
+      }
+
+      if (matchedUserIds.length === 0) return;
+
+      const uniqueUserIds = Array.from(new Set(matchedUserIds));
+
+      // 8. 동일 공고 중복 알림 방지 (동일 user_id, buddy_post_id, type: 'buddy_alert_matched')
+      const { data: existingNotis } = await sb
+        .from("user_notifications")
+        .select("user_id")
+        .eq("buddy_post_id", Number(post.id))
+        .eq("type", "buddy_alert_matched");
+
+      const alreadySentUserSet = new Set((existingNotis || []).map(n => String(n.user_id)));
+      const finalUserIds = uniqueUserIds.filter(uid => !alreadySentUserSet.has(uid));
+
+      if (finalUserIds.length === 0) return;
+
+      const pName = post.point_name || "버디 포인트";
+      const summaryText = `[${post.region} · ${post.activity_type}] ${pName} (${post.event_date})`;
+
+      const notiRows = finalUserIds.map(uid => ({
+        user_id: uid,
+        type: "buddy_alert_matched",
+        title: "🔔 맞춤 버디 공고가 등록되었습니다.",
+        content: `${summaryText} 새로운 버디 모집글이 등록되었습니다. 지금 확인해 보세요!`,
+        buddy_post_id: Number(post.id),
+        point_name: pName,
+        link_url: `./buddy.html?post_id=${post.id}`,
+        is_read: false
+      }));
+
+      const { error: insErr } = await sb.from("user_notifications").insert(notiRows);
+      if (insErr) {
+        console.error("[BuddyCreate] Alert notifications insert error:", insErr);
+      }
+    } catch (err) {
+      console.error("[BuddyCreate] Dispatch alert notifications error:", err);
+    }
+  }
+
   // 초기화 및 리스너 등록
   async function init() {
     await loadRegionsAndPoints();
+    populateIndoorCenters();
+    updatePlaceSelectionUI();
+
     if (editPostId) {
       await loadEditPostData(editPostId);
     } else {
@@ -904,14 +1292,11 @@
         setChipGroupValue("hostGenderGroup", "hostGenderInput", userGender);
       }
 
-      if (hostAidaLevelSelect && userLvl) {
-        const standardLevels = ["없음", "AIDA 1", "AIDA 2", "AIDA 3", "AIDA 4", "Instructor"];
-        if (standardLevels.includes(userLvl)) {
-          hostAidaLevelSelect.value = userLvl;
-          if (hostAidaCustomInput) { hostAidaCustomInput.style.display = "none"; hostAidaCustomInput.value = ""; }
-        } else {
-          hostAidaLevelSelect.value = "기타";
-          if (hostAidaCustomInput) { hostAidaCustomInput.style.display = "block"; hostAidaCustomInput.value = userLvl; }
+      if (hostAidaLevelSelect) {
+        hostAidaLevelSelect.value = "무관";
+        if (hostAidaCustomInput) {
+          hostAidaCustomInput.style.display = "none";
+          hostAidaCustomInput.value = "";
         }
       }
     }

@@ -8,9 +8,151 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Pretendard:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="./public/css/buddy.css?v=20260903_v18">
-  <link rel="stylesheet" href="./public/css/bottom-nav.css?v=20260903_v1">
-  <script src="./public/js/bottom-nav.js?v=20260903_v1"></script>
+  <link rel="stylesheet" href="./public/css/buddy.css?v=20260904_v3">
+  <link rel="stylesheet" href="./public/css/bottom-nav.css?v=20260904_v3">
+  <script src="./public/js/bottom-nav.js?v=20260904_v3"></script>
+  <style>
+    /* 상단 헤더, 배너, 메뉴 고정 및 최근 버디 모집 목록 영역 독립 세로 스크롤 복구 */
+    html, body {
+      height: 100%;
+      height: 100dvh;
+      margin: 0;
+      padding: 0;
+      overflow: hidden;
+    }
+    .buddy-app {
+      height: 100%;
+      height: 100dvh;
+      max-height: 100dvh;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      position: relative;
+    }
+    .buddy-header {
+      flex-shrink: 0;
+    }
+    .buddy-content {
+      flex: 1 1 0%;
+      min-height: 0;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      padding: 10px 14px 0;
+      gap: 10px;
+    }
+    .buddy-hero-banner {
+      flex-shrink: 0;
+    }
+    .buddy-quick-cards-row {
+      flex-shrink: 0;
+    }
+    /* 상단 배너 및 퀵카드는 상단에 고정 유지 */
+    .buddy-hero-banner,
+    .buddy-quick-cards-row {
+      flex-shrink: 0;
+    }
+
+    /* 공고찾기 필터 ~ 최근 등록된 버디 모집 카드 목록을 묶는 통합 세로 스크롤 영역 */
+    .buddy-scroll-wrap {
+      flex: 1 1 0%;
+      min-height: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      overflow-y: auto !important;
+      overflow-x: hidden !important;
+      -webkit-overflow-scrolling: touch;
+      overscroll-behavior-y: contain;
+      touch-action: pan-y;
+      /* 마지막 카드가 하단 네비게이션에 가리지 않도록 공통 bottom offset 적용 */
+      padding-bottom: calc(var(--snorky-bottom-nav-offset, 68px) + 24px) !important;
+      box-sizing: border-box;
+    }
+    .buddy-scroll-wrap::-webkit-scrollbar {
+      width: 4px;
+    }
+    .buddy-scroll-wrap::-webkit-scrollbar-thumb {
+      background: rgba(0, 0, 0, 0.15);
+      border-radius: 4px;
+    }
+    .buddy-scroll-wrap::-webkit-scrollbar-track {
+      background: transparent;
+    }
+
+    /* 공고찾기 필터 카드: 자체 별도 스크롤 제거, 스크롤 래퍼 안에서 전체 영역 노출 */
+    .buddy-search-card {
+      flex-shrink: 0;
+      max-height: none !important;
+      overflow: visible !important;
+    }
+
+    /* 최근 등록된 버디 모집 목록 영역 (통합 스크롤 래퍼 안에서 자연스럽게 렌더링) */
+    .buddy-list-section {
+      flex-shrink: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      overflow: visible !important;
+      padding-bottom: 0 !important;
+      box-sizing: border-box;
+    }
+    .buddy-list-header {
+      flex-shrink: 0;
+    }
+    .buddy-card-list {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    /* 모달 오버레이 & 상세 모달 스크롤 규칙 (헤더/하단 네비 고정, 본문만 독립 스크롤) */
+    .buddy-modal-overlay {
+      position: fixed;
+      inset: 0 0 var(--snorky-bottom-nav-offset, 0px);
+      z-index: 1000;
+      background: rgba(14,38,56,0.55);
+      backdrop-filter: blur(5px);
+      -webkit-backdrop-filter: blur(5px);
+      display: flex;
+      align-items: flex-end;
+      justify-content: center;
+      overflow: hidden;
+    }
+    .buddy-modal-card {
+      background: #fff;
+      border-radius: 22px 22px 0 0;
+      width: 100%;
+      max-width: 520px;
+      max-height: calc(100dvh - 30px - var(--snorky-bottom-nav-offset, 0px));
+      display: flex;
+      flex-direction: column;
+      overflow: hidden !important;
+      box-sizing: border-box;
+    }
+    .buddy-modal-head {
+      flex-shrink: 0;
+      background: #fff;
+      z-index: 2;
+    }
+    .buddy-modal-body,
+    .buddy-detail-body {
+      flex: 1 1 auto;
+      min-height: 0;
+      overflow-y: auto !important;
+      overflow-x: hidden !important;
+      -webkit-overflow-scrolling: touch;
+      overscroll-behavior-y: contain;
+      touch-action: pan-y;
+      box-sizing: border-box;
+    }
+    .buddy-detail-footer,
+    .buddy-modal-foot {
+      flex-shrink: 0;
+      background: #fff;
+      z-index: 2;
+      box-sizing: border-box;
+    }
+  </style>
 </head>
 <body>
   <div class="buddy-app">
@@ -69,175 +211,185 @@
         </button>
       </div>
 
-      <!-- 3. 공고 찾기 검색 조건 영역 (기본 숨김, 상단 공고 찾기 클릭 시 열림) -->
-      <section id="buddySearchCard" class="buddy-search-card" aria-label="버디 공고 검색">
-        <div id="searchCardHeader" class="buddy-search-card-header">
-          <div class="buddy-search-title-wrap">
-            <span class="buddy-search-main-title">
-              <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                <circle cx="11" cy="11" r="7"></circle>
-                <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
-              </svg>
-              공고 찾기
-            </span>
-          </div>
-          <button type="button" id="btnSearchClose" class="buddy-search-close-btn" aria-label="닫기">
-            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-              <line x1="18" y1="6" x2="6" y2="18"></line>
-              <line x1="6" y1="6" x2="18" y2="18"></line>
-            </svg>
-          </button>
-        </div>
-
-        <!-- 모바일 친화적 검색 폼 본문 -->
-        <div id="buddySearchBody" class="buddy-search-body">
-          <!-- 1) 날짜 선택 필터 (달력 선택 + 빠른 선택 칩) -->
-          <div class="buddy-search-section">
-            <div class="buddy-search-section-head">
-              <span class="buddy-search-label">날짜</span>
-            </div>
-
-            <!-- 달력 선택 버튼 (클릭 시 달력 팝업, 직접 타이핑 입력 방지) -->
-            <div class="buddy-date-picker-box" id="btnOpenDatePicker" role="button" aria-label="달력에서 날짜 선택">
-              <span class="buddy-date-picker-icon" aria-hidden="true">
-                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                  <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
-                  <line x1="16" y1="2" x2="16" y2="6"></line>
-                  <line x1="8" y1="2" x2="8" y2="6"></line>
-                  <line x1="3" y1="10" x2="21" y2="10"></line>
+      <!-- 4. 공고찾기 필터 ~ 최근 등록된 버디 모집 카드 목록 통합 세로 스크롤 영역 -->
+      <div class="buddy-scroll-wrap" id="buddyScrollWrap">
+        <!-- 공고 찾기 검색 조건 영역 (기본 숨김, 상단 공고 찾기 클릭 시 열림) -->
+        <section id="buddySearchCard" class="buddy-search-card" aria-label="버디 공고 검색">
+          <div id="searchCardHeader" class="buddy-search-card-header">
+            <div class="buddy-search-title-wrap">
+              <span class="buddy-search-main-title">
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <circle cx="11" cy="11" r="7"></circle>
+                  <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
                 </svg>
+                공고 찾기
               </span>
-              <span id="datePickerDisplay" class="buddy-date-picker-text">달력에서 날짜 선택</span>
-              <button type="button" id="btnClearDate" class="buddy-date-clear-btn" style="display:none;" aria-label="날짜 초기화">✕</button>
-              <input type="date" id="filterSpecificDate" class="buddy-hidden-date-input" tabindex="-1" aria-hidden="true">
             </div>
-
-            <!-- 빠른 날짜 선택 칩 -->
-            <div class="buddy-filter-chips-row" id="datePresetChips">
-              <button type="button" class="buddy-filter-chip active" data-date-range="">전체</button>
-              <button type="button" class="buddy-filter-chip" data-date-range="today">오늘</button>
-              <button type="button" class="buddy-filter-chip" data-date-range="weekend">이번 주말</button>
-              <button type="button" class="buddy-filter-chip" data-date-range="this_month">이번 달</button>
-            </div>
+            <button type="button" id="btnSearchClose" class="buddy-search-close-btn" aria-label="닫기">
+              <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                <line x1="18" y1="6" x2="6" y2="18"></line>
+                <line x1="6" y1="6" x2="18" y2="18"></line>
+              </svg>
+            </button>
           </div>
 
-          <!-- 2) 지역 선택 (대분류 / 세부지역 2단계) -->
-          <div class="buddy-search-section">
-            <label class="buddy-search-label">지역 선택</label>
+          <!-- 모바일 친화적 검색 폼 본문 -->
+          <div id="buddySearchBody" class="buddy-search-body">
+            <!-- 1) 활동 구분 & 난이도 (2열) - 최상단 1번째 필터 -->
             <div class="buddy-search-row-2">
               <div class="buddy-search-field">
-                <select id="filterRegion" class="buddy-search-select" aria-label="지역 대분류 선택">
-                  <option value="">전체 지역</option>
-                  <option value="강원">강원</option>
-                  <option value="경북">경북</option>
-                  <option value="경남">경남</option>
-                  <option value="전남">전남</option>
-                  <option value="서해">서해</option>
-                  <option value="울산">울산</option>
-                  <option value="제주">제주</option>
-                  <option value="부산">부산</option>
-                  <option value="서울">서울</option>
-                  <option value="경기">경기</option>
+                <label for="filterActivity" class="buddy-search-label">활동 구분</label>
+                <select id="filterActivity" class="buddy-search-select" aria-label="활동 구분 선택">
+                  <option value="">전체 활동</option>
+                  <option value="스노쿨링">스노쿨링</option>
+                  <option value="프리다이빙">프리다이빙</option>
+                  <option value="실내다이빙">실내다이빙</option>
                 </select>
               </div>
+
               <div class="buddy-search-field">
-                <select id="filterSubRegion" class="buddy-search-select" aria-label="세부 지역 선택" disabled>
-                  <option value="">전체</option>
+                <label for="filterDifficulty" class="buddy-search-label">난이도</label>
+                <select id="filterDifficulty" class="buddy-search-select" aria-label="난이도 선택">
+                  <option value="">전체 난이도</option>
+                  <option value="무관">무관</option>
+                  <option value="초급">초급</option>
+                  <option value="중급">중급</option>
+                  <option value="상급">상급</option>
                 </select>
               </div>
             </div>
-          </div>
 
-          <!-- 3) 활동 구분 & 난이도 (2열) -->
-          <div class="buddy-search-row-2">
-            <div class="buddy-search-field">
-              <label for="filterActivity" class="buddy-search-label">활동 구분</label>
-              <select id="filterActivity" class="buddy-search-select" aria-label="활동 구분 선택">
-                <option value="">전체 활동</option>
-                <option value="스노쿨링">스노쿨링</option>
-                <option value="프리다이빙">프리다이빙</option>
-                <option value="실내다이빙">실내다이빙</option>
-              </select>
+            <!-- 2) 활동별 지역 선택 (한 줄 계층형 구조) -->
+            <div class="buddy-search-section">
+              <label for="filterRegion" id="regionFilterLabel" class="buddy-search-label">지역 선택</label>
+              <div class="buddy-search-field">
+                <select id="filterRegion" class="buddy-search-select" aria-label="지역 선택">
+                  <option value="">전체 지역</option>
+                </select>
+              </div>
             </div>
 
-            <div class="buddy-search-field">
-              <label for="filterDifficulty" class="buddy-search-label">난이도</label>
-              <select id="filterDifficulty" class="buddy-search-select" aria-label="난이도 선택">
-                <option value="">전체 난이도</option>
-                <option value="무관">무관</option>
-                <option value="초급">초급</option>
-                <option value="중급">중급</option>
-                <option value="상급">상급</option>
-              </select>
+            <!-- 3) 날짜 선택 필터 (달력 선택 + 빠른 선택 칩) -->
+            <div class="buddy-search-section">
+              <div class="buddy-search-section-head">
+                <span class="buddy-search-label">날짜</span>
+              </div>
+
+              <!-- 달력 선택 버튼 (클릭 시 달력 팝업, 직접 타이핑 입력 방지) -->
+              <div class="buddy-date-picker-box" id="btnOpenDatePicker" role="button" aria-label="달력에서 날짜 선택">
+                <span class="buddy-date-picker-icon" aria-hidden="true">
+                  <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+                    <line x1="16" y1="2" x2="16" y2="6"></line>
+                    <line x1="8" y1="2" x2="8" y2="6"></line>
+                    <line x1="3" y1="10" x2="21" y2="10"></line>
+                  </svg>
+                </span>
+                <span id="datePickerDisplay" class="buddy-date-picker-text">달력에서 날짜 선택</span>
+                <button type="button" id="btnClearDate" class="buddy-date-clear-btn" style="display:none;" aria-label="날짜 초기화">✕</button>
+                <input type="date" id="filterSpecificDate" class="buddy-hidden-date-input" tabindex="-1" aria-hidden="true">
+              </div>
+
+              <!-- 빠른 날짜 선택 칩 -->
+              <div class="buddy-filter-chips-row" id="datePresetChips">
+                <button type="button" class="buddy-filter-chip active" data-date-range="">전체</button>
+                <button type="button" class="buddy-filter-chip" data-date-range="today">오늘</button>
+                <button type="button" class="buddy-filter-chip" data-date-range="weekend">이번 주말</button>
+                <button type="button" class="buddy-filter-chip" data-date-range="this_month">이번 달</button>
+              </div>
+            </div>
+
+            <!-- 4) 모집 성별 & 주최자 성별 (2열) -->
+            <div class="buddy-search-row-2">
+              <div class="buddy-search-field">
+                <label for="filterPreferredGender" class="buddy-search-label">모집 성별</label>
+                <select id="filterPreferredGender" class="buddy-search-select" aria-label="모집 성별 선택">
+                  <option value="">전체</option>
+                  <option value="성별 무관">성별 무관</option>
+                  <option value="남성">남성</option>
+                  <option value="여성">여성</option>
+                </select>
+              </div>
+
+              <div class="buddy-search-field">
+                <label for="filterHostGender" class="buddy-search-label">주최자 성별</label>
+                <select id="filterHostGender" class="buddy-search-select" aria-label="주최자 성별 선택">
+                  <option value="">전체</option>
+                  <option value="남성">남성</option>
+                  <option value="여성">여성</option>
+                </select>
+              </div>
+            </div>
+
+            <!-- 5) 참석자 레벨 & 모집 상태 (2열) -->
+            <div class="buddy-search-row-2">
+              <div class="buddy-search-field">
+                <label for="filterRequiredLevel" class="buddy-search-label">참석자 레벨</label>
+                <select id="filterRequiredLevel" class="buddy-search-select" aria-label="참석자 레벨 선택">
+                  <option value="">전체 (무관)</option>
+                  <option value="없음">없음</option>
+                  <option value="AIDA 1">AIDA 1</option>
+                  <option value="AIDA 2">AIDA 2</option>
+                  <option value="AIDA 3">AIDA 3</option>
+                  <option value="AIDA 4">AIDA 4</option>
+                  <option value="Instructor">Instructor</option>
+                  <option value="기타">기타</option>
+                </select>
+              </div>
+
+              <div class="buddy-search-field">
+                <label for="filterStatus" class="buddy-search-label">모집 상태</label>
+                <select id="filterStatus" class="buddy-search-select" aria-label="모집 상태 선택">
+                  <option value="RECRUITING">모집중인 공고만</option>
+                  <option value="CLOSED">마감된 공고</option>
+                  <option value="">전체 상태</option>
+                </select>
+              </div>
+            </div>
+
+            <!-- 알림 체크박스 (초기화 / 공고 검색 버튼 바로 위) -->
+            <div class="buddy-search-alert-row">
+              <label class="buddy-search-alert-label" for="chkSyncAlertWithSearch">
+                <input type="checkbox" id="chkSyncAlertWithSearch" class="buddy-search-alert-checkbox">
+                <span class="buddy-search-alert-text">현재 검색 조건으로 새 공고 알림 받기</span>
+              </label>
+            </div>
+
+            <!-- 하단 초기화 및 검색 버튼 -->
+            <div class="buddy-search-actions">
+              <button type="button" id="btnFilterReset" class="buddy-btn-reset">
+                <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <polyline points="1 4 1 10 7 10"></polyline>
+                  <path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"></path>
+                </svg>
+                <span>초기화</span>
+              </button>
+              <button type="button" id="btnFilterSearch" class="buddy-btn-search">
+                <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <circle cx="11" cy="11" r="7"></circle>
+                  <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                </svg>
+                <span>공고 검색</span>
+              </button>
             </div>
           </div>
+        </section>
 
-          <!-- 4) 모집 성별 & 주최자 성별 (2열) -->
-          <div class="buddy-search-row-2">
-            <div class="buddy-search-field">
-              <label for="filterPreferredGender" class="buddy-search-label">모집 성별</label>
-              <select id="filterPreferredGender" class="buddy-search-select" aria-label="모집 성별 선택">
-                <option value="">전체</option>
-                <option value="성별 무관">성별 무관</option>
-                <option value="남성">남성</option>
-                <option value="여성">여성</option>
-              </select>
-            </div>
+        <!-- 최근 등록된 버디 모집 목록 -->
+        <section class="buddy-list-section">
+          <header class="buddy-list-header">
+            <h3 class="buddy-list-title">최근 등록된 버디 모집</h3>
+          </header>
 
-            <div class="buddy-search-field">
-              <label for="filterHostGender" class="buddy-search-label">주최자 성별</label>
-              <select id="filterHostGender" class="buddy-search-select" aria-label="주최자 성별 선택">
-                <option value="">전체</option>
-                <option value="남성">남성</option>
-                <option value="여성">여성</option>
-              </select>
+          <div id="buddyPostList" class="buddy-card-list" aria-live="polite">
+            <!-- 카드 동적 렌더링 -->
+            <div class="buddy-empty-card">
+              <strong>버디 모집글을 불러오는 중입니다...</strong>
+              잠시만 기다려 주세요.
             </div>
           </div>
-
-          <!-- 5) 모집 상태 -->
-          <div class="buddy-search-section">
-            <label for="filterStatus" class="buddy-search-label">모집 상태</label>
-            <select id="filterStatus" class="buddy-search-select" aria-label="모집 상태 선택">
-              <option value="RECRUITING">모집중인 공고만</option>
-              <option value="CLOSED">마감된 공고</option>
-              <option value="">전체 상태</option>
-            </select>
-          </div>
-
-          <!-- 하단 초기화 및 검색 버튼 -->
-          <div class="buddy-search-actions">
-            <button type="button" id="btnFilterReset" class="buddy-btn-reset">
-              <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                <polyline points="1 4 1 10 7 10"></polyline>
-                <path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"></path>
-              </svg>
-              <span>초기화</span>
-            </button>
-            <button type="button" id="btnFilterSearch" class="buddy-btn-search">
-              <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                <circle cx="11" cy="11" r="7"></circle>
-                <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
-              </svg>
-              <span>공고 검색</span>
-            </button>
-          </div>
-        </div>
-      </section>
-
-      <!-- 4. 최근 등록된 버디 모집 목록 -->
-      <section class="buddy-list-section">
-        <header class="buddy-list-header">
-          <h3 class="buddy-list-title">최근 등록된 버디 모집</h3>
-        </header>
-
-        <div id="buddyPostList" class="buddy-card-list" aria-live="polite">
-          <!-- 카드 동적 렌더링 -->
-          <div class="buddy-empty-card">
-            <strong>버디 모집글을 불러오는 중입니다...</strong>
-            잠시만 기다려 주세요.
-          </div>
-        </div>
-      </section>
+        </section>
+      </div>
     </main>
 
     <!-- 버디 모집 상세 모달 -->
@@ -256,7 +408,10 @@
             <span id="detailStatusBadge" class="buddy-post-status-text">모집중</span>
           </div>
 
-          <h3 id="detailPointName" class="buddy-detail-heading">포인트명</h3>
+          <div class="buddy-detail-place-header">
+            <h3 id="detailPointName" class="buddy-detail-heading">포인트명</h3>
+            <a id="detailPlaceLinkBtn" href="#" class="buddy-place-detail-btn" style="display:none;">포인트 상세보기 ›</a>
+          </div>
 
           <div class="buddy-detail-info-grid">
             <div class="buddy-detail-item">
@@ -279,6 +434,10 @@
             <div class="buddy-detail-item">
               <span class="buddy-detail-label">모집 대상 성별</span>
               <strong id="detailPreferredGender" class="buddy-detail-val">-</strong>
+            </div>
+            <div class="buddy-detail-item">
+              <span class="buddy-detail-label">참석자 레벨</span>
+              <strong id="detailParticipantLevel" class="buddy-detail-val">-</strong>
             </div>
             <div class="buddy-detail-item buddy-detail-host-item">
               <span class="buddy-detail-label">주최자</span>
@@ -444,57 +603,61 @@
   <script src="./public/js/supabase-client.js?v=20260820_stitch_v76"></script>
   <script src="./public/js/auth-session.js?v=20260903_v2"></script>
   <script src="./public/js/buddy-regions.js?v=20260903_v1"></script>
-  <script src="./public/js/buddy-profile-card.js?v=20260903_v3"></script>
-  <script src="./public/js/buddy-card.js?v=20260903_v5"></script>
+  <script src="./public/js/indoor-diving.js?v=20260904_v2"></script>
+  <script src="./public/js/buddy-profile-card.js?v=20260904_v4"></script>
+  <script src="./public/js/buddy-card.js?v=20260904_v4"></script>
   <script>
     (function () {
       "use strict";
 
-      // 0. 지역 대분류 / 소분류 동적 초기화 (Supabase regions 테이블 자동 연동)
-      async function initRegionFilters() {
-        if (!window.SNORKYBuddyRegions) return;
-        const sb = window.getSnorkySupabase ? window.getSnorkySupabase() : window.snorkySupabase;
-        await window.SNORKYBuddyRegions.loadRegions(sb);
-
+      // 0-1. 활동 구분(스노클링/프리다이빙 vs 실내다이빙)에 맞게 한 줄 계층형 지역 옵션 동적 재구성
+      function updateRegionOptionsForCurrentActivity(selectedRegion = "") {
         const regionSelect = document.getElementById("filterRegion");
-        if (regionSelect) {
-          const currentVal = regionSelect.value;
-          const majors = window.SNORKYBuddyRegions.getMajorRegionNames();
-          regionSelect.innerHTML = '<option value="">전체 지역</option>';
-          majors.forEach(m => {
-            const opt = document.createElement("option");
-            opt.value = m;
-            opt.textContent = m;
-            if (m === currentVal) opt.selected = true;
-            regionSelect.appendChild(opt);
+        if (!regionSelect) return;
+
+        const currentActivity = document.getElementById("filterActivity")?.value || "";
+        const isIndoor = currentActivity === "실내다이빙";
+
+        const labelEl = document.getElementById("regionFilterLabel");
+        if (labelEl) {
+          labelEl.textContent = isIndoor ? "지역 / 실내센터 선택" : "지역 선택";
+        }
+
+        const placeholder = isIndoor ? "전체" : "전체 지역";
+
+        if (window.SNORKYBuddyRegions) {
+          window.SNORKYBuddyRegions.populateHierarchicalRegionSelect(regionSelect, currentActivity, {
+            selectedValue: selectedRegion,
+            placeholder: placeholder,
+            includeMajorOption: true
           });
         }
       }
 
-      function updateSubRegionOptions(selectedRegion, selectedSubRegion) {
-        const subSelect = document.getElementById("filterSubRegion");
-        if (!subSelect) return;
-        subSelect.innerHTML = '<option value="">전체</option>';
-        if (selectedRegion && window.SNORKYBuddyRegions) {
-          const subAreas = window.SNORKYBuddyRegions.getSubRegionNames(selectedRegion);
-          if (subAreas.length > 0) {
-            subSelect.disabled = false;
-            subAreas.forEach(sub => {
-              const opt = document.createElement("option");
-              opt.value = sub;
-              opt.textContent = sub;
-              if (selectedSubRegion && sub === selectedSubRegion) opt.selected = true;
-              subSelect.appendChild(opt);
-            });
-            return;
+      // 0-2. 지역 필터 초기화 및 가드 바인딩
+      async function initRegionFilters() {
+        const regionSelect = document.getElementById("filterRegion");
+        if (window.SNORKYBuddyRegions) {
+          const sb = window.getSnorkySupabase ? window.getSnorkySupabase() : window.snorkySupabase;
+          await window.SNORKYBuddyRegions.loadRegions(sb);
+
+          if (regionSelect) {
+            window.SNORKYBuddyRegions.bindActivityGuard(
+              regionSelect,
+              () => document.getElementById("filterActivity")?.value || "",
+              (msg) => showToast(msg)
+            );
           }
         }
-        subSelect.disabled = true;
-        subSelect.value = "";
+        const curRegion = regionSelect?.value || "";
+        updateRegionOptionsForCurrentActivity(curRegion);
       }
 
-      document.getElementById("filterRegion")?.addEventListener("change", function (e) {
-        updateSubRegionOptions(e.target.value, "");
+      // 활동 구분 변경 시 기존 지역 선택값 초기화 및 해당 활동 지역 목록 즉시 다시 로드
+      document.getElementById("filterActivity")?.addEventListener("change", function () {
+        const regionSelect = document.getElementById("filterRegion");
+        if (regionSelect) regionSelect.value = "";
+        updateRegionOptionsForCurrentActivity("");
       });
 
       // 1. 날짜 선택기 & 프리셋 제어 (달력 팝업 지원, 직접 텍스트 입력 방지)
@@ -568,35 +731,33 @@
         getFilters: function () {
           return {
             region: document.getElementById("filterRegion")?.value || "",
-            subRegion: document.getElementById("filterSubRegion")?.value || "",
             dateRange: selectedDatePreset,
             specificDate: document.getElementById("filterSpecificDate")?.value || "",
             activityType: document.getElementById("filterActivity")?.value || "",
             difficulty: document.getElementById("filterDifficulty")?.value || "",
             status: document.getElementById("filterStatus")?.value || "RECRUITING",
             preferredGender: document.getElementById("filterPreferredGender")?.value || "",
-            hostGender: document.getElementById("filterHostGender")?.value || ""
+            hostGender: document.getElementById("filterHostGender")?.value || "",
+            requiredLevel: document.getElementById("filterRequiredLevel")?.value || ""
           };
         },
         resetFilters: function () {
-          const r = document.getElementById("filterRegion");
-          const sr = document.getElementById("filterSubRegion");
           const a = document.getElementById("filterActivity");
           const diff = document.getElementById("filterDifficulty");
           const s = document.getElementById("filterStatus");
           const pg = document.getElementById("filterPreferredGender");
           const hg = document.getElementById("filterHostGender");
-          if (r) r.value = "";
-          if (sr) {
-            sr.innerHTML = '<option value="">전체</option>';
-            sr.disabled = true;
-            sr.value = "";
-          }
+          const rl = document.getElementById("filterRequiredLevel");
           if (a) a.value = "";
           if (diff) diff.value = "";
           if (s) s.value = "RECRUITING";
           if (pg) pg.value = "";
           if (hg) hg.value = "";
+          if (rl) rl.value = "";
+
+          const reg = document.getElementById("filterRegion");
+          if (reg) reg.value = "";
+          updateRegionOptionsForCurrentActivity("");
 
           selectedDatePreset = "";
           if (filterSpecificDate) filterSpecificDate.value = "";
@@ -612,18 +773,16 @@
         },
         setFilters: function (filters) {
           if (!filters) return;
-          if (filters.region !== undefined && document.getElementById("filterRegion")) {
-            document.getElementById("filterRegion").value = filters.region;
-            updateSubRegionOptions(filters.region, filters.subRegion || "");
+          if (filters.activityType !== undefined && document.getElementById("filterActivity")) {
+            document.getElementById("filterActivity").value = filters.activityType;
           }
-          if (filters.subRegion !== undefined && document.getElementById("filterSubRegion")) {
-            document.getElementById("filterSubRegion").value = filters.subRegion;
-          }
-          if (filters.activityType !== undefined && document.getElementById("filterActivity")) document.getElementById("filterActivity").value = filters.activityType;
+          const targetRegion = filters.subRegion || filters.region || "";
+          updateRegionOptionsForCurrentActivity(targetRegion);
           if (filters.difficulty !== undefined && document.getElementById("filterDifficulty")) document.getElementById("filterDifficulty").value = filters.difficulty;
           if (filters.status !== undefined && document.getElementById("filterStatus")) document.getElementById("filterStatus").value = filters.status;
           if (filters.preferredGender !== undefined && document.getElementById("filterPreferredGender")) document.getElementById("filterPreferredGender").value = filters.preferredGender;
           if (filters.hostGender !== undefined && document.getElementById("filterHostGender")) document.getElementById("filterHostGender").value = filters.hostGender;
+          if (filters.requiredLevel !== undefined && document.getElementById("filterRequiredLevel")) document.getElementById("filterRequiredLevel").value = filters.requiredLevel;
           if (filters.specificDate && filterSpecificDate) {
             filterSpecificDate.value = filters.specificDate;
             if (datePickerDisplay) {
@@ -693,7 +852,12 @@
         if (!searchCard) return;
         searchCard.classList.add("is-open");
         searchCard.style.display = "block";
-        searchCard.scrollIntoView({ behavior: "smooth", block: "nearest" });
+        const scrollWrap = document.getElementById("buddyScrollWrap");
+        if (scrollWrap) {
+          scrollWrap.scrollTo({ top: 0, behavior: "smooth" });
+        } else {
+          searchCard.scrollIntoView({ behavior: "smooth", block: "nearest" });
+        }
       }
 
       function closeSearchCard() {
@@ -731,8 +895,120 @@
       });
 
       btnFilterSearch?.addEventListener("click", () => {
+        if (chkSyncAlertWithSearch?.checked) {
+          saveAlertSettings(true, true);
+        }
         loadAndRenderPosts();
       });
+
+      // ── 5-1. 공고 알림 설정 제어 (검색 필터 내 체크박스 연동) ──
+      const chkSyncAlertWithSearch = document.getElementById("chkSyncAlertWithSearch");
+
+      // 알림 조건 저장
+      async function saveAlertSettings(isEnabled, silent = false) {
+        const session = window.SNORKYAuthSession?.get?.();
+        const curUser = session?.user?.id ? String(session.user.id) : null;
+        if (!curUser) {
+          if (!silent) {
+            if (window.SNORKYAuthSession?.showLoginPrompt) {
+              window.SNORKYAuthSession.showLoginPrompt("공고 알림을 설정하려면 먼저 로그인해 주세요.");
+            } else {
+              location.href = "./login.html?redirect=" + encodeURIComponent("buddy.html");
+            }
+          }
+          if (chkSyncAlertWithSearch) chkSyncAlertWithSearch.checked = false;
+          return;
+        }
+
+        const sb = window.getSnorkySupabase ? window.getSnorkySupabase() : window.snorkySupabase;
+        if (!sb) {
+          if (!silent) showToast("데이터베이스 연결 준비 중입니다.");
+          return;
+        }
+
+        const filters = window.SNORKYBuddySearch.getFilters();
+        const active = (isEnabled !== undefined) ? !!isEnabled : !!chkSyncAlertWithSearch?.checked;
+
+        try {
+          const dateFilterVal = filters.specificDate || filters.dateRange || "";
+          const alertPayload = {
+            user_id: curUser,
+            enabled: active,
+            date_filter: dateFilterVal,
+            region: filters.region || "",
+            sub_region: filters.subRegion || "",
+            activity_type: filters.activityType || "",
+            difficulty: filters.difficulty || "",
+            recruit_gender: filters.preferredGender || "",
+            host_gender: filters.hostGender || "",
+            participant_level: filters.requiredLevel || "",
+            updated_at: new Date().toISOString()
+          };
+
+          const { error } = await sb.from("buddy_alert_settings").upsert(alertPayload, { onConflict: "user_id" });
+          if (error) throw error;
+
+          if (!silent) {
+            showToast(active ? "현재 검색 조건으로 새 공고 알림을 받습니다." : "공고 알림이 꺼졌습니다.");
+          }
+        } catch (err) {
+          console.error("[AlertSettings] Save error:", err);
+          if (!silent) {
+            showToast(`알림 설정 저장 실패: ${err.message || "다시 시도해 주세요"}`);
+          }
+        }
+      }
+
+      chkSyncAlertWithSearch?.addEventListener("change", (e) => {
+        saveAlertSettings(e.target.checked);
+      });
+
+      // 사용자 알림 조건 로드
+      async function loadAlertSettings() {
+        const session = window.SNORKYAuthSession?.get?.();
+        const curUser = session?.user?.id ? String(session.user.id) : null;
+        if (!curUser) {
+          if (chkSyncAlertWithSearch) chkSyncAlertWithSearch.checked = false;
+          return;
+        }
+
+        const sb = window.getSnorkySupabase ? window.getSnorkySupabase() : window.snorkySupabase;
+        if (!sb) return;
+
+        try {
+          const { data, error } = await sb
+            .from("buddy_alert_settings")
+            .select("enabled, date_filter, region, sub_region, activity_type, difficulty, recruit_gender, host_gender, participant_level")
+            .eq("user_id", curUser)
+            .maybeSingle();
+
+          if (error) throw error;
+
+          if (data) {
+            if (chkSyncAlertWithSearch) chkSyncAlertWithSearch.checked = !!data.enabled;
+            if (data.enabled) {
+              const rawDateFilter = data.date_filter || "";
+              const isSpecificDate = /^\d{4}-\d{2}-\d{2}$/.test(rawDateFilter);
+              window.SNORKYBuddySearch.setFilters({
+                region: data.region || "",
+                subRegion: data.sub_region || "",
+                dateRange: isSpecificDate ? "" : rawDateFilter,
+                specificDate: isSpecificDate ? rawDateFilter : "",
+                activityType: data.activity_type || "",
+                difficulty: data.difficulty || "",
+                preferredGender: data.recruit_gender || "",
+                hostGender: data.host_gender || "",
+                requiredLevel: data.participant_level || ""
+              });
+            }
+          } else {
+            if (chkSyncAlertWithSearch) chkSyncAlertWithSearch.checked = false;
+          }
+        } catch (err) {
+          console.warn("[AlertSettings] Load error:", err);
+          if (chkSyncAlertWithSearch) chkSyncAlertWithSearch.checked = false;
+        }
+      }
 
       // KST 날짜 YYYY-MM-DD 구하기
       function getKstDateStr(targetDate) {
@@ -806,12 +1082,14 @@
       const detailActivityBadge = document.getElementById("detailActivityBadge");
       const detailStatusBadge = document.getElementById("detailStatusBadge");
       const detailPointName = document.getElementById("detailPointName");
+      const detailPlaceLinkBtn = document.getElementById("detailPlaceLinkBtn");
       const detailRegion = document.getElementById("detailRegion");
       const detailDateTime = document.getElementById("detailDateTime");
       const detailCapacity = document.getElementById("detailCapacity");
       const detailConfirmedProfiles = document.getElementById("detailConfirmedProfiles");
       const detailDifficulty = document.getElementById("detailDifficulty");
       const detailPreferredGender = document.getElementById("detailPreferredGender");
+      const detailParticipantLevel = document.getElementById("detailParticipantLevel");
       const detailHostInfo = document.getElementById("detailHostInfo");
       const detailDescription = document.getElementById("detailDescription");
       const detailUserActions = document.getElementById("detailUserActions");
@@ -1125,11 +1403,53 @@
           detailStatusBadge.textContent = isClosed ? "마감" : "모집중";
         }
         if (detailPointName) detailPointName.textContent = post.point_name;
+
+        // 장소 / 센터 상세 바로가기 연결
+        const isOfficialPlace = post.is_snorky_point === true || (!post.is_snorky_point && !!post.point_id);
+        if (isOfficialPlace && post.point_id) {
+          const isIndoorPost = post.activity_type === "실내다이빙";
+          const targetUrl = isIndoorPost
+            ? `./indoor-diving.html?centerId=${encodeURIComponent(post.point_id)}`
+            : `./index.html?point=${encodeURIComponent(post.point_id)}`;
+          const btnLabel = isIndoorPost ? "센터 상세보기 ›" : "포인트 상세보기 ›";
+
+          if (detailPlaceLinkBtn) {
+            detailPlaceLinkBtn.style.display = "inline-flex";
+            detailPlaceLinkBtn.textContent = btnLabel;
+            detailPlaceLinkBtn.href = targetUrl;
+            detailPlaceLinkBtn.onclick = (e) => {
+              e.preventDefault();
+              window.location.href = targetUrl;
+            };
+          }
+          if (detailPointName) {
+            detailPointName.classList.add("clickable");
+            detailPointName.title = isIndoorPost ? "센터 상세페이지로 이동" : "포인트 상세정보로 이동";
+            detailPointName.onclick = () => {
+              window.location.href = targetUrl;
+            };
+          }
+        } else {
+          if (detailPlaceLinkBtn) {
+            detailPlaceLinkBtn.style.display = "none";
+            detailPlaceLinkBtn.href = "#";
+            detailPlaceLinkBtn.onclick = null;
+          }
+          if (detailPointName) {
+            detailPointName.classList.remove("clickable");
+            detailPointName.title = "";
+            detailPointName.onclick = null;
+          }
+        }
         if (detailRegion) detailRegion.textContent = post.region;
         if (detailDateTime) detailDateTime.textContent = `${formattedDate} · ${post.entry_time || '시간미정'}`;
         if (detailCapacity) detailCapacity.textContent = `${post.current_count || 1} / ${post.capacity || 2}명`;
         if (detailDifficulty) detailDifficulty.textContent = post.difficulty || "무관";
         if (detailPreferredGender) detailPreferredGender.textContent = post.preferred_gender || "성별 무관";
+        if (detailParticipantLevel) {
+          const reqLvl = post.host_aida_level || post.participant_level || "무관";
+          detailParticipantLevel.textContent = reqLvl === "무관" ? "무관 (전체)" : reqLvl;
+        }
         if (detailHostInfo) {
           const aidaDisp = (author.aidaLevel && author.aidaLevel !== "없음") ? author.aidaLevel : "레벨 없음";
           const avatarTrigger = window.SNORKYBuddyProfileCard.renderTrigger({
@@ -1149,7 +1469,12 @@
             </span>
           `;
         }
-        window.SNORKYBuddyProfileCard.renderConfirmedParticipants(detailConfirmedProfiles, post, author);
+        window.SNORKYBuddyProfileCard.renderConfirmedParticipants(detailConfirmedProfiles, post, author).then((participants) => {
+          if (Array.isArray(participants) && detailCapacity) {
+            const currentTotal = 1 + participants.length;
+            detailCapacity.textContent = `${currentTotal} / ${post.capacity || 2}명`;
+          }
+        }).catch(() => {});
         if (detailDescription) {
           detailDescription.textContent = post.description ? post.description : "작성된 모집 내용이 없습니다.";
         }
@@ -1234,20 +1559,60 @@
         } catch (_) {}
 
         const filters = window.SNORKYBuddySearch.getFilters();
-        const hasCustomFilter = !!(filters.region || filters.subRegion || filters.activityType || filters.difficulty || filters.dateRange || filters.specificDate || filters.preferredGender || filters.hostGender || (filters.status && filters.status !== "RECRUITING"));
+        const hasCustomFilter = !!(filters.region || filters.subRegion || filters.activityType || filters.difficulty || filters.dateRange || filters.specificDate || filters.preferredGender || filters.hostGender || filters.requiredLevel || (filters.status && filters.status !== "RECRUITING"));
 
-        let query = sb ? sb.from("buddy_posts").select("id, user_id, activity_type, region, point_id, point_name, is_snorky_point, event_date, entry_time, host_gender, preferred_gender, capacity, current_count, difficulty, description, application_notification_enabled, status, contact_method, created_at, updated_at") : null;
+        let query = sb ? sb.from("buddy_posts").select("id, user_id, activity_type, region, point_id, point_name, is_snorky_point, event_date, entry_time, host_gender, host_aida_level, preferred_gender, capacity, current_count, difficulty, description, application_notification_enabled, status, contact_method, created_at, updated_at") : null;
 
         if (query) {
-          if (filters.subRegion) {
-            query = query.eq("region", filters.subRegion);
-          } else if (filters.region) {
-            const subAreas = window.SNORKYBuddyRegions ? window.SNORKYBuddyRegions.getSubRegionNames(filters.region) : [];
-            const targetRegions = Array.from(new Set([filters.region, ...subAreas]));
-            query = query.in("region", targetRegions);
-          }
           if (filters.activityType) {
             query = query.eq("activity_type", filters.activityType);
+          }
+
+          if (filters.region) {
+            if (filters.activityType === "실내다이빙") {
+              const centers = (window.SNORKYIndoorCenters && Array.isArray(window.SNORKYIndoorCenters))
+                ? window.SNORKYIndoorCenters
+                : [
+                    { id: "deepstation", name: "딥스테이션", region: "경기", subRegion: "용인시" },
+                    { id: "k26", name: "K26 잠수풀", region: "경기", subRegion: "가평군" },
+                    { id: "paradive35", name: "파라다이브35", region: "경기", subRegion: "시흥시" }
+                  ];
+
+              // 1) 광역 전체 선택 여부 확인 (예: 경기, 서울, 강원)
+              const matchedMajorCenters = centers.filter(c => c.region === filters.region);
+              const isMajor = matchedMajorCenters.length > 0;
+
+              if (isMajor) {
+                const subAreas = matchedMajorCenters.map(c => c.subRegion).filter(Boolean);
+                const targetRegions = Array.from(new Set([filters.region, ...subAreas]));
+                const orClauses = [`region.in.(${targetRegions.join(",")})`];
+                matchedMajorCenters.forEach(c => {
+                  if (c.id) orClauses.push(`point_id.eq.${c.id}`);
+                  if (c.name) orClauses.push(`point_name.eq.${c.name}`, `point_name.ilike.%${c.name}%`);
+                });
+                query = query.or(orClauses.join(","));
+              } else {
+                // 2) 특정 실내센터 선택 (예: k26, deepstation, paradive35)
+                const center = centers.find(c => c.id === filters.region || c.name === filters.region || c.subRegion === filters.region);
+                const orClauses = [];
+                if (center) {
+                  if (center.id) orClauses.push(`point_id.eq.${center.id}`);
+                  if (center.name) orClauses.push(`point_name.eq.${center.name}`, `point_name.ilike.%${center.name}%`);
+                }
+                orClauses.push(`point_id.eq.${filters.region}`, `point_name.eq.${filters.region}`, `region.eq.${filters.region}`);
+                query = query.or(Array.from(new Set(orClauses)).join(","));
+              }
+            } else {
+              // 스노클링 / 프리다이빙
+              const isMajor = window.SNORKYBuddyRegions ? window.SNORKYBuddyRegions.getMajorRegionNames().includes(filters.region) : false;
+              if (isMajor) {
+                const subAreas = window.SNORKYBuddyRegions ? window.SNORKYBuddyRegions.getSubRegionNames(filters.region) : [];
+                const targetRegions = Array.from(new Set([filters.region, ...subAreas]));
+                query = query.in("region", targetRegions);
+              } else {
+                query = query.eq("region", filters.region);
+              }
+            }
           }
           if (filters.difficulty) {
             query = query.eq("difficulty", filters.difficulty);
@@ -1260,6 +1625,16 @@
           }
           if (filters.hostGender) {
             query = query.eq("host_gender", filters.hostGender);
+          }
+          if (filters.requiredLevel) {
+            const reqLvl = filters.requiredLevel;
+            if (reqLvl === "없음") {
+              query = query.or("host_aida_level.eq.없음,host_aida_level.is.null,host_aida_level.eq.");
+            } else if (reqLvl === "기타") {
+              query = query.not("host_aida_level", "in", '("없음","AIDA 1","AIDA 2","AIDA 3","AIDA 4","Instructor")');
+            } else {
+              query = query.eq("host_aida_level", reqLvl);
+            }
           }
           if (filters.specificDate) {
             query = query.eq("event_date", filters.specificDate);
@@ -1299,6 +1674,21 @@
             } else if (data) {
               posts = data;
             }
+          }
+
+          if (filters.requiredLevel && posts.length > 0) {
+            const reqLvl = filters.requiredLevel;
+            const standardLevels = ["없음", "AIDA 1", "AIDA 2", "AIDA 3", "AIDA 4", "Instructor"];
+            posts = posts.filter(p => {
+              const pLvl = (p.host_aida_level || "없음").trim();
+              if (reqLvl === "없음") {
+                return !pLvl || pLvl === "없음";
+              }
+              if (reqLvl === "기타") {
+                return pLvl && !standardLevels.includes(pLvl);
+              }
+              return pLvl === reqLvl;
+            });
           }
 
           if (posts.length === 0) {
@@ -1384,6 +1774,30 @@
               });
             } catch (err) {
               console.warn("[BuddyPosts] Failed to fetch author profiles:", err);
+            }
+          }
+
+          const postIds = posts.map(p => Number(p.id)).filter(Boolean);
+          if (sb && postIds.length > 0) {
+            try {
+              const { data: appCounts } = await sb
+                .from("buddy_applications")
+                .select("buddy_post_id")
+                .in("buddy_post_id", postIds)
+                .eq("status", "APPROVED");
+              if (appCounts) {
+                const countMap = new Map();
+                appCounts.forEach(ac => {
+                  const pid = Number(ac.buddy_post_id);
+                  countMap.set(pid, (countMap.get(pid) || 0) + 1);
+                });
+                posts.forEach(p => {
+                  const approvedCount = countMap.get(Number(p.id)) || 0;
+                  p.current_count = 1 + approvedCount;
+                });
+              }
+            } catch (cntErr) {
+              console.warn("[BuddyPosts] Failed to fetch approved counts:", cntErr);
             }
           }
 
@@ -1580,6 +1994,7 @@
       // 초기 실행 & 페이지 복귀 시 실행
       async function initBuddyApp() {
         await initRegionFilters();
+        await loadAlertSettings();
         await loadAndRenderPosts();
         loadUserNotifications();
 
