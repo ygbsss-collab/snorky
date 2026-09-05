@@ -8,9 +8,10 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Pretendard:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="./public/css/buddy.css?v=20260904_v3">
+  <link rel="stylesheet" href="./public/css/buddy.css?v=20260905_v1">
   <link rel="stylesheet" href="./public/css/bottom-nav.css?v=20260904_v3">
   <script src="./public/js/bottom-nav.js?v=20260904_v3"></script>
+  <script src="./public/js/buddy-point-detail-overlay.js?v=20260905_v1"></script>
   <style>
     /* 상단 헤더, 배너, 메뉴 고정 및 최근 버디 모집 목록 영역 독립 세로 스크롤 복구 */
     html, body {
@@ -423,7 +424,6 @@
             <div class="buddy-detail-item">
               <span class="buddy-detail-label"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>모집 인원</span>
               <strong id="detailCapacity" class="buddy-detail-val">-</strong>
-              <div id="detailConfirmedProfiles" class="buddy-confirmed-participants" aria-label="참가 확정 프로필"></div>
             </div>
             <div class="buddy-detail-item">
               <span class="buddy-detail-label"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 20V10"/><path d="M12 20V4"/><path d="M6 20v-6"/></svg>난이도</span>
@@ -617,14 +617,15 @@
     <div id="toast" class="buddy-toast" role="alert" aria-live="assertive"></div>
   </div>
 
+  <script src="./public/js/snorky-test-mode.js?v=20260905_v1"></script>
   <script src="./public/js/supabase-client.js?v=20260820_stitch_v76"></script>
-  <script src="./public/js/auth-session.js?v=20260903_v2"></script>
+  <script src="./public/js/auth-session.js?v=20260905_moderation_v1"></script>
   <script src="./public/js/buddy-regions.js?v=20260903_v1"></script>
   <script src="./public/js/indoor-diving.js?v=20260904_v2"></script>
   <script src="./public/js/buddy-certification.js?v=20260905_v1"></script>
-  <script src="./public/js/snorky-friends.js?v=20260905_f1"></script>
-  <script src="./public/js/buddy-profile-card.js?v=20260904_v4"></script>
-  <script src="./public/js/buddy-card.js?v=20260904_v4"></script>
+  <script src="./public/js/snorky-friends.js?v=20260905_testmode_v1"></script>
+  <script src="./public/js/buddy-profile-card.js?v=20260905_testmode_v1"></script>
+  <script src="./public/js/buddy-card.js?v=20260905_v1"></script>
   <script>
     (function () {
       "use strict";
@@ -1132,7 +1133,6 @@
       const detailRegion = document.getElementById("detailRegion");
       const detailDateTime = document.getElementById("detailDateTime");
       const detailCapacity = document.getElementById("detailCapacity");
-      const detailConfirmedProfiles = document.getElementById("detailConfirmedProfiles");
       const detailDifficulty = document.getElementById("detailDifficulty");
       const detailPreferredGender = document.getElementById("detailPreferredGender");
       const detailParticipantLevel = document.getElementById("detailParticipantLevel");
@@ -1215,7 +1215,7 @@
         let prof = null;
         if (sb) {
           try {
-            const { data } = await sb.from("user_profiles").select("custom_nickname, custom_avatar_url, avatar_type, aida_level, gender, bio, age_group, activity_region, activity_depth").eq("provider_user_id", curUser).maybeSingle();
+            const { data } = await sb.from("user_profiles").select("custom_nickname, custom_avatar_url, avatar_type, aida_level, certification_status, gender, bio, age_group, activity_region, activity_depth").eq("provider_user_id", curUser).maybeSingle();
             prof = data;
           } catch (_) {}
         }
@@ -1274,6 +1274,20 @@
           showToast("로그인이 필요합니다.");
           return;
         }
+        if (
+          window.SNORKYTestMode?.TEST_MODE_ALLOW_DUPLICATE_USERS !== true &&
+          String(pendingApplyPost.user_id || "") === curUser
+        ) {
+          showToast("본인이 작성한 공고에는 참가 신청할 수 없습니다.");
+          return;
+        }
+        try {
+          await window.SNORKYAuthSession?.requirePostingAccess?.();
+          await window.SNORKYFriends?.cleanupSelfBlock?.(curUser);
+        } catch (error) {
+          showToast(error?.message || "현재 참가 신청을 할 수 없습니다.");
+          return;
+        }
 
         const introVal = applicantIntroInput?.value?.trim() || "";
         if (!introVal) {
@@ -1325,7 +1339,11 @@
             btnDetailApply.disabled = true;
           }
 
-          if (post.user_id && post.application_notification_enabled !== false) {
+          if (
+            post.user_id &&
+            post.application_notification_enabled !== false &&
+            (window.SNORKYTestMode?.TEST_MODE_ALLOW_DUPLICATE_USERS === true || String(post.user_id) !== curUser)
+          ) {
             try {
               const applicantNick = session?.user?.customNickname || session?.user?.nickname || "버디";
               const { error: insErr } = await sb.from("user_notifications").insert([{
@@ -1392,7 +1410,7 @@
           try {
             const { data: prof } = await sb
               .from("user_profiles")
-              .select("provider_user_id, custom_nickname, custom_avatar_url, avatar_type, aida_level, gender, bio, age_group, activity_region, activity_depth")
+              .select("provider_user_id, custom_nickname, custom_avatar_url, avatar_type, aida_level, certification_status, gender, bio, age_group, activity_region, activity_depth")
               .eq("provider_user_id", String(post.user_id))
               .maybeSingle();
             if (prof) {
@@ -1445,7 +1463,7 @@
           const isIndoorPost = post.activity_type === "실내다이빙";
           const targetUrl = isIndoorPost
             ? `./indoor-diving.html?centerId=${encodeURIComponent(post.point_id)}`
-            : `./index.html?point=${encodeURIComponent(post.point_id)}&from=buddy&postId=${encodeURIComponent(post.id)}`;
+            : "#";
           const btnLabel = isIndoorPost ? "센터 상세보기 ›" : "포인트 상세보기 ›";
 
           if (detailPlaceLinkBtn) {
@@ -1454,7 +1472,11 @@
             detailPlaceLinkBtn.href = targetUrl;
             detailPlaceLinkBtn.onclick = (e) => {
               e.preventDefault();
-              window.location.href = targetUrl;
+              if (isIndoorPost) {
+                window.location.href = targetUrl;
+                return;
+              }
+              window.SNORKYBuddyPointDetail?.open({ pointId: post.point_id, source: "buddy", postId: post.id, trigger: detailPlaceLinkBtn });
             };
           }
         } else {
@@ -1499,12 +1521,6 @@
             `;
           }
         }
-        window.SNORKYBuddyProfileCard.renderConfirmedParticipants(detailConfirmedProfiles, post, author).then((participants) => {
-          if (Array.isArray(participants) && detailCapacity) {
-            const currentTotal = 1 + participants.length;
-            detailCapacity.textContent = `${currentTotal} / ${post.capacity || 2}명`;
-          }
-        }).catch(() => {});
         if (detailDescription) {
           detailDescription.textContent = post.description ? post.description : "작성된 모집 내용이 없습니다.";
         }
@@ -1517,7 +1533,12 @@
           btnDetailApply.disabled = false;
           btnDetailApply.className = "buddy-detail-btn primary";
 
-          if (myAppStatus === "APPROVED") {
+          const isOwnPost = currentUserId && String(post.user_id || "") === String(currentUserId);
+          if (isOwnPost && window.SNORKYTestMode?.TEST_MODE_ALLOW_DUPLICATE_USERS !== true) {
+            btnDetailApply.textContent = "내가 작성한 공고";
+            btnDetailApply.disabled = true;
+            btnDetailApply.onclick = null;
+          } else if (myAppStatus === "APPROVED") {
             btnDetailApply.innerHTML = '<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex-shrink:0"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg> 버디 대화방 참여';
             btnDetailApply.className = "buddy-detail-btn buddy-chat-btn";
             btnDetailApply.onclick = async () => {
@@ -1818,7 +1839,7 @@
             try {
               const { data: profs } = await sb
                 .from("user_profiles")
-                .select("provider_user_id, custom_nickname, custom_avatar_url, avatar_type, aida_level, gender, bio, age_group, activity_region, activity_depth")
+                .select("provider_user_id, custom_nickname, custom_avatar_url, avatar_type, aida_level, certification_status, gender, bio, age_group, activity_region, activity_depth")
                 .in("provider_user_id", authorIds);
               (profs || []).forEach(pr => {
                 profilesMap.set(String(pr.provider_user_id), pr);

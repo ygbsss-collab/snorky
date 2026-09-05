@@ -1,7 +1,7 @@
 {
-  "liveServer.settings.host": "0.0.0.0",
+  "liveServer.settings.host": "127.0.0.1",
   "liveServer.settings.port": 5501,
-  "liveServer.settings.useLocalIp": true,
-  "livePreview.hostIP": "0.0.0.0",
+  "liveServer.settings.useLocalIp": false,
+  "livePreview.hostIP": "127.0.0.1",
   "livePreview.portNumber": 5501
 }

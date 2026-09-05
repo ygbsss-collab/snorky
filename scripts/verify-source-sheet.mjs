@@ -39,7 +39,7 @@ async function run() {
       '--headless=new',
       '--disable-gpu',
       '--no-sandbox',
-      'http://127.0.0.1:8089'
+      'http://127.0.0.1:5501'
     ]);
     for (let i = 0; i < 20; i++) {
       await new Promise(r => setTimeout(r, 200));

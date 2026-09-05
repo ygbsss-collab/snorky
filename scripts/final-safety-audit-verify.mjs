@@ -55,7 +55,7 @@ async function main() {
   await send('Runtime.enable');
 
   // Navigate to clean home
-  await send('Page.navigate', { url: 'http://127.0.0.1:8089/index.html' });
+  await send('Page.navigate', { url: 'http://127.0.0.1:5501/index.html' });
   await new Promise(r => setTimeout(r, 3000));
 
   // Dismiss intro

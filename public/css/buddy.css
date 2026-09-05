@@ -267,7 +267,10 @@ html, body {
 .buddy-post-status-approved { color: #16a34a; }
 .buddy-post-status-rejected { color: #dc2626; }
 .buddy-post-status-canceled { color: #64748b; }
+.buddy-post-heading-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; min-width: 0; }
 .buddy-post-heading { margin: 0; font-size: 14px; font-weight: 700; color: var(--deep); line-height: 1.3; letter-spacing: -0.01em; word-break: keep-all; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.buddy-post-heading-row .buddy-post-heading { flex: 1; min-width: 0; }
+.buddy-post-pending-badge { display: inline-flex; align-items: center; flex-shrink: 0; padding: 2px 7px; border-radius: 999px; background: #fef9c3; color: #a16207; font-size: 10.5px; font-weight: 600; line-height: 1.35; white-space: nowrap; }
 .buddy-post-meta-row { display: flex; align-items: center; flex-wrap: wrap; gap: 6px; font-size: 11.5px; font-weight: 500; color: #475467; }
 .buddy-meta-sep { color: #d1d5db; font-size: 10px; }
 .buddy-post-bottom-row { display: flex; align-items: center; justify-content: space-between; margin-top: 3px; }
@@ -436,7 +439,7 @@ html, body {
   -webkit-overflow-scrolling: touch;
   overscroll-behavior-y: contain;
   touch-action: pan-y;
-  gap: 14px;
+  gap: 12px;
   padding: 16px 18px;
   box-sizing: border-box;
 }
@@ -474,7 +477,7 @@ html, body {
 .mybuddy-detail-heading {
   margin: 0;
   font-size: 21px;
-  font-weight: 800;
+  font-weight: 700;
   color: var(--deep);
   line-height: 1.3;
   word-break: keep-all;
@@ -490,8 +493,8 @@ html, body {
   background: #f0f9ff;
   border: 1px solid #bae6fd;
   color: #0284c7;
-  font-size: 13px;
-  font-weight: 700;
+  font-size: 12.5px;
+  font-weight: 600;
   text-decoration: none;
   cursor: pointer;
   white-space: nowrap;
@@ -512,9 +515,9 @@ html, body {
 .mybuddy-info-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 12px 10px;
+  gap: 10px;
   background: #f8fafc;
-  padding: 14px 16px;
+  padding: 12px 14px;
   border-radius: 14px;
   border: 1px solid #e2e8f0;
   box-sizing: border-box;
@@ -523,7 +526,7 @@ html, body {
 .mybuddy-info-item {
   display: flex;
   flex-direction: column;
-  gap: 3px;
+  gap: 4px;
   min-width: 0;
 }
 .buddy-detail-label,
@@ -531,8 +534,8 @@ html, body {
   display: inline-flex;
   align-items: center;
   gap: 5px;
-  font-size: 14px;
-  font-weight: 600;
+  font-size: 13.5px;
+  font-weight: 500;
   color: #64748b;
   letter-spacing: -0.01em;
   line-height: 1.2;
@@ -546,7 +549,7 @@ html, body {
 }
 .buddy-detail-val,
 .mybuddy-info-val {
-  font-size: 16px;
+  font-size: 15.5px;
   font-weight: 600;
   color: #0f172a;
   word-break: keep-all;
@@ -565,21 +568,21 @@ html, body {
   grid-column: 1 / -1;
   border-top: 1px solid #e2e8f0;
   margin-top: 4px;
-  padding-top: 14px;
+  padding-top: 12px;
 }
 .buddy-detail-host-row {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 10px;
   min-width: 0;
   max-width: 100%;
   margin-top: 4px;
   cursor: pointer;
 }
 .buddy-detail-host-avatar {
-  width: 42px;
-  height: 42px;
-  min-width: 42px;
+  width: 34px;
+  height: 34px;
+  min-width: 34px;
   border-radius: 50%;
   flex-shrink: 0;
 }
@@ -588,9 +591,9 @@ html, body {
   align-items: center;
   gap: 5px;
   min-width: 0;
-  max-width: calc(100% - 54px);
-  font-size: 15px;
-  font-weight: 600;
+  max-width: calc(100% - 44px);
+  font-size: 14.5px;
+  font-weight: 500;
   color: #334155;
   line-height: 1.4;
   flex-wrap: wrap;
@@ -670,8 +673,8 @@ html, body {
 }
 .buddy-detail-desc-section .buddy-detail-label,
 .mybuddy-desc-section .mybuddy-info-label {
-  font-size: 14.5px;
-  font-weight: 600;
+  font-size: 13.5px;
+  font-weight: 500;
   color: #64748b;
   display: inline-flex;
   align-items: center;
@@ -679,7 +682,7 @@ html, body {
 }
 .buddy-detail-desc-box,
 .mybuddy-desc-box {
-  font-size: 15.5px;
+  font-size: 15px;
   line-height: 1.55;
   color: #334155;
   background: #f8fafc;
@@ -991,5 +994,4 @@ html, body {
 .buddy-profile-friends-btn:active {
   transform: scale(0.99);
 }
-
 

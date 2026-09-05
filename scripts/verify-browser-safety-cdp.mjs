@@ -4,7 +4,7 @@ import { spawn } from 'child_process';
 
 const chromePath = 'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe';
 const userDataDir = 'C:\\Users\\user\\AppData\\Local\\Temp\\chrome_cdp_verify_' + Date.now();
-const LOCAL_URL = 'http://127.0.0.1:8089/index.html';
+const LOCAL_URL = 'http://127.0.0.1:5501/index.html';
 const CDP_PORT = 9225;
 
 async function waitPort(port) {

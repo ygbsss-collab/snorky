@@ -88,6 +88,5 @@ server.on('error', (err) => {
 
 server.listen(PORT, HOST, () => {
   console.log(`SNORKY Server running on http://${HOST}:${PORT}`);
-  console.log(`- Local (localhost): http://localhost:${PORT}/`);
-  console.log(`- Local (IPv4):      http://127.0.0.1:${PORT}/`);
+  console.log(`- Local:             http://127.0.0.1:${PORT}/`);
 });

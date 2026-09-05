@@ -70,7 +70,7 @@
     try {
       const { data, error } = await sb
         .from("user_profiles")
-        .select("custom_nickname, custom_avatar_url, avatar_type, aida_level, gender, bio, age_group, activity_region, activity_depth")
+        .select("custom_nickname, custom_avatar_url, avatar_type, aida_level, certification_status, banned, suspended_until, gender, bio, age_group, activity_region, activity_depth")
         .eq("provider", provider || "kakao")
         .eq("provider_user_id", String(providerUserId))
         .maybeSingle();
@@ -85,6 +85,9 @@
           customAvatarUrl: data.custom_avatar_url,
           avatarType: data.avatar_type,
           aidaLevel: data.aida_level || "없음",
+          certificationStatus: data.certification_status || null,
+          banned: data.banned === true,
+          suspendedUntil: data.suspended_until || null,
           gender: data.gender || "비공개",
           bio: data.bio || null,
           ageGroup: data.age_group || null,

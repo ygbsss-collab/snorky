@@ -32,7 +32,7 @@ async function verifyAll() {
     '--disable-gpu',
     '--no-sandbox',
     '--window-size=390,844',
-    'http://127.0.0.1:8089/index.html'
+    'http://127.0.0.1:5501/index.html'
   ], { stdio: 'ignore' });
 
   const tabs = await waitPort(CDP_PORT);

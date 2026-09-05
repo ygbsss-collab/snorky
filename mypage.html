@@ -116,6 +116,12 @@
     .profile-certification-state.is-verified{background:#e9f7f2;color:#07885b}
     .profile-certification-btn{height:36px;flex:0 0 auto;padding:0 10px;border:1px solid #bcd9e5;border-radius:10px;background:#fff;color:#087ca7;font:inherit;font-size:11.5px;font-weight:900;cursor:pointer}
     .profile-certification-note{min-height:16px;margin:9px 2px 0;color:#78909c;font-size:11.5px;line-height:1.4}
+    .profile-certification-request{display:grid;gap:13px;margin-top:14px;padding-top:14px;border-top:1px solid #e5edf0}
+    .profile-certification-request[hidden]{display:none!important}
+    .profile-certification-request .profile-modal-field{margin:0}
+    .profile-certification-file{height:auto;padding:11px 12px;background:#fff;font-size:12.5px}
+    .profile-certification-submit{height:42px;border:0;border-radius:11px;background:#087ca7;color:#fff;font:inherit;font-size:13px;font-weight:800;cursor:pointer}
+    .profile-certification-submit:disabled{opacity:.6;cursor:not-allowed}
     
     .profile-status-msg{min-height:18px;margin:4px 18px 12px;font-size:12.5px;font-weight:700;color:#d32f2f;text-align:center}
     .profile-status-msg.success{color:#07885b}
@@ -400,6 +406,37 @@
               <button id="openCertificationBtn" class="profile-certification-btn" type="button">자격 인증하기</button>
             </div>
             <p id="certificationHelpText" class="profile-certification-note" aria-live="polite">자격 인증은 이 화면에서만 관리됩니다.</p>
+            <div id="certificationRequestForm" class="profile-certification-request" hidden>
+              <div class="profile-modal-field">
+                <label for="certificationAgencySelect">인증기관</label>
+                <select id="certificationAgencySelect" class="profile-modal-input">
+                  <option value="">선택</option>
+                  <option value="AIDA">AIDA</option>
+                  <option value="PADI">PADI</option>
+                  <option value="Molchanovs">Molchanovs</option>
+                  <option value="SSI">SSI</option>
+                  <option value="기타">기타</option>
+                </select>
+              </div>
+              <div id="certificationCustomAgencyField" class="profile-modal-field" hidden>
+                <label for="certificationCustomAgencyInput">협회명</label>
+                <input id="certificationCustomAgencyInput" class="profile-modal-input" type="text" maxlength="100" placeholder="협회명을 입력해 주세요" autocomplete="organization">
+              </div>
+              <div class="profile-modal-field">
+                <label id="certificationLevelLabel" for="certificationLevelInput">자격레벨</label>
+                <input id="certificationLevelInput" class="profile-modal-input" type="text" maxlength="100" placeholder="자격레벨을 입력해 주세요" autocomplete="off">
+              </div>
+              <div class="profile-modal-field">
+                <label for="certificationNumberInput">자격번호</label>
+                <input id="certificationNumberInput" class="profile-modal-input" type="text" maxlength="100" placeholder="자격번호를 입력해 주세요" autocomplete="off">
+              </div>
+              <div class="profile-modal-field">
+                <label for="certificationPhotoInput">자격증 사진</label>
+                <input id="certificationPhotoInput" class="profile-modal-input profile-certification-file" type="file" accept="image/jpeg,image/png,image/webp">
+                <p class="profile-field-hint">JPG, PNG, WebP · 1장 · 최대 5MB · 메일 첨부 후 별도 저장되지 않습니다.</p>
+              </div>
+              <button id="submitCertificationRequestBtn" class="profile-certification-submit" type="button">인증 요청</button>
+            </div>
           </section>
         </div>
 
@@ -458,11 +495,12 @@
     </div>
   </section>
 
+  <script src="./public/js/snorky-test-mode.js?v=20260905_v1"></script>
   <script src="./public/js/supabase-client.js?v=20260820_stitch_v76"></script>
   <script async src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" onload="window.dispatchEvent(new Event('snorky:supabase-ready'))"></script>
-  <script src="./public/js/auth-session.js?v=20260903_v2"></script>
+  <script src="./public/js/auth-session.js?v=20260905_moderation_v1"></script>
   <script src="./public/js/buddy-certification.js?v=20260905_v1"></script>
-  <script src="./public/js/user-profile.js?v=20260903_v4"></script>
+  <script src="./public/js/user-profile.js?v=20260905_moderation_v1"></script>
   <script>
     (function () {
       "use strict";
@@ -531,6 +569,15 @@
       const editCertificationState = document.getElementById("editCertificationState");
       const openCertificationBtn = document.getElementById("openCertificationBtn");
       const certificationHelpText = document.getElementById("certificationHelpText");
+      const certificationRequestForm = document.getElementById("certificationRequestForm");
+      const certificationAgencySelect = document.getElementById("certificationAgencySelect");
+      const certificationCustomAgencyField = document.getElementById("certificationCustomAgencyField");
+      const certificationCustomAgencyInput = document.getElementById("certificationCustomAgencyInput");
+      const certificationLevelLabel = document.getElementById("certificationLevelLabel");
+      const certificationLevelInput = document.getElementById("certificationLevelInput");
+      const certificationNumberInput = document.getElementById("certificationNumberInput");
+      const certificationPhotoInput = document.getElementById("certificationPhotoInput");
+      const submitCertificationRequestBtn = document.getElementById("submitCertificationRequestBtn");
       const statusMsg = document.getElementById("profileEditStatus");
       const saveBtn = document.getElementById("saveProfileBtn");
 
@@ -665,10 +712,114 @@
           editCertificationState.textContent = verified ? "인증완료" : (pending ? "검토중" : "미인증");
           editCertificationState.className = `profile-certification-state${verified ? " is-verified" : (pending ? " is-pending" : "")}`;
         }
-        if (openCertificationBtn) openCertificationBtn.textContent = verified ? "인증 정보" : (pending ? "검토중" : "자격 인증하기");
+        if (openCertificationBtn) openCertificationBtn.textContent = window.SNORKYTestMode?.TEST_MODE_ALLOW_DUPLICATE_USERS === true
+          ? "자격 인증하기"
+          : (verified ? "인증 정보" : (pending ? "검토중" : "자격 인증하기"));
       }
+
+      function syncCertificationAgencyFields() {
+        const isOther = certificationAgencySelect?.value === "기타";
+        if (certificationCustomAgencyField) certificationCustomAgencyField.hidden = !isOther;
+        if (certificationLevelLabel) certificationLevelLabel.textContent = isOther ? "자격명/레벨" : "자격레벨";
+        if (certificationLevelInput) certificationLevelInput.placeholder = isOther ? "자격명 또는 레벨을 입력해 주세요" : "자격레벨을 입력해 주세요";
+        if (!isOther && certificationCustomAgencyInput) certificationCustomAgencyInput.value = "";
+      }
+
+      function fileToBase64(file) {
+        return new Promise((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = () => {
+            const result = String(reader.result || "");
+            const separator = result.indexOf(",");
+            if (separator < 0) reject(new Error("자격증 사진을 읽지 못했습니다."));
+            else resolve(result.slice(separator + 1));
+          };
+          reader.onerror = () => reject(new Error("자격증 사진을 읽지 못했습니다."));
+          reader.readAsDataURL(file);
+        });
+      }
+
+      async function certificationResponseMessage(error) {
+        try {
+          const response = error?.context;
+          if (response && typeof response.clone === "function") {
+            const body = await response.clone().json();
+            if (body?.message) return body.message;
+          }
+        } catch (_) {}
+        return "인증 요청 중 오류가 발생했습니다. 잠시 후 다시 시도해 주세요.";
+      }
+
+      certificationAgencySelect?.addEventListener("change", syncCertificationAgencyFields);
       openCertificationBtn?.addEventListener("click", () => {
-        if (certificationHelpText) certificationHelpText.textContent = "자격 인증 접수 기능은 준비 중입니다.";
+        const user = currentSession?.user || {};
+        const status = String(user.certificationStatus || user.qualificationStatus || user.verificationStatus || user.certification_status || user.qualification_status || "").toLowerCase();
+        const verified = window.SNORKYCertification?.checkIsVerified(user) || ["verified", "approved", "complete", "인증완료"].includes(status);
+        const pending = ["pending", "reviewing", "in_review", "검토중"].includes(status);
+        if ((verified || pending) && window.SNORKYTestMode?.TEST_MODE_ALLOW_DUPLICATE_USERS !== true) {
+          if (certificationHelpText) certificationHelpText.textContent = verified ? "승인된 자격 정보입니다." : "인증 요청을 검토 중입니다.";
+          if (certificationRequestForm) certificationRequestForm.hidden = true;
+          return;
+        }
+        if (certificationRequestForm) certificationRequestForm.hidden = !certificationRequestForm.hidden;
+        if (certificationHelpText) certificationHelpText.textContent = "자격증 사진은 인증 메일에만 첨부되며 저장되지 않습니다.";
+      });
+
+      submitCertificationRequestBtn?.addEventListener("click", async () => {
+        const agencyType = certificationAgencySelect?.value || "";
+        const customAgency = certificationCustomAgencyInput?.value.trim() || "";
+        const level = certificationLevelInput?.value.trim() || "";
+        const certificationNumber = certificationNumberInput?.value.trim() || "";
+        const photo = certificationPhotoInput?.files?.[0] || null;
+        if (!agencyType) return void (certificationHelpText.textContent = "인증기관을 선택해 주세요.");
+        if (agencyType === "기타" && !customAgency) return void (certificationHelpText.textContent = "협회명을 입력해 주세요.");
+        if (!level) return void (certificationHelpText.textContent = agencyType === "기타" ? "자격명/레벨을 입력해 주세요." : "자격레벨을 입력해 주세요.");
+        if (!certificationNumber) return void (certificationHelpText.textContent = "자격번호를 입력해 주세요.");
+        if (!photo) return void (certificationHelpText.textContent = "자격증 사진 1장을 선택해 주세요.");
+        if (!["image/jpeg", "image/png", "image/webp"].includes(photo.type)) return void (certificationHelpText.textContent = "JPG, PNG, WebP 형식의 사진만 첨부할 수 있습니다.");
+        if (photo.size > 5 * 1024 * 1024) return void (certificationHelpText.textContent = "자격증 사진은 최대 5MB까지 첨부할 수 있습니다.");
+
+        submitCertificationRequestBtn.disabled = true;
+        submitCertificationRequestBtn.textContent = "요청 중...";
+        if (certificationHelpText) certificationHelpText.textContent = "자격 인증 요청을 접수하고 있습니다.";
+        try {
+          const client = window.getSnorkySupabase?.();
+          if (!client) throw new Error("SUPABASE_CLIENT_UNAVAILABLE");
+          const photoBase64 = await fileToBase64(photo);
+          const user = currentSession?.user || {};
+          const payload = {
+            inquiry_type: "certification_request",
+            user_id: String(user.id || ""),
+            nickname: String(user.customNickname || user.nickname || "").trim(),
+            agency: agencyType,
+            custom_agency: agencyType === "기타" ? customAgency : "",
+            level,
+            certification_number: certificationNumber,
+            photo: {
+              name: photo.name,
+              mime_type: photo.type,
+              content_base64: photoBase64
+            }
+          };
+          const { data, error } = await client.functions.invoke("submit-inquiry", { body: payload });
+          if (error) throw new Error(await certificationResponseMessage(error));
+          if (!data?.ok) throw new Error(data?.message || "인증 요청에 실패했습니다.");
+          certificationAgencySelect.value = "";
+          certificationCustomAgencyInput.value = "";
+          certificationLevelInput.value = "";
+          certificationNumberInput.value = "";
+          certificationPhotoInput.value = "";
+          syncCertificationAgencyFields();
+          certificationRequestForm.hidden = true;
+          certificationHelpText.textContent = "인증 요청이 접수되었습니다.";
+        } catch (error) {
+          certificationHelpText.textContent = error instanceof Error && error.message
+            ? error.message
+            : "인증 요청 중 오류가 발생했습니다. 잠시 후 다시 시도해 주세요.";
+        } finally {
+          submitCertificationRequestBtn.disabled = false;
+          submitCertificationRequestBtn.textContent = "인증 요청";
+        }
       });
 
       // Crop Modal Elements

@@ -426,6 +426,91 @@ async function primaryCenterPhotoAdmin(centerId, imageId) {
   }
 }
 
+async function loadCertificationRequestsAdmin() {
+  await requireAdmin();
+  const result = await sb()
+    .from("certification_requests")
+    .select("id, user_id, nickname, organization:agency, level, certification_number, status, rejection_reason, requested_at, reviewed_at, reviewed_by")
+    .order("requested_at", { ascending: false });
+  if (result.error) throw result.error;
+  return result.data || [];
+}
+
+async function reviewCertificationRequestAdmin(requestId, status, rejectionReason) {
+  await requireAdmin();
+  const result = await sb().rpc("review_certification_request", {
+    p_request_id: Number(requestId),
+    p_status: status,
+    p_rejection_reason: rejectionReason || null
+  });
+  if (result.error) throw result.error;
+  return result.data;
+}
+
+async function loadUserReportsAdmin() {
+  await requireAdmin();
+  let reports = [];
+  try {
+    const rpcResult = await sb().rpc("get_user_reports_admin");
+    if (!rpcResult.error && Array.isArray(rpcResult.data)) {
+      reports = rpcResult.data;
+    } else {
+      throw rpcResult.error || new Error("RPC_FAILED");
+    }
+  } catch (_) {
+    const reportResult = await sb()
+      .from("user_reports")
+      .select("id, target_user_id, target_nickname, reporter_user_id, reporter_nickname, reason, details, buddy_post_id, status, action_type, action_reason, reported_at, reviewed_at, reviewed_by")
+      .order("reported_at", { ascending: false });
+    if (reportResult.error) throw reportResult.error;
+    reports = reportResult.data || [];
+  }
+
+  const userIds = Array.from(new Set(reports.flatMap((row) => [row.target_user_id, row.reporter_user_id]).filter(Boolean)));
+  const postIds = Array.from(new Set(reports.map((row) => Number(row.buddy_post_id)).filter(Boolean)));
+  const profileMap = new Map();
+  const postMap = new Map();
+
+  if (userIds.length) {
+    const profiles = await sb()
+      .from("user_profiles")
+      .select("provider_user_id, custom_nickname, custom_avatar_url, avatar_type, aida_level, gender, age_group")
+      .in("provider_user_id", userIds);
+    if (profiles.error) throw profiles.error;
+    (profiles.data || []).forEach((profile) => profileMap.set(String(profile.provider_user_id), profile));
+  }
+  if (postIds.length) {
+    const posts = await sb()
+      .from("buddy_posts")
+      .select("id, point_name, activity_type, event_date, status, user_id")
+      .in("id", postIds);
+    if (posts.error) throw posts.error;
+    (posts.data || []).forEach((post) => postMap.set(Number(post.id), post));
+  }
+
+  const countMap = new Map();
+  reports.forEach((row) => countMap.set(String(row.target_user_id), (countMap.get(String(row.target_user_id)) || 0) + 1));
+  return reports.map((row) => ({
+    ...row,
+    target_profile: profileMap.get(String(row.target_user_id)) || null,
+    reporter_profile: profileMap.get(String(row.reporter_user_id)) || null,
+    related_post: postMap.get(Number(row.buddy_post_id)) || null,
+    cumulative_report_count: countMap.get(String(row.target_user_id)) || 0
+  }));
+}
+
+async function moderateUserReportAdmin(reportId, status, actionType, actionReason) {
+  await requireAdmin();
+  const result = await sb().rpc("moderate_user_report", {
+    p_report_id: Number(reportId),
+    p_status: status,
+    p_action_type: actionType || null,
+    p_action_reason: actionReason || null
+  });
+  if (result.error) throw result.error;
+  return result.data;
+}
+
 window.SNORKYAdmin = {
   login,
   logout,
@@ -444,7 +529,11 @@ window.SNORKYAdmin = {
   deleteIndoorCenterAdmin,
   uploadCenterPhotosAdmin,
   deleteCenterPhotoAdmin,
-  primaryCenterPhotoAdmin
+  primaryCenterPhotoAdmin,
+  loadCertificationRequestsAdmin,
+  reviewCertificationRequestAdmin,
+  loadUserReportsAdmin,
+  moderateUserReportAdmin
 };
 addAdminRegion=function(){return addRegion()};renameAdminRegion=function(id){return renameRegion(id)};deleteAdminRegion=function(id){return deleteRegion(id)};
 saveNewPoint=function(){return saveNew()};savePointDetailOverride=function(){return saveDetail()};persistPointCoordinate=function(regionName,point){return persistCoordinates(regionName,point)};

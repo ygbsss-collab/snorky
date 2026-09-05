@@ -11,8 +11,8 @@ async function main() {
   const page = await browser.newPage();
   await page.setViewport({ width: 412, height: 915 }); // Mobile viewport
 
-  console.log("1. http://127.0.0.1:8089/ 접속 중...");
-  await page.goto("http://127.0.0.1:8089/", { waitUntil: 'networkidle0', timeout: 30000 });
+  console.log("1. http://127.0.0.1:5501/ 접속 중...");
+  await page.goto("http://127.0.0.1:5501/", { waitUntil: 'networkidle0', timeout: 30000 });
 
   // Wait for points and safety
   console.log("2. Supabase 포인트 및 KMA Safety 데이터 로드 대기 중...");

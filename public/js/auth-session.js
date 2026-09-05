@@ -24,6 +24,8 @@
       verificationStatus: user.verificationStatus ? String(user.verificationStatus) : null,
       certificationVerified: user.certificationVerified === true,
       aidaVerified: user.aidaVerified === true,
+      banned: user.banned === true,
+      suspendedUntil: user.suspendedUntil ? String(user.suspendedUntil) : null,
     };
   }
 
@@ -139,6 +141,12 @@
     if (profileUpdates.certificationStatus !== undefined) {
       session.user.certificationStatus = profileUpdates.certificationStatus;
     }
+    if (profileUpdates.banned !== undefined) {
+      session.user.banned = profileUpdates.banned === true;
+    }
+    if (profileUpdates.suspendedUntil !== undefined) {
+      session.user.suspendedUntil = profileUpdates.suspendedUntil || null;
+    }
     save(session);
     try {
       window.dispatchEvent(new CustomEvent("snorky:profile-updated", {
@@ -155,6 +163,75 @@
   function isLoggedIn() {
     const session = get();
     return Boolean(session && session.version === 1 && normalizeUser(session.user));
+  }
+
+  function getAccessState(session = get()) {
+    const user = session?.user || null;
+    const suspendedUntil = user?.suspendedUntil ? new Date(user.suspendedUntil) : null;
+    const isSuspended = Boolean(suspendedUntil && !Number.isNaN(suspendedUntil.getTime()) && suspendedUntil.getTime() > Date.now());
+    return {
+      banned: user?.banned === true,
+      suspendedUntil: isSuspended ? suspendedUntil.toISOString() : null,
+      isSuspended
+    };
+  }
+
+  function showBannedOverlay() {
+    if (document.getElementById("snorkyBannedAccountOverlay")) return;
+    const overlay = document.createElement("div");
+    overlay.id = "snorkyBannedAccountOverlay";
+    overlay.setAttribute("role", "alertdialog");
+    overlay.setAttribute("aria-modal", "true");
+    overlay.innerHTML = `
+      <div style="width:min(360px,calc(100vw - 40px));padding:24px 20px;border-radius:18px;background:#fff;box-shadow:0 24px 70px rgba(0,0,0,.3);text-align:center;box-sizing:border-box;">
+        <h2 style="margin:0 0 9px;font-size:19px;color:#172b3a;">앱 이용이 제한된 계정입니다</h2>
+        <p style="margin:0 0 18px;color:#64748b;font-size:13.5px;line-height:1.55;">관리자에게 문의해 주세요. 기존 활동 이력은 보존됩니다.</p>
+        <button type="button" data-banned-account-logout style="width:100%;height:42px;border:0;border-radius:10px;background:#e9eff2;color:#334155;font:inherit;font-size:14px;font-weight:700;cursor:pointer;">로그아웃</button>
+      </div>`;
+    Object.assign(overlay.style, {
+      position: "fixed", inset: "0", zIndex: "100000", display: "grid", placeItems: "center",
+      padding: "20px", background: "rgba(8,35,50,.72)", boxSizing: "border-box"
+    });
+    overlay.querySelector("[data-banned-account-logout]")?.addEventListener("click", () => {
+      clear();
+      location.href = "./login.html";
+    });
+    document.body.appendChild(overlay);
+  }
+
+  async function refreshAccessState() {
+    const session = get();
+    if (!session?.user?.id) return getAccessState(session);
+    let sb = null;
+    try { sb = typeof global.getSnorkySupabase === "function" ? global.getSnorkySupabase() : global.snorkySupabase; } catch (_) {}
+    if (sb) {
+      const result = await sb
+        .from("user_profiles")
+        .select("certification_status, banned, suspended_until")
+        .eq("provider", session.provider || "kakao")
+        .eq("provider_user_id", String(session.user.id))
+        .maybeSingle();
+      if (!result.error && result.data) {
+        updateProfile({
+          certificationStatus: result.data.certification_status || null,
+          banned: result.data.banned === true,
+          suspendedUntil: result.data.suspended_until || null
+        });
+      }
+    }
+    const state = getAccessState();
+    if (state.banned && document.body) showBannedOverlay();
+    return state;
+  }
+
+  async function requirePostingAccess() {
+    const state = await refreshAccessState();
+    if (state.banned) throw new Error("영구 정지된 계정은 앱 기능을 사용할 수 없습니다.");
+    if (state.isSuspended) {
+      const until = new Date(state.suspendedUntil).toLocaleString("ko-KR");
+      throw new Error(`${until}까지 게시 및 참여 기능이 정지되었습니다.`);
+    }
+    return true;
   }
 
   function showLoginPrompt(message = "즐겨찾기는 로그인 후 이용할 수 있어요.") {
@@ -306,5 +383,12 @@
     showLoginPrompt,
     getEffectiveProfile,
     updateProfile,
+    getAccessState,
+    refreshAccessState,
+    requirePostingAccess,
   });
+
+  const refreshOnLoad = () => { refreshAccessState().catch(() => {}); };
+  if (document.readyState === "complete") refreshOnLoad();
+  else global.addEventListener("load", refreshOnLoad, { once: true });
 })(window);

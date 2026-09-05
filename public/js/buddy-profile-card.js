@@ -2,8 +2,6 @@
   "use strict";
 
   const DEFAULT_AVATAR = "./public/images/snorky-symbol.png";
-  // TEST 모드 플래그: 본인 프로필에서도 프렌즈 등록/차단/신고 UI 허용 (TEST 종료 시 false로 변경)
-  const TEST_MODE_ALLOW_SELF_PROFILE_ACTIONS = true;
   const profileCache = new Map();
   const pendingProfileFetches = new Map();
 
@@ -56,7 +54,7 @@
     try {
       const { data, error } = await sb
         .from("user_profiles")
-        .select("provider_user_id, custom_nickname, custom_avatar_url, avatar_type, aida_level, gender, bio, age_group, activity_region, activity_depth")
+        .select("provider_user_id, custom_nickname, custom_avatar_url, avatar_type, aida_level, certification_status, gender, bio, age_group, activity_region, activity_depth")
         .in("provider_user_id", missingIds);
 
       if (error) {
@@ -424,8 +422,10 @@
     reportModal.addEventListener("click", (e) => { if (e.target === reportModal) closeReport(); });
 
     const form = reportModal.querySelector("form");
+    let isReportSubmitting = false;
     form.addEventListener("submit", async (e) => {
       e.preventDefault();
+      if (isReportSubmitting) return;
       const reason = form.report_reason.value;
       const details = form.report_details.value;
       const submitBtn = reportModal.querySelector("[data-report-submit]");
@@ -433,6 +433,7 @@
         alert("신고 사유를 선택해 주세요.");
         return;
       }
+      isReportSubmitting = true;
       submitBtn.disabled = true;
       submitBtn.textContent = "접수 중...";
 
@@ -453,6 +454,7 @@
       } catch (err) {
         alert(err?.message || "신고 접수 중 오류가 발생했습니다.");
       } finally {
+        isReportSubmitting = false;
         submitBtn.disabled = false;
         submitBtn.textContent = "신고 접수";
       }
@@ -470,7 +472,7 @@
     const sessionUser = getSessionUser();
     const myUserId = sessionUser?.id ? String(sessionUser.id) : "";
     const isSelf = Boolean(targetUserId && myUserId && targetUserId === myUserId);
-    const allowActions = !isSelf || TEST_MODE_ALLOW_SELF_PROFILE_ACTIONS;
+    const allowActions = !isSelf || global.SNORKYTestMode?.TEST_MODE_ALLOW_DUPLICATE_USERS === true;
 
     // 1. 상단: 프로필 사진
     const avatar = modal.querySelector("[data-buddy-profile-card-avatar]");
@@ -742,18 +744,18 @@
 
     if (container.dataset.buddyParticipantPostId !== postId) return [];
 
-    const TEST_MODE_ALLOW_DUPLICATE_USERS = true;
+    const allowDuplicateUsers = global.SNORKYTestMode?.TEST_MODE_ALLOW_DUPLICATE_USERS === true;
     const hostId = String(post.user_id || "");
     const participants = [];
     const seenUserIds = new Set();
-    if (!TEST_MODE_ALLOW_DUPLICATE_USERS && hostId) {
+    if (!allowDuplicateUsers && hostId) {
       seenUserIds.add(hostId);
     }
 
     approvedApplications.forEach((application) => {
       const userId = String(application.applicant_user_id || "");
       if (!userId) return;
-      if (!TEST_MODE_ALLOW_DUPLICATE_USERS) {
+      if (!allowDuplicateUsers) {
         if (seenUserIds.has(userId)) return;
         seenUserIds.add(userId);
       }

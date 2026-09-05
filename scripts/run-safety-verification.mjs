@@ -40,7 +40,7 @@ async function main() {
       '--headless=new',
       '--disable-gpu',
       '--no-sandbox',
-      'http://127.0.0.1:8089'
+      'http://127.0.0.1:5501'
     ]);
     for (let i = 0; i < 25; i++) {
       await new Promise(r => setTimeout(r, 200));
@@ -84,7 +84,7 @@ async function main() {
   await send('DOM.enable');
 
   // Navigate to home to ensure fresh state
-  await send('Page.navigate', { url: 'http://127.0.0.1:8089/index.html' });
+  await send('Page.navigate', { url: 'http://127.0.0.1:5501/index.html' });
   await new Promise(r => setTimeout(r, 3000));
 
   // Dismiss intro

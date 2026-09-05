@@ -656,6 +656,13 @@
       return;
     }
 
+    try {
+      await window.SNORKYAuthSession?.requirePostingAccess?.();
+    } catch (error) {
+      showToast(error?.message || "현재 버디 공고를 등록할 수 없습니다.");
+      return;
+    }
+
     const sb = getSbClient();
     if (!sb) {
       showToast("데이터베이스 연결에 실패했습니다.");
@@ -742,10 +749,11 @@
               }
 
               if (approvedApps && approvedApps.length > 0) {
+                const allowDuplicateUsers = window.SNORKYTestMode?.TEST_MODE_ALLOW_DUPLICATE_USERS === true;
                 const recipientIds = Array.from(new Set(
                   approvedApps
                     .map(a => a.applicant_user_id ? String(a.applicant_user_id) : null)
-                    .filter(uid => uid && uid !== String(userId))
+                    .filter(uid => uid && (allowDuplicateUsers || uid !== String(userId)))
                 ));
 
                 if (recipientIds.length > 0) {

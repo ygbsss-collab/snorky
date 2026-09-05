@@ -115,7 +115,7 @@
     return false;
   }
 
-  function render({ post, author, formattedDate, attributes, statusText, statusClass }) {
+  function render({ post, author, formattedDate, attributes, statusText, statusClass, pendingCount = 0 }) {
     const statusInfo = getPostStatusInfo(post);
     const finalStatusText = statusText !== undefined ? statusText : statusInfo.text;
     const finalStatusClass = statusClass !== undefined ? statusClass : statusInfo.className;
@@ -153,6 +153,10 @@
     const hostMetaText = global.SNORKYBuddyProfileCard?.formatProfileMetaText
       ? global.SNORKYBuddyProfileCard.formatProfileMetaText(hostProfile, { includeNickname: true })
       : `${displayName} · ${gender}${rawAida ? ` · ${isVerified ? `${rawAida} ✓` : rawAida}` : ""}`;
+    const normalizedPendingCount = Math.max(0, Number(pendingCount) || 0);
+    const pendingBadge = normalizedPendingCount > 0
+      ? `<span class="buddy-post-pending-badge">신청대기 ${normalizedPendingCount}</span>`
+      : "";
 
     return `
       <article class="buddy-post-card" ${attributeMarkup}>
@@ -165,7 +169,10 @@
             </div>
             <span class="buddy-post-status-text ${finalStatusClass}">${escapeHtml(finalStatusText)}</span>
           </div>
-          <h4 class="buddy-post-heading">${escapeHtml(post?.point_name)}</h4>
+          <div class="buddy-post-heading-row">
+            <h4 class="buddy-post-heading">${escapeHtml(post?.point_name)}</h4>
+            ${pendingBadge}
+          </div>
           <div class="buddy-post-meta-row">
             <span>${escapeHtml(formattedDate || "-")}</span>
             <span class="buddy-meta-sep">·</span>
