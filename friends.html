@@ -1,0 +1,574 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>SNORKY 프렌즈 - SNORKY</title>
+  <link rel="icon" href="./public/images/snorky-symbol.png" type="image/png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Pretendard:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="./public/css/buddy.css?v=20260905_f1">
+  <link rel="stylesheet" href="./public/css/bottom-nav.css?v=20260903_v1">
+  <script src="./public/js/bottom-nav.js?v=20260903_v1"></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; }
+    html, body {
+      margin: 0; padding: 0;
+      width: 100%; height: 100%; height: 100dvh;
+      overflow: hidden;
+      font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+      background: #f6f8fa; color: #102a3a;
+      -webkit-font-smoothing: antialiased;
+    }
+    body { display: flex; flex-direction: column; align-items: center; }
+    .friends-app {
+      width: 100%; max-width: 520px;
+      height: 100%; height: 100dvh; max-height: 100dvh;
+      display: flex; flex-direction: column;
+      background: #fff;
+      box-shadow: 0 0 30px rgba(10,35,48,.04);
+      position: relative; overflow: hidden;
+    }
+
+    /* 상단 헤더 */
+    .friends-header {
+      flex-shrink: 0; position: relative; z-index: 50;
+      display: flex; align-items: center; justify-content: space-between;
+      height: 52px; padding: 0 16px;
+      background: rgba(255,255,255,.96);
+      backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+      border-bottom: 1px solid #edf2f5;
+    }
+    .friends-back {
+      display: grid; place-items: center;
+      width: 36px; height: 36px;
+      border: 0; border-radius: 50%;
+      background: transparent; color: #101828;
+      font-size: 24px; font-weight: 300;
+      text-decoration: none; line-height: 1; cursor: pointer;
+      transition: background .15s;
+    }
+    .friends-back:hover { background: #f1f5f9; }
+    .friends-header h1 {
+      margin: 0; font-size: 17px; font-weight: 800;
+      letter-spacing: -.02em; color: #0e2032;
+    }
+    .friends-header-spacer { width: 36px; height: 36px; }
+
+    /* 탭 바 */
+    .friends-tabs {
+      display: flex;
+      background: #fff;
+      border-bottom: 1px solid #edf2f5;
+      flex-shrink: 0;
+    }
+    .friends-tab {
+      flex: 1;
+      height: 44px;
+      border: 0;
+      background: transparent;
+      font-size: 14.5px;
+      font-weight: 700;
+      color: #64748b;
+      cursor: pointer;
+      position: relative;
+      font-family: inherit;
+      transition: color .15s;
+    }
+    .friends-tab.active {
+      color: #0e2032;
+    }
+    .friends-tab.active::after {
+      content: '';
+      position: absolute;
+      bottom: 0; left: 0; right: 0;
+      height: 2.5px;
+      background: #087ca7;
+    }
+
+    /* 검색 바 영역 */
+    .friends-search-bar {
+      flex-shrink: 0;
+      padding: 10px 16px;
+      background: #fff;
+      border-bottom: 1px solid #edf2f5;
+    }
+    .friends-search-input-wrap {
+      position: relative;
+      display: flex; align-items: center;
+    }
+    .friends-search-icon {
+      position: absolute; left: 12px;
+      display: grid; place-items: center;
+      color: #94a3b8; pointer-events: none;
+    }
+    .friends-search-input {
+      width: 100%; height: 40px;
+      padding: 0 12px 0 38px;
+      border: 1px solid #e2e8f0; border-radius: 12px;
+      background: #f8fafc; color: #0f172a;
+      font-size: 14px; font-family: inherit;
+      outline: none; transition: border-color .15s, background .15s;
+    }
+    .friends-search-input:focus {
+      border-color: #087ca7; background: #fff;
+      box-shadow: 0 0 0 3px rgba(8,124,167,.1);
+    }
+    .friends-search-clear {
+      position: absolute; right: 10px;
+      display: none; place-items: center;
+      width: 22px; height: 22px; border: 0; border-radius: 50%;
+      background: #cbd5e1; color: #fff; font-size: 13px;
+      cursor: pointer; padding: 0; line-height: 1;
+    }
+
+    /* 프렌즈 목록 컨테이너 (단독 세로 스크롤) */
+    .friends-content {
+      flex: 1 1 0%; min-height: 0;
+      overflow-y: auto; overflow-x: hidden;
+      -webkit-overflow-scrolling: touch;
+      overscroll-behavior-y: contain;
+      padding: 12px 16px calc(24px + var(--snorky-bottom-nav-offset, 80px));
+      display: flex; flex-direction: column; gap: 10px;
+    }
+
+    /* 프렌즈 카드 */
+    .friend-card {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 14px 14px;
+      background: #fff; border: 1px solid #e2e8f0; border-radius: 16px;
+      box-shadow: 0 2px 8px rgba(15,23,42,.03);
+      cursor: pointer; transition: transform .12s, box-shadow .12s, border-color .12s;
+    }
+    .friend-card:hover {
+      border-color: #cbd5e1;
+      transform: translateY(-1px);
+      box-shadow: 0 4px 12px rgba(15,23,42,.06);
+    }
+    .friend-card-left {
+      display: flex; align-items: center; gap: 12px;
+      min-width: 0; flex: 1;
+    }
+    .friend-avatar {
+      width: 48px; height: 48px; min-width: 48px;
+      border-radius: 50%; object-fit: cover;
+      background: #f1f5f9; border: 2px solid #fff;
+      box-shadow: 0 2px 6px rgba(15,23,42,.08);
+      flex-shrink: 0;
+    }
+    .friend-info {
+      display: flex; flex-direction: column; gap: 3px;
+      min-width: 0; flex: 1;
+    }
+    .friend-name-row {
+      display: flex; align-items: center; gap: 6px;
+      min-width: 0;
+    }
+    .friend-name {
+      font-size: 15.5px; font-weight: 800; color: #0f172a;
+      overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+    }
+    .friend-cert-badge {
+      display: inline-flex; align-items: center;
+      padding: 2px 7px; border-radius: 6px;
+      font-size: 11px; font-weight: 700;
+      white-space: nowrap; flex-shrink: 0;
+      border: 1px solid #cbd5e1; background: #f1f5f9; color: #475569;
+    }
+    .friend-cert-badge.verified {
+      background: #ecfdf5; color: #059669; border-color: #a7f3d0;
+    }
+    .friend-meta-row {
+      display: flex; align-items: center; flex-wrap: wrap; gap: 4px;
+      font-size: 12.5px; font-weight: 600; color: #64748b;
+      line-height: 1.3;
+    }
+    .friend-meta-sep {
+      color: #cbd5e1; font-size: 11px; user-select: none;
+    }
+    .friend-delete-btn {
+      flex-shrink: 0; margin-left: 10px;
+      padding: 6px 11px;
+      border: 1px solid #e2e8f0; border-radius: 10px;
+      background: #fff; color: #64748b;
+      font-size: 12px; font-weight: 700; font-family: inherit;
+      cursor: pointer; white-space: nowrap;
+      transition: all .15s;
+    }
+    .friend-delete-btn:hover {
+      border-color: #fca5a5; background: #fff5f5; color: #dc2626;
+    }
+
+    /* 차단 해제 버튼 */
+    .friend-unblock-btn {
+      flex-shrink: 0; margin-left: 10px;
+      padding: 6px 11px;
+      border: 1px solid #cce0e8; border-radius: 10px;
+      background: #f0f8fb; color: #087ca7;
+      font-size: 12px; font-weight: 700; font-family: inherit;
+      cursor: pointer; white-space: nowrap;
+      transition: all .15s;
+    }
+    .friend-unblock-btn:hover {
+      background: #dbeafe; border-color: #87bdd0;
+    }
+
+    /* 빈 상태 */
+    .friends-empty {
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      padding: 56px 20px; gap: 10px;
+      color: #7a8fa0; text-align: center;
+    }
+    .friends-empty svg { opacity: .35; }
+    .friends-empty strong { font-size: 15px; font-weight: 700; color: #4a6070; }
+    .friends-empty small { font-size: 13px; }
+
+    /* 토스트 */
+    .friends-toast {
+      position: fixed; bottom: calc(20px + var(--snorky-bottom-nav-offset, 0px));
+      left: 50%; transform: translateX(-50%);
+      background: rgba(16,42,58,.92); color: #fff;
+      font-size: 13.5px; font-weight: 600;
+      padding: 10px 18px; border-radius: 12px;
+      pointer-events: none; opacity: 0; transition: opacity .25s;
+      white-space: nowrap; z-index: 9999;
+      max-width: calc(100vw - 40px); text-align: center;
+    }
+    .friends-toast.show { opacity: 1; }
+  </style>
+</head>
+<body>
+  <div class="friends-app">
+    <!-- 1. 상단 헤더: 뒤로가기, 제목 -->
+    <header class="friends-header">
+      <a href="./mypage.html" class="friends-back" aria-label="마이페이지로 돌아가기">‹</a>
+      <h1>SNORKY 프렌즈</h1>
+      <div class="friends-header-spacer"></div>
+    </header>
+
+    <!-- 2. 상단 탭: 프렌즈 / 차단 목록 -->
+    <div class="friends-tabs" role="tablist">
+      <button type="button" class="friends-tab active" id="tabFriends" role="tab" aria-selected="true">프렌즈</button>
+      <button type="button" class="friends-tab" id="tabBlocked" role="tab" aria-selected="false">차단 목록</button>
+    </div>
+
+    <!-- 3. 검색 바: 닉네임 검색 -->
+    <section class="friends-search-bar" aria-label="닉네임 검색">
+      <div class="friends-search-input-wrap">
+        <span class="friends-search-icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="11" cy="11" r="8"></circle>
+            <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+          </svg>
+        </span>
+        <input type="search" id="friendsSearchInput" class="friends-search-input" placeholder="닉네임 검색..." autocomplete="off">
+        <button type="button" id="friendsSearchClear" class="friends-search-clear" aria-label="검색어 지우기">×</button>
+      </div>
+    </section>
+
+    <!-- 4. 목록 본문 -->
+    <main id="friendsContent" class="friends-content" aria-live="polite">
+      <div class="friends-empty">
+        <strong>불러오는 중...</strong>
+      </div>
+    </main>
+
+    <div id="friendsToast" class="friends-toast" role="status" aria-live="polite"></div>
+  </div>
+
+  <script src="./public/js/supabase-client.js?v=20260820_stitch_v76"></script>
+  <script async src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" onload="window.dispatchEvent(new Event('snorky:supabase-ready'))"></script>
+  <script src="./public/js/auth-session.js?v=20260903_v2"></script>
+  <script src="./public/js/buddy-certification.js?v=20260905_v1"></script>
+  <script src="./public/js/snorky-friends.js?v=20260905_f1"></script>
+  <script src="./public/js/buddy-profile-card.js?v=20260905_f1"></script>
+  <script>
+    (function () {
+      "use strict";
+
+      const DEFAULT_AVATAR = "./public/images/snorky-symbol.png";
+
+      function getSession() {
+        return window.SNORKYAuthSession?.get() || null;
+      }
+
+      const session = getSession();
+      if (!session || session.version !== 1 || !session.user) {
+        location.replace("./login.html");
+        return;
+      }
+
+      const currentUserId = String(session.user.id);
+      window.SNORKYBottomNav.mount({ active: "mypage", navigation: false, spacer: false });
+
+      const contentEl = document.getElementById("friendsContent");
+      const searchInput = document.getElementById("friendsSearchInput");
+      const searchClear = document.getElementById("friendsSearchClear");
+      const toastEl = document.getElementById("friendsToast");
+      const tabFriends = document.getElementById("tabFriends");
+      const tabBlocked = document.getElementById("tabBlocked");
+
+      let currentTab = "friends"; // "friends" | "blocked"
+      let allFriends = [];
+      let allBlocked = [];
+      let toastTimer = null;
+
+      function showToast(msg) {
+        if (!toastEl) return;
+        toastEl.textContent = msg;
+        toastEl.classList.add("show");
+        clearTimeout(toastTimer);
+        toastTimer = setTimeout(() => toastEl.classList.remove("show"), 2300);
+      }
+      window.showToast = showToast;
+
+      function escapeHtml(str) {
+        return String(str ?? "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+      }
+
+      // 미입력 선택정보 필터 (없음 / 미설정 / - 제외)
+      function isValidVal(val) {
+        if (!val) return false;
+        const s = String(val).trim().toLowerCase();
+        if (s.includes("[object")) return false;
+        return !["", "미설정", "없음", "-", "null", "undefined", "레벨 없음", "무관", "전체"].includes(s);
+      }
+
+      function cleanAida(val) {
+        if (!val) return "";
+        const s = String(val).replace(/\s*✓$/, "").trim();
+        return isValidVal(s) ? s : "";
+      }
+
+      function renderList() {
+        const query = (searchInput?.value || "").trim().toLowerCase();
+        const items = currentTab === "friends" ? allFriends : allBlocked;
+        const filtered = items.filter((item) => {
+          if (!query) return true;
+          const name = String(item.displayName || "").toLowerCase();
+          return name.includes(query);
+        });
+
+        if (!items.length) {
+          if (currentTab === "friends") {
+            contentEl.innerHTML = `
+              <div class="friends-empty">
+                <svg viewBox="0 0 24 24" width="48" height="48" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+                </svg>
+                <strong>등록된 SNORKY 프렌즈가 없습니다.</strong>
+                <small>버디 모집 공고에서 마음에 드는 다이버를 프렌즈로 등록해 보세요!</small>
+              </div>
+            `;
+          } else {
+            contentEl.innerHTML = `
+              <div class="friends-empty">
+                <svg viewBox="0 0 24 24" width="48" height="48" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                  <circle cx="12" cy="12" r="10"/><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/>
+                </svg>
+                <strong>차단한 사용자가 없습니다.</strong>
+              </div>
+            `;
+          }
+          return;
+        }
+
+        if (!filtered.length) {
+          contentEl.innerHTML = `
+            <div class="friends-empty">
+              <strong>검색 결과가 없습니다.</strong>
+              <small>다른 닉네임으로 검색해 보세요.</small>
+            </div>
+          `;
+          return;
+        }
+
+        contentEl.innerHTML = filtered.map((item) => {
+          const rawAidaVal = cleanAida(item.aidaLevel);
+          const certText = rawAidaVal ? (item.isVerified ? `${rawAidaVal} ✓` : rawAidaVal) : "";
+
+          // 메타 정보 구성 (성별, 나이대, 활동지역 중 유효한 것만)
+          const metaParts = [];
+          if (isValidVal(item.gender) && item.gender !== "비공개") metaParts.push(item.gender);
+          if (isValidVal(item.ageGroup)) metaParts.push(item.ageGroup);
+          if (isValidVal(item.activityRegion)) metaParts.push(item.activityRegion);
+
+          const metaHtml = metaParts.map((part, i) => {
+            return (i > 0 ? `<span class="friend-meta-sep">·</span>` : '') + `<span>${escapeHtml(part)}</span>`;
+          }).join("");
+
+          const actionBtnHtml = currentTab === "friends"
+            ? `<button type="button" class="friend-delete-btn" data-action="delete-friend" data-user-id="${escapeHtml(item.userId)}" data-user-name="${escapeHtml(item.displayName)}">프렌즈 삭제</button>`
+            : `<button type="button" class="friend-unblock-btn" data-action="unblock-user" data-user-id="${escapeHtml(item.userId)}" data-user-name="${escapeHtml(item.displayName)}">차단 해제</button>`;
+
+          return `
+            <article class="friend-card" data-user-id="${escapeHtml(item.userId)}">
+              <div class="friend-card-left" data-action="open-profile" data-user-id="${escapeHtml(item.userId)}">
+                <img class="friend-avatar" src="${escapeHtml(item.avatarUrl || DEFAULT_AVATAR)}" alt="" onerror="this.onerror=null;this.src='${DEFAULT_AVATAR}'">
+                <div class="friend-info">
+                  <div class="friend-name-row">
+                    <strong class="friend-name">${escapeHtml(item.displayName)}</strong>
+                    ${certText ? `<span class="friend-cert-badge ${item.isVerified ? 'verified' : ''}">${escapeHtml(certText)}</span>` : ''}
+                  </div>
+                  ${metaParts.length ? `<div class="friend-meta-row">${metaHtml}</div>` : ''}
+                </div>
+              </div>
+              ${actionBtnHtml}
+            </article>
+          `;
+        }).join("");
+
+        // 이벤트 바인딩
+        contentEl.querySelectorAll('.friend-card').forEach((card) => {
+          const userId = card.dataset.userId;
+          const currentItem = (currentTab === "friends" ? allFriends : allBlocked).find((x) => x.userId === userId);
+
+          // 프로필 카드 열기 (행 또는 아바타 클릭)
+          card.querySelector('[data-action="open-profile"]')?.addEventListener("click", (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            if (window.SNORKYBuddyProfileCard?.openByUserId && userId) {
+              window.SNORKYBuddyProfileCard.openByUserId(userId, currentItem || {});
+            }
+          });
+
+          // 프렌즈 삭제 버튼 클릭
+          card.querySelector('[data-action="delete-friend"]')?.addEventListener("click", async (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            const friendName = e.currentTarget.dataset.userName || "다이버";
+            if (!confirm(`${friendName}님을 프렌즈에서 삭제하시겠습니까?`)) {
+              return;
+            }
+
+            try {
+              if (!window.SNORKYFriends?.removeFriend) throw new Error("프렌즈 모듈을 불러오지 못했습니다.");
+              await window.SNORKYFriends.removeFriend(currentUserId, userId);
+              allFriends = allFriends.filter((f) => f.userId !== userId);
+              renderList();
+              showToast("프렌즈가 삭제되었습니다.");
+            } catch (err) {
+              alert(err?.message || "프렌즈 삭제에 실패했습니다.");
+            }
+          });
+
+          // 차단 해제 버튼 클릭
+          card.querySelector('[data-action="unblock-user"]')?.addEventListener("click", async (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            if (!confirm("이 사용자의 차단을 해제하시겠습니까?")) {
+              return;
+            }
+
+            try {
+              if (!window.SNORKYFriends?.unblockUser) throw new Error("차단 모듈을 불러오지 못했습니다.");
+              await window.SNORKYFriends.unblockUser(currentUserId, userId);
+              allBlocked = allBlocked.filter((b) => b.userId !== userId);
+              renderList();
+              showToast("차단이 해제되었습니다.");
+            } catch (err) {
+              alert(err?.message || "차단 해제에 실패했습니다.");
+            }
+          });
+        });
+      }
+
+      async function loadFriends() {
+        if (!window.SNORKYFriends?.getFriendsList) return;
+        if (currentTab === "friends") {
+          contentEl.innerHTML = '<div class="friends-empty"><strong>프렌즈 목록을 불러오는 중...</strong></div>';
+        }
+        try {
+          allFriends = await window.SNORKYFriends.getFriendsList(currentUserId);
+          if (currentTab === "friends") renderList();
+        } catch (err) {
+          console.error("[Friends] load error:", err);
+          if (currentTab === "friends") {
+            contentEl.innerHTML = '<div class="friends-empty"><strong>프렌즈 목록을 불러오지 못했습니다.</strong><small>잠시 후 다시 시도해 주세요.</small></div>';
+          }
+        }
+      }
+
+      async function loadBlocked() {
+        if (!window.SNORKYFriends?.getBlockedList) return;
+        if (currentTab === "blocked") {
+          contentEl.innerHTML = '<div class="friends-empty"><strong>차단 목록을 불러오는 중...</strong></div>';
+        }
+        try {
+          allBlocked = await window.SNORKYFriends.getBlockedList(currentUserId);
+          if (currentTab === "blocked") renderList();
+        } catch (err) {
+          console.error("[Friends] load blocked error:", err);
+          if (currentTab === "blocked") {
+            contentEl.innerHTML = '<div class="friends-empty"><strong>차단 목록을 불러오지 못했습니다.</strong><small>잠시 후 다시 시도해 주세요.</small></div>';
+          }
+        }
+      }
+
+      function switchTab(tab) {
+        if (currentTab === tab) return;
+        currentTab = tab;
+        if (tab === "friends") {
+          tabFriends.classList.add("active");
+          tabFriends.setAttribute("aria-selected", "true");
+          tabBlocked.classList.remove("active");
+          tabBlocked.setAttribute("aria-selected", "false");
+          loadFriends();
+        } else {
+          tabBlocked.classList.add("active");
+          tabBlocked.setAttribute("aria-selected", "true");
+          tabFriends.classList.remove("active");
+          tabFriends.setAttribute("aria-selected", "false");
+          loadBlocked();
+        }
+        if (searchInput) searchInput.value = "";
+        if (searchClear) searchClear.style.display = "none";
+      }
+
+      tabFriends?.addEventListener("click", () => switchTab("friends"));
+      tabBlocked?.addEventListener("click", () => switchTab("blocked"));
+
+      // 검색 이벤트
+      searchInput?.addEventListener("input", () => {
+        if (searchClear) searchClear.style.display = searchInput.value ? "grid" : "none";
+        renderList();
+      });
+
+      searchClear?.addEventListener("click", () => {
+        if (searchInput) searchInput.value = "";
+        if (searchClear) searchClear.style.display = "none";
+        renderList();
+        searchInput?.focus();
+      });
+
+      // 프렌즈/차단 변경 이벤트 리스너 (등록/삭제/차단 시 실시간 반영)
+      window.addEventListener("snorky:friends-changed", () => {
+        loadFriends();
+        if (currentTab === "blocked") loadBlocked();
+      });
+
+      window.addEventListener("snorky:user-blocked", () => {
+        loadFriends();
+        loadBlocked();
+      });
+
+      window.addEventListener("snorky:user-unblocked", () => {
+        loadBlocked();
+      });
+
+      function initData() {
+        loadFriends();
+        loadBlocked();
+      }
+
+      if (window.supabase) {
+        initData();
+      } else {
+        window.addEventListener("snorky:supabase-ready", initData, { once: true });
+        setTimeout(() => { if (window.supabase) initData(); }, 800);
+      }
+    })();
+  </script>
+</body>
+</html>

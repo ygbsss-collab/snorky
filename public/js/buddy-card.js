@@ -90,26 +90,69 @@
     };
   }
 
+  function isApprovedStatus(status) {
+    if (global.SNORKYCertification?.isApprovedStatus) {
+      return global.SNORKYCertification.isApprovedStatus(status);
+    }
+    if (!status) return false;
+    const s = String(status).trim().toLowerCase();
+    return ["approved", "verified", "complete", "인증완료"].includes(s);
+  }
+
+  function checkIsVerified(target) {
+    if (global.SNORKYCertification?.checkIsVerified) {
+      return global.SNORKYCertification.checkIsVerified(target);
+    }
+    if (!target) return false;
+    if (Array.isArray(target.certifications)) {
+      return target.certifications.some((c) => isApprovedStatus(c?.status));
+    }
+    const status = target.certificationStatus || target.qualificationStatus || target.verificationStatus || target.certification_status || target.qualification_status;
+    if (isApprovedStatus(status)) return true;
+    if (target.certificationVerified === true || target.aidaVerified === true || target.isVerified === true || target.isCertified === true) {
+      return true;
+    }
+    return false;
+  }
+
   function render({ post, author, formattedDate, attributes, statusText, statusClass }) {
     const statusInfo = getPostStatusInfo(post);
     const finalStatusText = statusText !== undefined ? statusText : statusInfo.text;
     const finalStatusClass = statusClass !== undefined ? statusClass : statusInfo.className;
     const displayName = author?.displayName || "다이버";
-    const aidaLevel = author?.aidaLevel && author.aidaLevel !== "없음" ? author.aidaLevel : "레벨 없음";
-    const gender = post?.host_gender || author?.gender || "비공개";
+    const isVerified = Boolean(author?.isVerified || checkIsVerified(author));
+    let rawAida = author?.aidaLevel && author.aidaLevel !== "없음" && author.aidaLevel !== "미설정" ? String(author.aidaLevel).replace(/\s*✓$/, "").trim() : "";
+    if (rawAida.includes("이상") || rawAida === "전체" || rawAida === "무관" || rawAida === "무관 (전체)") {
+      rawAida = "";
+    }
+    const gender = author?.gender || post?.host_gender || "비공개";
+    const hostProfile = {
+      displayName,
+      avatarUrl: author?.avatarUrl || "",
+      gender,
+      ageGroup: author?.ageGroup || "",
+      activityRegion: author?.activityRegion || "",
+      activityDepth: author?.activityDepth || "",
+      aidaLevel: rawAida,
+      isVerified,
+      bio: author?.bio || ""
+    };
+
     const attributeMarkup = renderAttributes(attributes);
     const avatarTrigger = global.SNORKYBuddyProfileCard.renderTrigger({
       userId: post?.user_id,
-      profile: {
-        displayName,
-        avatarUrl: author?.avatarUrl || "",
-        gender,
-        aidaLevel,
-        bio: author?.bio || ""
-      },
+      profile: hostProfile,
       className: "buddy-host-avatar",
       resolved: true
     });
+
+    const displayRegion = global.SNORKYBuddyRegions?.formatPostRegion
+      ? global.SNORKYBuddyRegions.formatPostRegion(post)
+      : (post?.region || "");
+
+    const hostMetaText = global.SNORKYBuddyProfileCard?.formatProfileMetaText
+      ? global.SNORKYBuddyProfileCard.formatProfileMetaText(hostProfile, { includeNickname: true })
+      : `${displayName} · ${gender}${rawAida ? ` · ${isVerified ? `${rawAida} ✓` : rawAida}` : ""}`;
 
     return `
       <article class="buddy-post-card" ${attributeMarkup}>
@@ -118,7 +161,7 @@
           <div class="buddy-post-top-row">
             <div class="buddy-post-tag-group">
               <span class="buddy-badge-activity ${getBadgeClass(post?.activity_type)}">${escapeHtml(post?.activity_type)}</span>
-              <span class="buddy-post-location">${escapeHtml(post?.region)}</span>
+              <span class="buddy-post-location">${escapeHtml(displayRegion)}</span>
             </div>
             <span class="buddy-post-status-text ${finalStatusClass}">${escapeHtml(finalStatusText)}</span>
           </div>
@@ -135,11 +178,7 @@
           <div class="buddy-post-bottom-row">
             <div class="buddy-host-wrap">
               ${avatarTrigger}
-              <span>${escapeHtml(displayName)}</span>
-              <span class="buddy-host-divider">·</span>
-              <span class="buddy-host-gender">${escapeHtml(gender)}</span>
-              <span class="buddy-host-divider">·</span>
-              <span class="buddy-host-aida">${escapeHtml(aidaLevel)}</span>
+              <span class="buddy-host-meta-text">${escapeHtml(hostMetaText)}</span>
             </div>
             <button type="button" class="buddy-btn-apply" data-action="view-detail" data-post-id="${escapeHtml(post?.id)}">상세보기</button>
           </div>

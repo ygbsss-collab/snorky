@@ -46,13 +46,7 @@ function isRecommendablePoint(point){
 }
 function casePolicy(eligible,rows){
   if(!eligible.length){
-    const blocked=rows.filter(p=>p.v12?.safety==="BLOCK"||p.kma==="BLOCK").length;
-    const unknown=rows.filter(p=>p.v12?.safety==="UNKNOWN"||p.kma==="UNKNOWN").length;
-    if(blocked||unknown){
-      const subtitle=blocked&&unknown?"공식 해상특보가 발효 중이거나 특보 정보를 확인할 수 없어 안전을 위해 추천하지 않습니다.":blocked?"공식 해상특보가 발효 중인 포인트는 추천에서 제외했습니다.":"해상특보 정보를 확인할 수 없어 안전을 위해 추천하지 않습니다.";
-      return{caseName:"KMA",title:"오늘은 추천할 만한 바다 날씨 상태가 아닙니다.",subtitle,detail:"해상특보 상태가 정상화된 뒤 다시 확인해 주세요.",rows:[],medals:false};
-    }
-    return{caseName:"E",title:"오늘은 추천할 만한 바다 날씨 상태가 아닙니다.",subtitle:"",sectionTitle:"",rows:[],medals:false};
+    return{caseName:"E",title:"오늘은 기상악화로 추천 포인트가 없습니다.",subtitle:"실내 다이빙센터 이용을 권합니다.",detail:"",rows:[],medals:false};
   }
   const topPoint=eligible[0];
   const highest=Number(topPoint?.v12?.conditionScore);
@@ -137,7 +131,7 @@ function render(snapshot){
     const rankLabel=index<3?["🥇","🥈","🥉"][index]:String(index+1);
     return`<li class="nearby-best-item today-best-item" data-supabase-point-id="${escapeHtml(point.id)}" role="button" tabindex="0" aria-label="${escapeHtml(point.name)} 상세 보기"><span class="nearby-best-rank">${rankLabel}</span><div class="nearby-best-content"><div class="nearby-best-title"><div class="nearby-best-name">${escapeHtml(point.name)}</div>${point.region?`<span class="nearby-best-region">${escapeHtml(point.region)}</span>`:""}</div><div class="nearby-best-meta">${scoreText} · ${escapeHtml(conditionText)}</div></div><span class="nearby-best-chevron" aria-hidden="true">›</span></li>`;
   }).join("");
-  const recommendable=policy.caseName==="A"||policy.caseName==="B"||policy.caseName==="C",primary=recommendable?`<section class="nearby-recommendations-section">${policy.subtitle?`<p class="nearby-best-status">${policy.subtitle}</p>`:""}<h3>오늘 추천 포인트</h3><ol class="nearby-best-list">${rows}</ol></section>`:`<section class="nearby-recommendations-section"><p class="nearby-best-status"><strong>⚠️ ${policy.title}</strong>${policy.subtitle?`<br>${policy.subtitle}`:""}${policy.detail?`<br>${policy.detail}`:""}</p></section>`,reference=!recommendable&&rows?`<section class="nearby-points-section"><h3>${policy.sectionTitle||"참고 포인트"}</h3><ol class="nearby-best-list">${rows}</ol></section>`:"";
+  const recommendable=policy.caseName==="A"||policy.caseName==="B"||policy.caseName==="C",primary=recommendable?`<section class="nearby-recommendations-section">${policy.subtitle?`<p class="nearby-best-status">${policy.subtitle}</p>`:""}<h3>오늘 추천 포인트</h3><ol class="nearby-best-list">${rows}</ol></section>`:`<section class="nearby-recommendations-section"><p class="nearby-best-status"><strong>⚠️ ${policy.title}</strong>${policy.subtitle?`<br>${policy.subtitle}`:""}</p></section>`,reference=!recommendable&&rows?`<section class="nearby-points-section"><h3>${policy.sectionTitle||"참고 포인트"}</h3><ol class="nearby-best-list">${rows}</ol></section>`:"";
   getDialog().querySelector(".today-best-results").innerHTML=primary+reference;
 }
 function openPointDetail(row){const pointId=row.dataset.supabasePointId;closeDialog();if(typeof window.openPointOnMap==="function"){window.openPointOnMap(pointId,"todayBest");}else{const returnState=captureReturnState();if(!window.SNORKYPointDetail?.openBySupabaseId(pointId,"todayBest",returnState))console.warn("[SNORKY TODAY BEST] Point 상세 진입 실패",{pointId})}}

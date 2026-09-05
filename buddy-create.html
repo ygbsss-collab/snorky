@@ -72,16 +72,13 @@
         <div class="buddy-field" style="margin-top:14px">
           <label class="buddy-label" for="hostAidaLevelSelect">참석자 레벨<span class="required">*</span></label>
           <select id="hostAidaLevelSelect" class="buddy-select">
-            <option value="무관">무관 (전체)</option>
-            <option value="없음">없음</option>
-            <option value="AIDA 1">AIDA 1</option>
-            <option value="AIDA 2">AIDA 2</option>
-            <option value="AIDA 3">AIDA 3</option>
-            <option value="AIDA 4">AIDA 4</option>
+            <option value="전체">전체 (무관)</option>
+            <option value="레벨 1 이상">레벨 1 이상</option>
+            <option value="레벨 2 이상">레벨 2 이상</option>
+            <option value="레벨 3 이상">레벨 3 이상</option>
+            <option value="레벨 4 이상">레벨 4 이상</option>
             <option value="Instructor">Instructor</option>
-            <option value="기타">기타 (직접 입력)</option>
           </select>
-          <input id="hostAidaCustomInput" class="buddy-input" type="text" maxlength="30" placeholder="예: PADI Freediver, SSI Level 2 등" style="display:none;margin-top:6px;">
         </div>
       </section>
 
@@ -300,6 +297,7 @@
   <script src="./public/js/auth-session.js?v=20260903_v2"></script>
   <script src="./public/js/buddy-regions.js?v=20260903_v1"></script>
   <script src="./public/js/indoor-diving.js?v=20260904_v2"></script>
+  <script src="./public/js/buddy-certification.js?v=20260905_v1"></script>
   <script src="./public/js/buddy-create.js?v=20260904_v1"></script>
   <script async src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" onload="window.dispatchEvent(new Event('snorky:supabase-ready'))"></script>
 </body>

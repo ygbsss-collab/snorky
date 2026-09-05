@@ -290,7 +290,22 @@ async function saveIndoorCenterAdmin(centerData) {
     updated_at: new Date().toISOString()
   };
 
-  const { data, error } = await sb().from("indoor_diving_centers").upsert(payload).select("id").single();
+  let result;
+  if (centerData.id) {
+    // 기존 센터 수정은 폼에 있는 정보만 갱신한다.
+    const editableFields = [
+      "name", "region", "sub_region", "address", "max_depth",
+      "has_freediving", "has_scuba", "has_parking", "status",
+      "business_hours", "holiday", "parking_info", "phone", "homepage",
+      "map_guide", "facilities", "feature_short", "price_full", "reservation_info", "updated_at"
+    ];
+    const updates = Object.fromEntries(editableFields.map(key => [key, payload[key]]));
+    updates.status = { active: "운영중", check_needed: "확인필요", closed: "휴장" }[updates.status] || updates.status;
+    result = await sb().from("indoor_diving_centers").update(updates).eq("id", centerId).select("id").single();
+  } else {
+    result = await sb().from("indoor_diving_centers").upsert(payload).select("id").single();
+  }
+  const { data, error } = result;
   if (error) throw error;
 
   if (window.SNORKYIndoor?.loadIndoorCenters) {

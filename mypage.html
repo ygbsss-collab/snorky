@@ -27,14 +27,15 @@
     .mypage-content{flex:1;padding:20px 18px calc(24px + var(--snorky-bottom-nav-offset, 80px))}
     
     /* 프로필 카드 */
-    .mypage-profile-card{display:flex;align-items:center;gap:14px;padding:18px 16px;background:linear-gradient(135deg,#f0f7fa 0%,#e7f3f9 100%);border:1px solid #d8e7ee;border-radius:20px;margin-bottom:24px}
-    .mypage-avatar-wrap{position:relative;width:56px;height:56px;flex:0 0 56px}
+    .mypage-profile-card{padding:18px 18px;background:linear-gradient(145deg,#f4fafc 0%,#e8f4f8 100%);border:1px solid #d8e7ee;border-radius:22px;margin-bottom:16px}
+    .mypage-profile-head{display:flex;align-items:center;gap:14px}
+    .mypage-avatar-wrap{position:relative;width:64px;height:64px;flex:0 0 64px}
     .mypage-avatar{width:100%;height:100%;border-radius:50%;object-fit:cover;background:#fff;border:2.5px solid #fff;box-shadow:0 4px 12px rgba(7,80,110,.12)}
-    .mypage-profile-info{flex:1;min-width:0;display:flex;flex-direction:column;gap:4px}
-    .mypage-nickname{font-size:17.5px;font-weight:800;color:#07506e;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-    .mypage-badge-row{display:flex;align-items:center;gap:6px}
-    .mypage-badge{display:inline-flex;align-items:center;width:fit-content;padding:2px 8px;border-radius:99px;background:rgba(8,124,167,.12);color:#087ca7;font-size:11px;font-weight:700}
-    .mypage-edit-btn{padding:7px 12px;border:1px solid #cce0e8;border-radius:12px;background:#ffffff;color:#087ca7;font-size:12px;font-weight:800;cursor:pointer;white-space:nowrap;transition:all .15s}
+    .mypage-profile-info{flex:1;min-width:0;display:flex;flex-direction:column;gap:5px}
+    .mypage-profile-info-top{display:flex;align-items:center;justify-content:space-between;gap:8px}
+    .mypage-nickname{font-size:17.5px;font-weight:900;color:#07506e;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+    .mypage-profile-subline{display:flex;align-items:center;flex-wrap:wrap;gap:6px;color:#55707d;font-size:12.5px;font-weight:700}
+    .mypage-edit-btn{padding:6px 11px;border:1px solid #cce0e8;border-radius:12px;background:#ffffff;color:#087ca7;font-size:12px;font-weight:800;cursor:pointer;white-space:nowrap;transition:all .15s;flex-shrink:0}
     .mypage-edit-btn:hover{background:#087ca7;color:#fff;border-color:#087ca7}
     
     /* 메뉴 섹션 */
@@ -62,14 +63,20 @@
     .profile-modal[hidden]{display:none!important}
     .profile-modal-backdrop{position:absolute;inset:0;background:rgba(10,35,48,.45);backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px)}
     .profile-modal-card{position:relative;z-index:1;width:100%;max-width:440px;max-height:calc(100dvh - 32px);overflow-y:auto;background:#fff;border-radius:24px;box-shadow:0 12px 40px rgba(10,35,48,.18);padding:24px 20px;box-sizing:border-box;animation:profilePop .2s cubic-bezier(0.16,1,0.3,1)}
+    #profileEditModal .profile-modal-card{background:#f7f9fa;padding:0}
     @keyframes profilePop{from{opacity:0;transform:scale(0.95)}to{opacity:1;transform:scale(1)}}
     
     .profile-modal-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;padding-bottom:12px;border-bottom:1px solid #edf2f5}
     .profile-modal-head h2{margin:0;font-size:18px;font-weight:800;color:#0e2032}
+    #profileEditModal .profile-modal-head{position:sticky;top:0;z-index:3;margin:0;padding:17px 20px;border-color:#e6edf0;background:rgba(255,255,255,.96);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px)}
+    #profileEditModal .profile-modal-head h2{font-weight:900}
     .profile-modal-close{width:32px;height:32px;border:0;border-radius:50%;background:#f1f5f9;color:#64748b;font-size:18px;cursor:pointer;display:grid;place-items:center;line-height:1;transition:background .12s}
     .profile-modal-close:hover{background:#e2e8f0;color:#1e293b}
     
-    .profile-modal-avatar-sec{display:flex;flex-direction:column;align-items:center;gap:12px;margin-bottom:20px}
+    .profile-edit-body{display:grid;gap:14px;padding:18px 18px 6px}
+    .profile-edit-section{padding:18px;background:#fff;border:1px solid #e2eaee;border-radius:18px;box-shadow:0 2px 8px rgba(22,49,63,.025)}
+    .profile-edit-section-title{margin:0 0 15px;font-size:13px;font-weight:900;color:#183445}
+    .profile-modal-avatar-sec{display:flex;flex-direction:column;align-items:center;gap:12px;margin:0}
     .profile-preview-wrap{width:84px;height:84px;border-radius:50%;overflow:hidden;border:3px solid #eef5f8;box-shadow:0 4px 14px rgba(7,80,110,.14);background:#f6f8fa}
     .profile-preview-img{width:100%;height:100%;object-fit:cover}
     .profile-avatar-actions{display:flex;align-items:center;gap:8px}
@@ -80,7 +87,8 @@
     .profile-btn-reset:hover{background:#f3f6f8;color:#2c404c}
     .profile-avatar-hint{margin:0;font-size:11px;color:#8ba0a9}
     
-    .profile-modal-field{display:flex;flex-direction:column;gap:6px;margin-bottom:18px}
+    .profile-modal-field{display:flex;flex-direction:column;gap:6px;margin-bottom:17px}
+    .profile-modal-field:last-child{margin-bottom:0}
     .profile-modal-field label{font-size:13px;font-weight:800;color:#183445}
     .profile-modal-input{height:46px;padding:0 14px;border:1px solid #d3e1e7;border-radius:12px;font-size:14.5px;color:#102a3a;outline:none;font-family:inherit;transition:border-color .15s,box-shadow .15s}
     .profile-modal-input:focus{border-color:#087ca7;box-shadow:0 0 0 3px rgba(8,124,167,.12)}
@@ -98,17 +106,29 @@
     .profile-field-meta{display:flex;align-items:flex-start;justify-content:space-between;gap:10px}
     .profile-char-count{flex:0 0 auto;font-size:11.5px;color:#859da7}
     .profile-field-hint{margin:0;font-size:11.5px;color:#859da7;line-height:1.4}
+    .profile-certification-card{display:flex;align-items:center;gap:12px;padding:14px;border:1px solid #dce8ed;border-radius:14px;background:#f8fbfc}
+    .profile-certification-icon{display:grid;place-items:center;width:42px;height:42px;flex:0 0 42px;border-radius:13px;background:#e8f5fa;color:#087ca7}
+    .profile-certification-info{flex:1;min-width:0;display:flex;flex-direction:column;gap:3px}
+    .profile-certification-info strong{font-size:13.5px;font-weight:900;color:#183445}
+    .profile-certification-info small{font-size:11.5px;color:#708792}
+    .profile-certification-state{display:inline-flex;align-items:center;width:max-content;margin-top:2px;padding:3px 7px;border-radius:99px;background:#f0f3f5;color:#64748b;font-size:10.5px;font-weight:900}
+    .profile-certification-state.is-pending{background:#fff6e5;color:#ad6800}
+    .profile-certification-state.is-verified{background:#e9f7f2;color:#07885b}
+    .profile-certification-btn{height:36px;flex:0 0 auto;padding:0 10px;border:1px solid #bcd9e5;border-radius:10px;background:#fff;color:#087ca7;font:inherit;font-size:11.5px;font-weight:900;cursor:pointer}
+    .profile-certification-note{min-height:16px;margin:9px 2px 0;color:#78909c;font-size:11.5px;line-height:1.4}
     
-    .profile-status-msg{min-height:18px;margin:0 0 14px;font-size:12.5px;font-weight:700;color:#d32f2f;text-align:center}
+    .profile-status-msg{min-height:18px;margin:4px 18px 12px;font-size:12.5px;font-weight:700;color:#d32f2f;text-align:center}
     .profile-status-msg.success{color:#07885b}
     
     .profile-modal-actions{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+    #profileEditModal .profile-modal-actions{position:sticky;bottom:0;z-index:3;padding:14px 18px calc(14px + env(safe-area-inset-bottom));border-top:1px solid #e5ecef;background:rgba(255,255,255,.97);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px)}
     .profile-act-btn{height:46px;border-radius:12px;font-size:14.5px;font-weight:800;cursor:pointer;border:0;transition:all .15s}
     .profile-btn-cancel{background:#f0f4f6;color:#55707d}
     .profile-btn-cancel:hover{background:#e4ecef;color:#183445}
     .profile-btn-save{background:linear-gradient(135deg,#087ca7,#07506e);color:#fff;box-shadow:0 4px 12px rgba(8,124,167,.25)}
     .profile-btn-save:hover{filter:brightness(1.06)}
     .profile-btn-save:disabled{opacity:.6;cursor:not-allowed}
+    @media(max-width:520px){#profileEditModal{align-items:stretch;padding:0}#profileEditModal .profile-modal-card{max-width:none;max-height:100%;border-radius:0}#profileEditModal .profile-modal-head{padding-top:calc(17px + env(safe-area-inset-top))}}
 
     /* 크롭 모달 스타일 */
     .crop-modal{position:fixed;inset:0 0 var(--snorky-bottom-nav-offset,0px);z-index:1300;display:flex;align-items:center;justify-content:center;padding:16px}
@@ -147,21 +167,25 @@
 
     <main class="mypage-content">
       <!-- 2. 프로필 -->
-      <section class="mypage-profile-card">
-        <div class="mypage-avatar-wrap">
-          <img id="userAvatarImg" class="mypage-avatar" src="./public/images/snorky-symbol.png" alt="프로필 사진">
-        </div>
-        <div class="mypage-profile-info">
-          <strong id="userNickname" class="mypage-nickname">카카오 사용자</strong>
-          <div class="mypage-badge-row">
-            <span id="userBadge" class="mypage-badge">카카오 로그인</span>
+      <section class="mypage-profile-card" aria-labelledby="userNickname">
+        <div class="mypage-profile-head">
+          <div class="mypage-avatar-wrap">
+            <img id="userAvatarImg" class="mypage-avatar" src="./public/images/snorky-symbol.png" alt="프로필 사진">
+          </div>
+          <div class="mypage-profile-info">
+            <div class="mypage-profile-info-top">
+              <strong id="userNickname" class="mypage-nickname">카카오 사용자</strong>
+              <button id="openEditProfileBtn" class="mypage-edit-btn" type="button">프로필 수정</button>
+            </div>
+            <div class="mypage-profile-subline">
+              <span id="userGenderAge">비공개</span>
+            </div>
           </div>
         </div>
-        <button id="openEditProfileBtn" class="mypage-edit-btn" type="button">프로필 편집</button>
       </section>
 
-      <!-- 3. 메뉴 -->
-      <nav class="mypage-menu-group" aria-label="마이페이지 메뉴">
+      <!-- 3. 기존 활동 메뉴 -->
+      <nav class="mypage-menu-group" aria-label="활동 메뉴">
         <button class="mypage-menu-item" type="button" data-action="favorites">
           <span class="mypage-menu-icon">
             <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
@@ -192,7 +216,7 @@
           </div>
         </button>
 
-        <button class="mypage-menu-item" type="button" data-action="my-buddy" onclick="location.href='./my-buddy.html'">
+        <button class="mypage-menu-item" type="button" data-action="my-buddy">
           <span class="mypage-menu-icon">
             <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
           </span>
@@ -202,13 +226,13 @@
           </div>
         </button>
 
-        <button class="mypage-menu-item" type="button" data-action="share">
+        <button class="mypage-menu-item" type="button" data-action="friends">
           <span class="mypage-menu-icon">
-            <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
+            <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
           </span>
           <div class="mypage-menu-text">
-            <strong>버디에게 공유하기</strong>
-            <small>친구에게 포인트 다이빙스케줄을 공유 하고 SNORKY를 소개해주세요</small>
+            <strong>SNORKY 프렌즈</strong>
+            <small>등록한 프렌즈를 확인하고 관리합니다.</small>
           </div>
         </button>
       </nav>
@@ -220,73 +244,163 @@
     <div class="profile-modal-backdrop" id="profileEditBackdrop"></div>
     <div class="profile-modal-card">
       <header class="profile-modal-head">
-        <h2 id="profileEditTitle">프로필 편집</h2>
+        <h2 id="profileEditTitle">프로필 수정</h2>
         <button id="closeEditProfileBtn" class="profile-modal-close" type="button" aria-label="닫기">×</button>
       </header>
 
       <form id="profileEditForm">
-        <!-- 프로필 사진 -->
-        <div class="profile-modal-avatar-sec">
-          <div class="profile-preview-wrap">
-            <img id="editAvatarPreview" class="profile-preview-img" src="./public/images/snorky-symbol.png" alt="미리보기">
-          </div>
-          <div class="profile-avatar-actions">
-            <button id="changeAvatarBtn" class="profile-btn-sm profile-btn-change" type="button">사진 변경</button>
-            <button id="resetAvatarBtn" class="profile-btn-sm profile-btn-reset" type="button">기본 이미지</button>
-          </div>
-          <input id="avatarFileInput" type="file" accept="image/jpeg,image/png,image/webp" hidden>
-          <p class="profile-avatar-hint">JPG, PNG, WebP · 최대 5MB</p>
-        </div>
+        <div class="profile-edit-body">
+          <section class="profile-edit-section" aria-labelledby="profilePhotoSectionTitle">
+            <h3 id="profilePhotoSectionTitle" class="profile-edit-section-title">프로필 사진</h3>
+            <div class="profile-modal-avatar-sec">
+              <div class="profile-preview-wrap">
+                <img id="editAvatarPreview" class="profile-preview-img" src="./public/images/snorky-symbol.png" alt="프로필 사진 미리보기">
+              </div>
+              <div class="profile-avatar-actions">
+                <button id="changeAvatarBtn" class="profile-btn-sm profile-btn-change" type="button">사진 변경</button>
+                <button id="resetAvatarBtn" class="profile-btn-sm profile-btn-reset" type="button">기본 이미지</button>
+              </div>
+              <input id="avatarFileInput" type="file" accept="image/jpeg,image/png,image/webp" hidden>
+              <p class="profile-avatar-hint">JPG, PNG, WebP · 최대 5MB</p>
+            </div>
+          </section>
 
-        <!-- 닉네임 -->
-        <div class="profile-modal-field">
-          <label for="editNicknameInput">닉네임</label>
-          <div class="profile-nickname-row">
-            <input id="editNicknameInput" class="profile-modal-input" type="text" maxlength="8" placeholder="닉네임 입력 (2~8자)" autocomplete="off">
-            <button id="checkNicknameBtn" class="profile-nickname-check-btn" type="button">중복검사</button>
-          </div>
-          <div class="profile-nickname-meta">
-            <p id="nicknameCheckStatus" class="profile-nickname-check-msg" aria-live="polite"></p>
-            <span id="editNicknameCount" class="profile-char-count">0 / 8</span>
-          </div>
-          <p class="profile-field-hint">* 2~8자 · 한글, 영문, 숫자, _만 사용할 수 있습니다.</p>
-          <p class="profile-field-hint">* 닉네임을 비워두면 카카오 원본 닉네임으로 표시됩니다.</p>
-        </div>
+          <section class="profile-edit-section" aria-labelledby="profileBasicSectionTitle">
+            <h3 id="profileBasicSectionTitle" class="profile-edit-section-title">기본 정보</h3>
 
-        <!-- 성별 -->
-        <div class="profile-modal-field">
-          <label for="editGenderSelect">성별</label>
-          <select id="editGenderSelect" class="profile-modal-input">
-            <option value="남성">남성</option>
-            <option value="여성">여성</option>
-            <option value="비공개">비공개</option>
-          </select>
-        </div>
+            <!-- 닉네임 -->
+            <div class="profile-modal-field">
+              <label for="editNicknameInput">닉네임</label>
+              <div class="profile-nickname-row">
+                <input id="editNicknameInput" class="profile-modal-input" type="text" maxlength="8" placeholder="닉네임 입력 (2~8자)" autocomplete="off">
+                <button id="checkNicknameBtn" class="profile-nickname-check-btn" type="button">중복검사</button>
+              </div>
+              <div class="profile-nickname-meta">
+                <p id="nicknameCheckStatus" class="profile-nickname-check-msg" aria-live="polite"></p>
+                <span id="editNicknameCount" class="profile-char-count">0 / 8</span>
+              </div>
+              <p class="profile-field-hint">* 2~8자 · 한글, 영문, 숫자, _만 사용할 수 있습니다.</p>
+              <p class="profile-field-hint">* 비워두면 카카오 원본 닉네임으로 표시됩니다.</p>
+            </div>
 
-        <!-- 프리다이빙 레벨 -->
-        <div class="profile-modal-field">
-          <label for="editAidaLevelSelect">프리다이빙 레벨</label>
-          <select id="editAidaLevelSelect" class="profile-modal-input">
-            <option value="없음">없음</option>
-            <option value="AIDA 1">AIDA 1</option>
-            <option value="AIDA 2">AIDA 2</option>
-            <option value="AIDA 3">AIDA 3</option>
-            <option value="AIDA 4">AIDA 4</option>
-            <option value="Instructor">Instructor</option>
-            <option value="기타">기타 (직접 입력)</option>
-          </select>
-          <input id="editAidaCustomInput" class="profile-modal-input" type="text" maxlength="30" placeholder="예: PADI Freediver, SSI Level 2 등" style="display:none;margin-top:6px;" autocomplete="off">
-          <p class="profile-field-hint">* 버디 모집 및 참가 신청 시 프로필에 표시됩니다.</p>
-        </div>
+            <!-- 성별 (필수) -->
+            <div class="profile-modal-field">
+              <label for="editGenderSelect">성별 <span style="color:#087ca7;font-size:11px;">*필수</span></label>
+              <select id="editGenderSelect" class="profile-modal-input">
+                <option value="남성">남성</option>
+                <option value="여성">여성</option>
+                <option value="비공개">비공개</option>
+              </select>
+            </div>
 
-        <!-- 자기소개 -->
-        <div class="profile-modal-field">
-          <label for="editBioInput">자기소개</label>
-          <textarea id="editBioInput" class="profile-modal-input profile-modal-textarea" rows="3" maxlength="100" placeholder="다이빙 경험이나 함께하고 싶은 활동을 간단히 소개해 주세요."></textarea>
-          <div class="profile-field-meta">
-            <p class="profile-field-hint">* 버디 참가 신청 시 필수입니다.</p>
-            <span id="editBioCount" class="profile-char-count">0 / 100</span>
-          </div>
+            <!-- 나이대 (선택) -->
+            <div class="profile-modal-field">
+              <label for="editAgeGroupSelect">나이대 <span style="color:#78909c;font-size:11px;">선택</span></label>
+              <select id="editAgeGroupSelect" class="profile-modal-input">
+                <option value="">미설정</option>
+                <option value="20대">20대</option>
+                <option value="30대">30대</option>
+                <option value="40대">40대</option>
+                <option value="50대">50대</option>
+                <option value="60대">60대</option>
+                <option value="70대">70대</option>
+              </select>
+              <p class="profile-field-hint">* 미입력 시 프로필에 표시되지 않습니다.</p>
+            </div>
+
+            <!-- 활동지역 (선택) -->
+            <div class="profile-modal-field">
+              <label for="editActivityRegionSelect">활동지역 <span style="color:#78909c;font-size:11px;">선택</span></label>
+              <select id="editActivityRegionSelect" class="profile-modal-input">
+                <option value="">미설정</option>
+                <option value="서울">서울</option>
+                <option value="경기">경기</option>
+                <option value="인천">인천</option>
+                <option value="강원">강원</option>
+                <option value="충청">충청</option>
+                <option value="전라">전라</option>
+                <option value="경상">경상</option>
+                <option value="제주">제주</option>
+                <option value="전국">전국</option>
+              </select>
+            </div>
+
+            <!-- 활동 레벨 (선택) -->
+            <div class="profile-modal-field">
+              <label for="editAidaLevelSelect">활동 레벨 <span style="color:#78909c;font-size:11px;">선택</span></label>
+              <select id="editAidaLevelSelect" class="profile-modal-input">
+                <option value="없음">미설정</option>
+                <optgroup label="AIDA">
+                  <option value="AIDA 1">AIDA 1</option>
+                  <option value="AIDA 2">AIDA 2</option>
+                  <option value="AIDA 3">AIDA 3</option>
+                  <option value="AIDA 4">AIDA 4</option>
+                  <option value="AIDA Instructor">AIDA Instructor</option>
+                </optgroup>
+                <optgroup label="PADI">
+                  <option value="PADI 1">PADI 1</option>
+                  <option value="PADI 2">PADI 2</option>
+                  <option value="PADI 3">PADI 3</option>
+                  <option value="PADI Instructor">PADI Instructor</option>
+                </optgroup>
+                <optgroup label="Molchanovs">
+                  <option value="Molchanovs 1">Molchanovs 1</option>
+                  <option value="Molchanovs 2">Molchanovs 2</option>
+                  <option value="Molchanovs 3">Molchanovs 3</option>
+                  <option value="Molchanovs 4">Molchanovs 4</option>
+                  <option value="Molchanovs Instructor">Molchanovs Instructor</option>
+                </optgroup>
+                <optgroup label="SSI">
+                  <option value="SSI 1">SSI 1</option>
+                  <option value="SSI 2">SSI 2</option>
+                  <option value="SSI 3">SSI 3</option>
+                  <option value="SSI Instructor">SSI Instructor</option>
+                </optgroup>
+              </select>
+              <p class="profile-field-hint">* 미입력 시 프로필에 표시되지 않습니다.</p>
+            </div>
+
+            <!-- 활동 수심 (선택) -->
+            <div class="profile-modal-field">
+              <label for="editActivityDepthSelect">활동 수심 <span style="color:#78909c;font-size:11px;">선택</span></label>
+              <select id="editActivityDepthSelect" class="profile-modal-input">
+                <option value="">미설정</option>
+                <option value="5m">5m</option>
+                <option value="10m">10m</option>
+                <option value="15m">15m</option>
+                <option value="20m">20m</option>
+                <option value="25m">25m</option>
+                <option value="30m+">30m+</option>
+              </select>
+              <p class="profile-field-hint">* 미입력 시 프로필에 표시되지 않습니다.</p>
+            </div>
+
+            <!-- 한줄소개 (선택) -->
+            <div class="profile-modal-field">
+              <label for="editBioInput">한줄소개 <span style="color:#78909c;font-size:11px;">선택</span></label>
+              <textarea id="editBioInput" class="profile-modal-input profile-modal-textarea" rows="3" maxlength="100" placeholder="다이빙 경험이나 함께하고 싶은 활동을 간단히 소개해 주세요."></textarea>
+              <div class="profile-field-meta">
+                <p class="profile-field-hint">* 미입력 시 항목 자체가 숨겨집니다.</p>
+                <span id="editBioCount" class="profile-char-count">0 / 100</span>
+              </div>
+            </div>
+          </section>
+
+          <section class="profile-edit-section" aria-labelledby="profileCertificationSectionTitle">
+            <h3 id="profileCertificationSectionTitle" class="profile-edit-section-title">자격 인증</h3>
+            <div class="profile-certification-card">
+              <span class="profile-certification-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="5"/><path d="m8.5 12-1 9 4.5-2 4.5 2-1-9"/></svg>
+              </span>
+              <div class="profile-certification-info">
+                <strong id="editCertificationLabel">등록된 자격 없음</strong>
+                <small>자격 확인 상태</small>
+                <span id="editCertificationState" class="profile-certification-state">미인증</span>
+              </div>
+              <button id="openCertificationBtn" class="profile-certification-btn" type="button">자격 인증하기</button>
+            </div>
+            <p id="certificationHelpText" class="profile-certification-note" aria-live="polite">자격 인증은 이 화면에서만 관리됩니다.</p>
+          </section>
         </div>
 
         <p id="profileEditStatus" class="profile-status-msg" aria-live="polite"></p>
@@ -347,6 +461,7 @@
   <script src="./public/js/supabase-client.js?v=20260820_stitch_v76"></script>
   <script async src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" onload="window.dispatchEvent(new Event('snorky:supabase-ready'))"></script>
   <script src="./public/js/auth-session.js?v=20260903_v2"></script>
+  <script src="./public/js/buddy-certification.js?v=20260905_v1"></script>
   <script src="./public/js/user-profile.js?v=20260903_v4"></script>
   <script>
     (function () {
@@ -380,10 +495,14 @@
         location.href = "./my-buddy.html";
       });
 
+      document.querySelector('[data-action="friends"]')?.addEventListener("click", function () {
+        location.href = "./friends.html";
+      });
+
       // Elements
       const userNicknameEl = document.getElementById("userNickname");
       const userAvatarImgEl = document.getElementById("userAvatarImg");
-      const userBadgeEl = document.getElementById("userBadge");
+      const userGenderAgeEl = document.getElementById("userGenderAge");
 
       const profileModal = document.getElementById("profileEditModal");
       const openEditBtn = document.getElementById("openEditProfileBtn");
@@ -401,10 +520,17 @@
       const nicknameCheckStatus = document.getElementById("nicknameCheckStatus");
       const editNicknameCount = document.getElementById("editNicknameCount");
       const editGenderSelect = document.getElementById("editGenderSelect");
+      const editAgeGroupSelect = document.getElementById("editAgeGroupSelect");
+      const editActivityRegionSelect = document.getElementById("editActivityRegionSelect");
       const editAidaLevelSelect = document.getElementById("editAidaLevelSelect");
+      const editActivityDepthSelect = document.getElementById("editActivityDepthSelect");
       const editAidaCustomInput = document.getElementById("editAidaCustomInput");
       const editBioInput = document.getElementById("editBioInput");
       const editBioCount = document.getElementById("editBioCount");
+      const editCertificationLabel = document.getElementById("editCertificationLabel");
+      const editCertificationState = document.getElementById("editCertificationState");
+      const openCertificationBtn = document.getElementById("openCertificationBtn");
+      const certificationHelpText = document.getElementById("certificationHelpText");
       const statusMsg = document.getElementById("profileEditStatus");
       const saveBtn = document.getElementById("saveProfileBtn");
 
@@ -518,15 +644,31 @@
       });
 
       editAidaLevelSelect?.addEventListener("change", () => {
-        if (editAidaCustomInput) {
-          if (editAidaLevelSelect.value === "기타") {
-            editAidaCustomInput.style.display = "block";
-            editAidaCustomInput.focus();
-          } else {
-            editAidaCustomInput.style.display = "none";
-            editAidaCustomInput.value = "";
-          }
+        renderCertificationPanel();
+      });
+
+      function renderCertificationPanel() {
+        const user = currentSession?.user || {};
+        const selectedLevel = editAidaLevelSelect?.value;
+        const level = selectedLevel && selectedLevel !== "없음" ? String(selectedLevel).replace(/\s*✓$/, "").trim() : "";
+        const certModule = window.SNORKYCertification;
+        const verified = certModule ? certModule.checkIsVerified(user) : (["verified", "approved", "complete", "인증완료"].includes(String(user.certificationStatus || user.qualificationStatus || user.verificationStatus || user.certification_status || user.qualification_status || "").toLowerCase()) || user.certificationVerified === true || user.aidaVerified === true);
+        const status = String(user.certificationStatus || user.qualificationStatus || user.verificationStatus || user.certification_status || user.qualification_status || "").toLowerCase();
+        const pending = ["pending", "reviewing", "in_review", "검토중"].includes(status);
+
+        if (editCertificationLabel) {
+          editCertificationLabel.textContent = verified && level
+            ? `${level} · 인증완료`
+            : (pending ? `${level ? `${level} · ` : ""}검토중` : (level ? `${level} · 미인증` : "등록된 자격 없음"));
         }
+        if (editCertificationState) {
+          editCertificationState.textContent = verified ? "인증완료" : (pending ? "검토중" : "미인증");
+          editCertificationState.className = `profile-certification-state${verified ? " is-verified" : (pending ? " is-pending" : "")}`;
+        }
+        if (openCertificationBtn) openCertificationBtn.textContent = verified ? "인증 정보" : (pending ? "검토중" : "자격 인증하기");
+      }
+      openCertificationBtn?.addEventListener("click", () => {
+        if (certificationHelpText) certificationHelpText.textContent = "자격 인증 접수 기능은 준비 중입니다.";
       });
 
       // Crop Modal Elements
@@ -565,21 +707,71 @@
       let initialPinchDist = 0;
       let initialPinchZoom = 1;
 
+      function getVerifiedCertificationLabel(user) {
+        if (window.SNORKYCertification) {
+          return window.SNORKYCertification.formatDisplayCertification(user, { showCheckMark: true });
+        }
+        const verifiedStatuses = ["verified", "approved", "complete", "인증완료"];
+        const certifications = Array.isArray(user?.certifications) ? user.certifications : [];
+        const verified = certifications.find(item => verifiedStatuses.includes(String(item?.status || "").toLowerCase()));
+        if (verified) {
+          const label = verified.displayName || [verified.organization || verified.agency, verified.level || verified.name].filter(Boolean).join(" ");
+          return label ? `${label} ✓` : "";
+        }
+        const legacyStatus = String(user?.certificationStatus || user?.qualificationStatus || user?.verificationStatus || user?.certification_status || user?.qualification_status || "").toLowerCase();
+        const isLegacyVerified = verifiedStatuses.includes(legacyStatus) || user?.certificationVerified === true || user?.aidaVerified === true;
+        const cleanAida = (user?.aidaLevel && user.aidaLevel !== "없음") ? String(user.aidaLevel).replace(/\s*✓$/, "").trim() : "";
+        return isLegacyVerified && cleanAida ? `${cleanAida} ✓` : "";
+      }
+
       function renderProfileUI() {
         currentSession = getSession();
         if (!currentSession || !currentSession.user) return;
         const effective = window.SNORKYAuthSession?.getEffectiveProfile(currentSession);
         if (userNicknameEl) {
-          userNicknameEl.textContent = effective.nickname;
+          userNicknameEl.textContent = effective.nickname || "다이버";
         }
         if (userAvatarImgEl) {
           userAvatarImgEl.src = effective.avatarUrl || DEFAULT_SYMBOL;
         }
-        if (userBadgeEl) {
-          const aidaLvl = currentSession.user.aidaLevel;
-          const aidaDisp = (aidaLvl && aidaLvl !== "없음") ? aidaLvl : "레벨 없음";
-          const badgeText = (effective.isCustomNickname || effective.isCustomAvatar ? "SNORKY 프로필" : "카카오 로그인") + (aidaDisp !== "레벨 없음" ? " · " + aidaDisp : "");
-          userBadgeEl.textContent = badgeText;
+        const user = currentSession.user;
+
+        function isValidVal(val) {
+          if (!val) return false;
+          if (typeof val === "object") return false;
+          const s = String(val).trim().toLowerCase();
+          return !["", "미설정", "없음", "-", "null", "undefined", "레벨 없음", "무관"].includes(s);
+        }
+
+        // 1. 성별 (필수, 기본값 '비공개')
+        const gender = (user.gender && isValidVal(user.gender)) ? String(user.gender).trim() : "비공개";
+
+        // 2. 나이대 (미입력/미설정 시 숨김)
+        const ageGroup = isValidVal(user.ageGroup) ? String(user.ageGroup).trim() : "";
+
+        // 3. 자격 (user_profiles의 현재 프로필 자격값 항상 표시, APPROVED일 때만 ✓ 추가, 미입력 시 숨김)
+        const rawAida = (user.aidaLevel && user.aidaLevel !== "없음" && user.aidaLevel !== "미설정")
+          ? String(user.aidaLevel).replace(/\s*✓$/, "").trim()
+          : "";
+        const levelVal = isValidVal(rawAida) ? rawAida : "";
+
+        // 4. 인증 승인 여부 (APPROVED 상태 확인)
+        const certModule = window.SNORKYCertification;
+        const isVerified = certModule
+          ? certModule.checkIsVerified(user)
+          : (["verified", "approved", "complete", "인증완료"].includes(String(user.certificationStatus || user.qualificationStatus || user.verificationStatus || user.certification_status || user.qualification_status || "").toLowerCase()) || user.certificationVerified === true || user.aidaVerified === true);
+
+        // 정보 한 줄 순서: 성별 · 나이대 · 자격(✓)
+        const sublineItems = [gender];
+        if (ageGroup) {
+          sublineItems.push(ageGroup);
+        }
+        if (levelVal) {
+          sublineItems.push(isVerified ? `${levelVal} ✓` : levelVal);
+        }
+
+        if (userGenderAgeEl) {
+          userGenderAgeEl.textContent = sublineItems.join(" · ");
         }
       }
 
@@ -596,22 +788,27 @@
         updateNicknameCount();
         setNicknameCheckStatus("");
         if (editGenderSelect) editGenderSelect.value = currentSession.user.gender || "비공개";
+        if (editAgeGroupSelect) editAgeGroupSelect.value = currentSession.user.ageGroup || "";
+        if (editActivityRegionSelect) {
+          const savedRegion = Array.isArray(currentSession.user.activityRegion)
+            ? currentSession.user.activityRegion[0]
+            : (currentSession.user.activityRegion || currentSession.user.region || "");
+          editActivityRegionSelect.value = savedRegion;
+        }
+        if (editActivityDepthSelect) editActivityDepthSelect.value = currentSession.user.activityDepth || "";
         if (editBioInput) editBioInput.value = currentSession.user.bio || "";
         if (editBioCount) editBioCount.textContent = `${editBioInput?.value.length || 0} / 100`;
 
-        const standardLevels = ["없음", "AIDA 1", "AIDA 2", "AIDA 3", "AIDA 4", "Instructor"];
-        const currentLvl = currentSession.user.aidaLevel || "없음";
-        if (editAidaLevelSelect && editAidaCustomInput) {
-          if (standardLevels.includes(currentLvl)) {
-            editAidaLevelSelect.value = currentLvl;
-            editAidaCustomInput.style.display = "none";
-            editAidaCustomInput.value = "";
+        const currentLvl = (currentSession.user.aidaLevel || "없음").replace(/\s*✓$/, "").trim();
+        if (editAidaLevelSelect) {
+          if (window.SNORKYCertification?.renderCertificationSelectOptions) {
+            editAidaLevelSelect.innerHTML = window.SNORKYCertification.renderCertificationSelectOptions(currentLvl);
           } else {
-            editAidaLevelSelect.value = "기타";
-            editAidaCustomInput.style.display = "block";
-            editAidaCustomInput.value = currentLvl;
+            editAidaLevelSelect.value = currentLvl;
           }
         }
+        if (certificationHelpText) certificationHelpText.textContent = "자격 인증은 이 화면에서만 관리됩니다.";
+        renderCertificationPanel();
 
         selectedAvatarFile = null;
         selectedAvatarType = currentSession.user.avatarType || "default";
@@ -636,6 +833,7 @@
       closeEditBtn?.addEventListener("click", closeModal);
       cancelEditBtn?.addEventListener("click", closeModal);
       backdrop?.addEventListener("click", closeModal);
+      window.addEventListener("snorky:profile-updated", () => renderProfileUI());
 
       document.addEventListener("keydown", (e) => {
         if (e.key === "Escape") {
@@ -932,12 +1130,9 @@
           }
 
           let finalAida = editAidaLevelSelect ? editAidaLevelSelect.value : "없음";
-          if (finalAida === "기타") {
-            finalAida = editAidaCustomInput ? editAidaCustomInput.value.trim() : "";
-            if (!finalAida) {
-              throw new Error("프리다이빙 레벨을 직접 입력해 주세요.");
-            }
-          }
+          const ageGroupVal = editAgeGroupSelect ? editAgeGroupSelect.value.trim() : "";
+          const activityRegionVal = editActivityRegionSelect ? editActivityRegionSelect.value.trim() : "";
+          const activityDepthVal = editActivityDepthSelect ? editActivityDepthSelect.value.trim() : "";
 
           await window.SNORKYUserProfile.saveProfile({
             customNickname: nicknameVal,
@@ -945,6 +1140,9 @@
             avatarType: selectedAvatarType,
             aidaLevel: finalAida,
             gender: editGenderSelect ? editGenderSelect.value : "비공개",
+            ageGroup: ageGroupVal,
+            activityRegion: activityRegionVal,
+            activityDepth: activityDepthVal,
             bio: bioVal,
           });
 

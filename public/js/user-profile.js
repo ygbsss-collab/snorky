@@ -70,7 +70,7 @@
     try {
       const { data, error } = await sb
         .from("user_profiles")
-        .select("custom_nickname, custom_avatar_url, avatar_type, aida_level, gender, bio")
+        .select("custom_nickname, custom_avatar_url, avatar_type, aida_level, gender, bio, age_group, activity_region, activity_depth")
         .eq("provider", provider || "kakao")
         .eq("provider_user_id", String(providerUserId))
         .maybeSingle();
@@ -87,6 +87,9 @@
           aidaLevel: data.aida_level || "없음",
           gender: data.gender || "비공개",
           bio: data.bio || null,
+          ageGroup: data.age_group || null,
+          activityRegion: data.activity_region || null,
+          activityDepth: data.activity_depth || null,
         });
       }
       return data;
@@ -127,7 +130,7 @@
     return data.publicUrl;
   }
 
-  async function saveProfile({ customNickname, avatarFile, avatarType, customAvatarUrl, aidaLevel, gender, bio }) {
+  async function saveProfile({ customNickname, avatarFile, avatarType, customAvatarUrl, aidaLevel, gender, bio, ageGroup, activityRegion, activityDepth }) {
     const session = window.SNORKYAuthSession?.get();
     if (!session || !session.user) {
       throw new Error("로그인 세션이 필요합니다.");
@@ -170,6 +173,19 @@
       throw new Error("성별 선택값을 확인해 주세요.");
     }
 
+    const validAgeGroups = ["20대", "30대", "40대", "50대", "60대", "70대"];
+    const finalAgeGroup = (ageGroup !== undefined && ageGroup !== null && validAgeGroups.includes(String(ageGroup).trim()))
+      ? String(ageGroup).trim()
+      : null;
+
+    const finalActivityRegion = (activityRegion !== undefined && activityRegion !== null && String(activityRegion).trim() && String(activityRegion).trim() !== "미설정")
+      ? String(activityRegion).trim()
+      : null;
+
+    const finalActivityDepth = (activityDepth !== undefined && activityDepth !== null && String(activityDepth).trim() && String(activityDepth).trim() !== "미설정")
+      ? String(activityDepth).trim()
+      : null;
+
     const finalBio = (bio !== undefined && bio !== null)
       ? (String(bio).trim() || null)
       : (session.user.bio ? String(session.user.bio).trim() : null);
@@ -193,6 +209,9 @@
       avatar_type: finalAvatarType,
       aida_level: finalAidaLevel,
       gender: finalGender,
+      age_group: finalAgeGroup,
+      activity_region: finalActivityRegion,
+      activity_depth: finalActivityDepth,
       bio: finalBio,
       updated_at: new Date().toISOString(),
     };
@@ -215,8 +234,19 @@
       avatarType: finalAvatarType,
       aidaLevel: finalAidaLevel,
       gender: finalGender,
+      ageGroup: finalAgeGroup,
+      activityRegion: finalActivityRegion,
+      activityDepth: finalActivityDepth,
       bio: finalBio,
     });
+
+    // DB 최신값 1회 재조회하여 세션 및 캐시 완벽 동기화
+    await fetchRemoteProfile(session.provider || "kakao", providerUserId);
+
+    // 공개 프로필 캐시 무효화
+    try {
+      window.SNORKYBuddyProfileCard?.invalidateCache?.(providerUserId);
+    } catch (_) {}
 
     return window.SNORKYAuthSession?.getEffectiveProfile(window.SNORKYAuthSession.get());
   }

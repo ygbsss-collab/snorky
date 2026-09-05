@@ -15,6 +15,15 @@
       aidaLevel: user.aidaLevel ? String(user.aidaLevel) : "없음",
       gender: ["남성", "여성", "비공개"].includes(String(user.gender || "")) ? String(user.gender) : "비공개",
       bio: user.bio !== undefined && user.bio !== null && String(user.bio).trim() ? String(user.bio).trim() : null,
+      ageGroup: user.ageGroup !== undefined && user.ageGroup !== null && String(user.ageGroup).trim() ? String(user.ageGroup).trim() : null,
+      activityRegion: user.activityRegion !== undefined && user.activityRegion !== null && String(user.activityRegion).trim() ? String(user.activityRegion).trim() : null,
+      activityDepth: user.activityDepth !== undefined && user.activityDepth !== null && String(user.activityDepth).trim() ? String(user.activityDepth).trim() : null,
+      certifications: Array.isArray(user.certifications) ? user.certifications : (user.certifications || null),
+      certificationStatus: user.certificationStatus ? String(user.certificationStatus) : null,
+      qualificationStatus: user.qualificationStatus ? String(user.qualificationStatus) : null,
+      verificationStatus: user.verificationStatus ? String(user.verificationStatus) : null,
+      certificationVerified: user.certificationVerified === true,
+      aidaVerified: user.aidaVerified === true,
     };
   }
 
@@ -115,9 +124,30 @@
     if (profileUpdates.bio !== undefined) {
       session.user.bio = profileUpdates.bio ? String(profileUpdates.bio).trim() : null;
     }
+    if (profileUpdates.ageGroup !== undefined) {
+      session.user.ageGroup = profileUpdates.ageGroup ? String(profileUpdates.ageGroup).trim() : null;
+    }
+    if (profileUpdates.activityRegion !== undefined) {
+      session.user.activityRegion = profileUpdates.activityRegion ? String(profileUpdates.activityRegion).trim() : null;
+    }
+    if (profileUpdates.activityDepth !== undefined) {
+      session.user.activityDepth = profileUpdates.activityDepth ? String(profileUpdates.activityDepth).trim() : null;
+    }
+    if (profileUpdates.certifications !== undefined) {
+      session.user.certifications = profileUpdates.certifications;
+    }
+    if (profileUpdates.certificationStatus !== undefined) {
+      session.user.certificationStatus = profileUpdates.certificationStatus;
+    }
     save(session);
     try {
-      window.dispatchEvent(new CustomEvent("snorky:profile-updated", { detail: session }));
+      window.dispatchEvent(new CustomEvent("snorky:profile-updated", {
+        detail: {
+          session,
+          userId: String(session.user.id),
+          user: session.user
+        }
+      }));
     } catch (_) {}
     return session;
   }

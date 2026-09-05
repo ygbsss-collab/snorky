@@ -68,17 +68,7 @@
   const submitBtn = document.getElementById("submitBtn");
   const toastEl = document.getElementById("toast");
 
-  hostAidaLevelSelect?.addEventListener("change", () => {
-    if (hostAidaCustomInput) {
-      if (hostAidaLevelSelect.value === "기타") {
-        hostAidaCustomInput.style.display = "block";
-        hostAidaCustomInput.focus();
-      } else {
-        hostAidaCustomInput.style.display = "none";
-        hostAidaCustomInput.value = "";
-      }
-    }
-  });
+
 
   // 확인 모달 DOM 요소
   const confirmModal = document.getElementById("confirmModal");
@@ -607,15 +597,7 @@
       }
     }
 
-    let finalHostAida = hostAidaLevelSelect ? hostAidaLevelSelect.value : "무관";
-    if (finalHostAida === "기타") {
-      finalHostAida = hostAidaCustomInput ? hostAidaCustomInput.value.trim() : "";
-      if (!finalHostAida) {
-        showToast("참석자 레벨을 직접 입력해 주세요.");
-        hostAidaCustomInput?.focus();
-        return;
-      }
-    }
+    let finalHostAida = hostAidaLevelSelect ? hostAidaLevelSelect.value : "전체";
 
     validatedFormPayload = {
       user_id: String(userId),
@@ -1058,15 +1040,10 @@
         setChipGroupValue("hostGenderGroup", "hostGenderInput", post.host_gender);
       }
       if (hostAidaLevelSelect) {
-        const standardLevels = ["무관", "없음", "AIDA 1", "AIDA 2", "AIDA 3", "AIDA 4", "Instructor"];
-        const savedLvl = post.host_aida_level || "무관";
-        if (standardLevels.includes(savedLvl)) {
-          hostAidaLevelSelect.value = savedLvl;
-          if (hostAidaCustomInput) { hostAidaCustomInput.style.display = "none"; hostAidaCustomInput.value = ""; }
-        } else {
-          hostAidaLevelSelect.value = "기타";
-          if (hostAidaCustomInput) { hostAidaCustomInput.style.display = "block"; hostAidaCustomInput.value = savedLvl; }
-        }
+        let savedLvl = post.host_aida_level || "전체";
+        if (savedLvl === "무관" || savedLvl === "없음") savedLvl = "전체";
+        hostAidaLevelSelect.value = savedLvl;
+        if (!hostAidaLevelSelect.value) hostAidaLevelSelect.value = "전체";
       }
 
       // 11. 설명 (description) 복원
@@ -1212,11 +1189,9 @@
 
         // 7) 참여 레벨 조건 검사 (buddy_posts의 host_aida_level과 비교)
         if (condLevel && condLevel !== "전체" && condLevel !== "" && condLevel !== "무관") {
-          const standardLevels = ["없음", "AIDA 1", "AIDA 2", "AIDA 3", "AIDA 4", "Instructor"];
-          if (condLevel === "없음") {
-            if (postLevel && postLevel !== "없음") continue;
-          } else if (condLevel === "기타") {
-            if (!postLevel || standardLevels.includes(postLevel)) continue;
+          const certModule = window.SNORKYCertification;
+          if (certModule?.matchPostLevelRequirement) {
+            if (!certModule.matchPostLevelRequirement(condLevel, postLevel)) continue;
           } else {
             if (postLevel !== condLevel) continue;
           }
@@ -1293,11 +1268,7 @@
       }
 
       if (hostAidaLevelSelect) {
-        hostAidaLevelSelect.value = "무관";
-        if (hostAidaCustomInput) {
-          hostAidaCustomInput.style.display = "none";
-          hostAidaCustomInput.value = "";
-        }
+        hostAidaLevelSelect.value = "전체";
       }
     }
   }

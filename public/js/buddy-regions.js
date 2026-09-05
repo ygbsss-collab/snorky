@@ -307,6 +307,53 @@
     });
   }
 
+  // 공고 지역 포맷 헬퍼 (실내다이빙: 광역지역 · 세부지역, 스노클링/프리다이빙: 기존 post.region)
+  function formatPostRegion(post) {
+    if (!post) return "";
+    if (post.activity_type !== "실내다이빙") {
+      return post.region || "";
+    }
+
+    const centers = (window.SNORKYIndoorCenters && Array.isArray(window.SNORKYIndoorCenters) && window.SNORKYIndoorCenters.length > 0)
+      ? window.SNORKYIndoorCenters
+      : [
+          { id: "deepstation", name: "딥스테이션", region: "경기", subRegion: "용인시" },
+          { id: "k26", name: "K26 잠수풀", region: "경기", subRegion: "가평군" },
+          { id: "paradive35", name: "파라다이브35", region: "경기", subRegion: "시흥시" }
+        ];
+
+    const centerId = String(post.indoor_center_id || post.point_id || "").toLowerCase();
+    const rawRegion = String(post.region || "").trim();
+    const pointName = String(post.point_name || "").trim().toLowerCase();
+
+    let matched = null;
+    if (centerId) {
+      matched = centers.find((c) => String(c.id).toLowerCase() === centerId);
+    }
+    if (!matched && rawRegion) {
+      matched = centers.find((c) =>
+        String(c.id).toLowerCase() === rawRegion.toLowerCase() ||
+        String(c.name).toLowerCase() === rawRegion.toLowerCase()
+      );
+    }
+    if (!matched && pointName) {
+      matched = centers.find((c) => String(c.name).toLowerCase() === pointName);
+    }
+
+    if (matched) {
+      const major = (matched.region || "").trim();
+      const sub = (matched.subRegion || "").trim().replace(/(시|군|구)$/, "");
+      if (major && sub) return `${major} · ${sub}`;
+      if (major) return major;
+    }
+
+    if (rawRegion && !["deepstation", "k26", "paradive35", "딥스테이션", "k26 잠수풀", "파라다이브35"].includes(rawRegion.toLowerCase())) {
+      return rawRegion;
+    }
+
+    return "경기 · 용인";
+  }
+
   global.SNORKYBuddyRegions = {
     loadRegions,
     resolveMajorRegion,
@@ -317,6 +364,7 @@
     getIndoorCenterRegions,
     getRegionsForActivity,
     populateHierarchicalRegionSelect,
-    bindActivityGuard
+    bindActivityGuard,
+    formatPostRegion
   };
 })(window);

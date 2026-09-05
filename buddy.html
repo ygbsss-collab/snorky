@@ -327,13 +327,11 @@
                 <label for="filterRequiredLevel" class="buddy-search-label">참석자 레벨</label>
                 <select id="filterRequiredLevel" class="buddy-search-select" aria-label="참석자 레벨 선택">
                   <option value="">전체 (무관)</option>
-                  <option value="없음">없음</option>
-                  <option value="AIDA 1">AIDA 1</option>
-                  <option value="AIDA 2">AIDA 2</option>
-                  <option value="AIDA 3">AIDA 3</option>
-                  <option value="AIDA 4">AIDA 4</option>
+                  <option value="레벨 1 이상">레벨 1 이상</option>
+                  <option value="레벨 2 이상">레벨 2 이상</option>
+                  <option value="레벨 3 이상">레벨 3 이상</option>
+                  <option value="레벨 4 이상">레벨 4 이상</option>
                   <option value="Instructor">Instructor</option>
-                  <option value="기타">기타</option>
                 </select>
               </div>
 
@@ -415,38 +413,38 @@
 
           <div class="buddy-detail-info-grid">
             <div class="buddy-detail-item">
-              <span class="buddy-detail-label">지역</span>
+              <span class="buddy-detail-label"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>지역</span>
               <strong id="detailRegion" class="buddy-detail-val">-</strong>
             </div>
             <div class="buddy-detail-item">
-              <span class="buddy-detail-label">일시</span>
+              <span class="buddy-detail-label"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>일시</span>
               <strong id="detailDateTime" class="buddy-detail-val">-</strong>
             </div>
             <div class="buddy-detail-item">
-              <span class="buddy-detail-label">모집 인원</span>
+              <span class="buddy-detail-label"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>모집 인원</span>
               <strong id="detailCapacity" class="buddy-detail-val">-</strong>
               <div id="detailConfirmedProfiles" class="buddy-confirmed-participants" aria-label="참가 확정 프로필"></div>
             </div>
             <div class="buddy-detail-item">
-              <span class="buddy-detail-label">난이도</span>
+              <span class="buddy-detail-label"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 20V10"/><path d="M12 20V4"/><path d="M6 20v-6"/></svg>난이도</span>
               <strong id="detailDifficulty" class="buddy-detail-val">-</strong>
             </div>
             <div class="buddy-detail-item">
-              <span class="buddy-detail-label">모집 대상 성별</span>
+              <span class="buddy-detail-label"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="7" r="4"/><path d="M5.5 21v-2a6.5 6.5 0 0 1 13 0v2"/></svg>모집 대상 성별</span>
               <strong id="detailPreferredGender" class="buddy-detail-val">-</strong>
             </div>
             <div class="buddy-detail-item">
-              <span class="buddy-detail-label">참석자 레벨</span>
+              <span class="buddy-detail-label"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="6"/><path d="M15.477 12.89 17 22l-5-3-5 3 1.523-9.11"/></svg>참석자 레벨</span>
               <strong id="detailParticipantLevel" class="buddy-detail-val">-</strong>
             </div>
             <div class="buddy-detail-item buddy-detail-host-item">
-              <span class="buddy-detail-label">주최자</span>
+              <span class="buddy-detail-label"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>주최자</span>
               <div id="detailHostInfo" class="buddy-detail-val buddy-detail-host-row">-</div>
             </div>
           </div>
 
           <div class="buddy-detail-desc-section">
-            <span class="buddy-detail-label">모집 내용</span>
+            <span class="buddy-detail-label"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>모집 내용</span>
             <div id="detailDescription" class="buddy-detail-desc-box">내용 없음</div>
           </div>
         </div>
@@ -534,14 +532,33 @@
             <label style="display:block;font-size:12.5px;font-weight:700;color:#334155;margin-bottom:4px;">프리다이빙 레벨 (선택)</label>
             <select id="applicantAidaSelect" class="buddy-select" style="width:100%;height:38px;padding:0 10px;border-radius:8px;border:1px solid #cbd5e1;font-size:13.5px;">
               <option value="없음">없음</option>
-              <option value="AIDA 1">AIDA 1</option>
-              <option value="AIDA 2">AIDA 2</option>
-              <option value="AIDA 3">AIDA 3</option>
-              <option value="AIDA 4">AIDA 4</option>
-              <option value="Instructor">Instructor</option>
-              <option value="기타">기타 (직접 입력)</option>
+              <optgroup label="AIDA">
+                <option value="AIDA 1">AIDA 1</option>
+                <option value="AIDA 2">AIDA 2</option>
+                <option value="AIDA 3">AIDA 3</option>
+                <option value="AIDA 4">AIDA 4</option>
+                <option value="AIDA Instructor">AIDA Instructor</option>
+              </optgroup>
+              <optgroup label="PADI">
+                <option value="PADI 1">PADI 1</option>
+                <option value="PADI 2">PADI 2</option>
+                <option value="PADI 3">PADI 3</option>
+                <option value="PADI Instructor">PADI Instructor</option>
+              </optgroup>
+              <optgroup label="Molchanovs">
+                <option value="Molchanovs 1">Molchanovs 1</option>
+                <option value="Molchanovs 2">Molchanovs 2</option>
+                <option value="Molchanovs 3">Molchanovs 3</option>
+                <option value="Molchanovs 4">Molchanovs 4</option>
+                <option value="Molchanovs Instructor">Molchanovs Instructor</option>
+              </optgroup>
+              <optgroup label="SSI">
+                <option value="SSI 1">SSI 1</option>
+                <option value="SSI 2">SSI 2</option>
+                <option value="SSI 3">SSI 3</option>
+                <option value="SSI Instructor">SSI Instructor</option>
+              </optgroup>
             </select>
-            <input id="applicantAidaCustomInput" class="buddy-input" type="text" maxlength="30" placeholder="예: PADI Freediver, SSI Level 2 등" style="display:none;margin-top:6px;width:100%;box-sizing:border-box;height:38px;padding:0 10px;border-radius:8px;border:1px solid #cbd5e1;font-size:13px;">
           </div>
 
           <!-- 간단한 소개 (필수) -->
@@ -604,6 +621,8 @@
   <script src="./public/js/auth-session.js?v=20260903_v2"></script>
   <script src="./public/js/buddy-regions.js?v=20260903_v1"></script>
   <script src="./public/js/indoor-diving.js?v=20260904_v2"></script>
+  <script src="./public/js/buddy-certification.js?v=20260905_v1"></script>
+  <script src="./public/js/snorky-friends.js?v=20260905_f1"></script>
   <script src="./public/js/buddy-profile-card.js?v=20260904_v4"></script>
   <script src="./public/js/buddy-card.js?v=20260904_v4"></script>
   <script>
@@ -1042,9 +1061,28 @@
         }
       }
 
+      function isApprovedStatus(status) {
+        if (!status) return false;
+        const s = String(status).trim().toLowerCase();
+        return ["approved", "verified", "complete", "인증완료"].includes(s);
+      }
+
+      function checkIsVerified(target) {
+        if (!target) return false;
+        if (Array.isArray(target.certifications)) {
+          return target.certifications.some((c) => isApprovedStatus(c?.status));
+        }
+        const status = target.certificationStatus || target.qualificationStatus || target.verificationStatus || target.certification_status || target.qualification_status;
+        if (isApprovedStatus(status)) return true;
+        if (target.certificationVerified === true || target.aidaVerified === true || target.isVerified === true || target.isCertified === true) {
+          return true;
+        }
+        return false;
+      }
+
       // ── 작성자 프로필 해석 헬퍼 ──
       function resolveAuthorInfo(post) {
-        if (!post) return { displayName: "다이버", avatarUrl: null, aidaLevel: "없음", gender: "비공개", bio: "" };
+        if (!post) return { displayName: "다이버", avatarUrl: null, aidaLevel: "없음", isVerified: false, gender: "비공개", ageGroup: "", activityRegion: "", activityDepth: "", bio: "" };
         const currentSession = window.SNORKYAuthSession?.get?.();
         const currentUserId = currentSession?.user?.id ? String(currentSession.user.id) : null;
         const prof = profilesMap.get(String(post.user_id));
@@ -1069,11 +1107,19 @@
           avatarUrl = currentSession.user.customAvatarUrl || currentSession.user.profileImageUrl || null;
         }
 
-        const aidaLevel = post.host_aida_level || prof?.aida_level || (isMe ? currentSession?.user?.aidaLevel : null) || "없음";
+        const profileAida = prof?.aida_level || (isMe ? (currentSession?.user?.aidaLevel || currentSession?.user?.aida_level) : null) || "없음";
+        let cleanAida = (profileAida && profileAida !== "없음" && profileAida !== "미설정") ? String(profileAida).replace(/\s*✓$/, "").trim() : "없음";
+        if (cleanAida.includes("이상") || cleanAida === "전체" || cleanAida === "무관" || cleanAida === "무관 (전체)") {
+          cleanAida = "없음";
+        }
+        const isVerified = checkIsVerified(prof) || (isMe && checkIsVerified(currentSession?.user));
         const gender = prof?.gender || (isMe ? currentSession?.user?.gender : null) || post.host_gender || "비공개";
+        const ageGroup = prof?.age_group || (isMe ? currentSession?.user?.ageGroup : null) || "";
+        const activityRegion = prof?.activity_region || (isMe ? currentSession?.user?.activityRegion : null) || "";
+        const activityDepth = prof?.activity_depth || (isMe ? currentSession?.user?.activityDepth : null) || "";
         const bio = prof?.bio || (isMe ? currentSession?.user?.bio : null) || "";
 
-        return { displayName, avatarUrl, aidaLevel, gender, bio };
+        return { displayName, avatarUrl, aidaLevel: cleanAida, isVerified: Boolean(isVerified && cleanAida !== "없음"), gender, ageGroup, activityRegion, activityDepth, bio };
       }
 
       // ── 상세보기 모달 요소 및 닫기 제어 ──
@@ -1147,17 +1193,7 @@
       const applicantIntroInput = document.getElementById("applicantIntroInput");
       const btnSubmitApplication = document.getElementById("btnSubmitApplication");
 
-      applicantAidaSelect?.addEventListener("change", () => {
-        if (applicantAidaCustomInput) {
-          if (applicantAidaSelect.value === "기타") {
-            applicantAidaCustomInput.style.display = "block";
-            applicantAidaCustomInput.focus();
-          } else {
-            applicantAidaCustomInput.style.display = "none";
-            applicantAidaCustomInput.value = "";
-          }
-        }
-      });
+
 
       function closeApplyFormModal() {
         if (applyFormModal) applyFormModal.style.display = "none";
@@ -1179,7 +1215,7 @@
         let prof = null;
         if (sb) {
           try {
-            const { data } = await sb.from("user_profiles").select("custom_nickname, custom_avatar_url, avatar_type, aida_level, gender, bio").eq("provider_user_id", curUser).maybeSingle();
+            const { data } = await sb.from("user_profiles").select("custom_nickname, custom_avatar_url, avatar_type, aida_level, gender, bio, age_group, activity_region, activity_depth").eq("provider_user_id", curUser).maybeSingle();
             prof = data;
           } catch (_) {}
         }
@@ -1189,13 +1225,18 @@
         const profileBio = (prof?.bio || session?.user?.bio || "").trim();
         const hasProfile = Boolean(effectiveNick && profileBio);
 
-        if (applicantAvatarImg) applicantAvatarImg.src = effectiveAvatar || "./public/images/snorky-symbol.png";
-        if (applicantNickName) applicantNickName.textContent = effectiveNick || "닉네임 없음";
+        const rawUserAida = prof?.aida_level || session?.user?.aidaLevel || "없음";
+        const cleanUserAida = (rawUserAida && rawUserAida !== "없음") ? String(rawUserAida).replace(/\s*✓$/, "").trim() : "없음";
+        const isMeVerified = checkIsVerified(prof) || checkIsVerified(session?.user);
         window.SNORKYBuddyProfileCard?.setTriggerProfile(applicantProfileTrigger, curUser, {
           displayName: effectiveNick || "닉네임 없음",
           avatarUrl: effectiveAvatar,
           gender: prof?.gender || session?.user?.gender || "비공개",
-          aidaLevel: prof?.aida_level || session?.user?.aidaLevel || "없음",
+          ageGroup: prof?.age_group || session?.user?.ageGroup || "",
+          activityRegion: prof?.activity_region || session?.user?.activityRegion || "",
+          activityDepth: prof?.activity_depth || session?.user?.activityDepth || "",
+          aidaLevel: cleanUserAida,
+          isVerified: Boolean(isMeVerified && cleanUserAida !== "없음"),
           bio: profileBio
         }, true);
 
@@ -1210,15 +1251,12 @@
         }
 
         if (applicantGenderSelect) applicantGenderSelect.value = prof?.gender || session?.user?.gender || "비공개";
-        const userAida = prof?.aida_level || session?.user?.aidaLevel || "없음";
-        const standardLevels = ["없음", "AIDA 1", "AIDA 2", "AIDA 3", "AIDA 4", "Instructor"];
+        const userAida = (prof?.aida_level || session?.user?.aidaLevel || "없음").replace(/\s*✓$/, "").trim();
         if (applicantAidaSelect) {
-          if (standardLevels.includes(userAida)) {
-            applicantAidaSelect.value = userAida;
-            if (applicantAidaCustomInput) { applicantAidaCustomInput.style.display = "none"; applicantAidaCustomInput.value = ""; }
+          if (window.SNORKYCertification?.renderCertificationSelectOptions) {
+            window.SNORKYCertification.renderCertificationSelectOptions(applicantAidaSelect, userAida, { defaultLabel: "없음", defaultValue: "없음" });
           } else {
-            applicantAidaSelect.value = "기타";
-            if (applicantAidaCustomInput) { applicantAidaCustomInput.style.display = "block"; applicantAidaCustomInput.value = userAida; }
+            applicantAidaSelect.value = userAida;
           }
         }
         if (applicantIntroInput) applicantIntroInput.value = profileBio;
@@ -1250,14 +1288,6 @@
         }
 
         let finalAida = applicantAidaSelect ? applicantAidaSelect.value : "없음";
-        if (finalAida === "기타") {
-          finalAida = applicantAidaCustomInput ? applicantAidaCustomInput.value.trim() : "";
-          if (!finalAida) {
-            showToast("프리다이빙 레벨을 직접 입력해 주세요.");
-            applicantAidaCustomInput?.focus();
-            return;
-          }
-        }
 
         btnSubmitApplication.disabled = true;
         btnSubmitApplication.textContent = "신청 처리 중...";
@@ -1362,11 +1392,12 @@
           try {
             const { data: prof } = await sb
               .from("user_profiles")
-              .select("provider_user_id, custom_nickname, custom_avatar_url, avatar_type, aida_level, gender, bio")
+              .select("provider_user_id, custom_nickname, custom_avatar_url, avatar_type, aida_level, gender, bio, age_group, activity_region, activity_depth")
               .eq("provider_user_id", String(post.user_id))
               .maybeSingle();
             if (prof) {
               profilesMap.set(String(prof.provider_user_id), prof);
+              window.SNORKYBuddyProfileCard?.setCachedProfile?.(String(prof.provider_user_id), prof);
               author = resolveAuthorInfo(post);
             }
           } catch (_) {}
@@ -1414,7 +1445,7 @@
           const isIndoorPost = post.activity_type === "실내다이빙";
           const targetUrl = isIndoorPost
             ? `./indoor-diving.html?centerId=${encodeURIComponent(post.point_id)}`
-            : `./index.html?point=${encodeURIComponent(post.point_id)}`;
+            : `./index.html?point=${encodeURIComponent(post.point_id)}&from=buddy&postId=${encodeURIComponent(post.id)}`;
           const btnLabel = isIndoorPost ? "센터 상세보기 ›" : "포인트 상세보기 ›";
 
           if (detailPlaceLinkBtn) {
@@ -1426,52 +1457,47 @@
               window.location.href = targetUrl;
             };
           }
-          if (detailPointName) {
-            detailPointName.classList.add("clickable");
-            detailPointName.title = isIndoorPost ? "센터 상세페이지로 이동" : "포인트 상세정보로 이동";
-            detailPointName.onclick = () => {
-              window.location.href = targetUrl;
-            };
-          }
         } else {
           if (detailPlaceLinkBtn) {
             detailPlaceLinkBtn.style.display = "none";
             detailPlaceLinkBtn.href = "#";
             detailPlaceLinkBtn.onclick = null;
           }
-          if (detailPointName) {
-            detailPointName.classList.remove("clickable");
-            detailPointName.title = "";
-            detailPointName.onclick = null;
-          }
         }
-        if (detailRegion) detailRegion.textContent = post.region;
+        const displayRegion = window.SNORKYBuddyRegions?.formatPostRegion
+          ? window.SNORKYBuddyRegions.formatPostRegion(post)
+          : (post.region || "");
+        if (detailRegion) detailRegion.textContent = displayRegion;
         if (detailDateTime) detailDateTime.textContent = `${formattedDate} · ${post.entry_time || '시간미정'}`;
         if (detailCapacity) detailCapacity.textContent = `${post.current_count || 1} / ${post.capacity || 2}명`;
         if (detailDifficulty) detailDifficulty.textContent = post.difficulty || "무관";
         if (detailPreferredGender) detailPreferredGender.textContent = post.preferred_gender || "성별 무관";
         if (detailParticipantLevel) {
-          const reqLvl = post.host_aida_level || post.participant_level || "무관";
-          detailParticipantLevel.textContent = reqLvl === "무관" ? "무관 (전체)" : reqLvl;
+          const reqLvl = post.host_aida_level || post.participant_level || "전체";
+          if (window.SNORKYCertification?.formatParticipantLevelRequirement) {
+            detailParticipantLevel.textContent = window.SNORKYCertification.formatParticipantLevelRequirement(reqLvl);
+          } else {
+            detailParticipantLevel.textContent = reqLvl === "무관" ? "무관 (전체)" : reqLvl;
+          }
         }
         if (detailHostInfo) {
-          const aidaDisp = (author.aidaLevel && author.aidaLevel !== "없음") ? author.aidaLevel : "레벨 없음";
-          const avatarTrigger = window.SNORKYBuddyProfileCard.renderTrigger({
-            userId: post.user_id,
-            profile: author,
-            className: "buddy-detail-host-avatar",
-            resolved: true
-          });
-          detailHostInfo.innerHTML = `
-            ${avatarTrigger}
-            <span class="buddy-detail-host-meta">
-              <span class="buddy-detail-host-name">${escapeHtml(author.displayName)}</span>
-              <span class="buddy-detail-host-divider">·</span>
-              <span class="buddy-detail-host-gender">${escapeHtml(author.gender || "비공개")}</span>
-              <span class="buddy-detail-host-divider">·</span>
-              <span class="buddy-detail-host-aida">${escapeHtml(aidaDisp)}</span>
-            </span>
-          `;
+          if (window.SNORKYBuddyProfileCard?.renderHostProfileRow) {
+            window.SNORKYBuddyProfileCard.renderHostProfileRow(detailHostInfo, post, author);
+          } else {
+            const avatarTrigger = window.SNORKYBuddyProfileCard?.renderTrigger({
+              userId: post.user_id,
+              profile: author,
+              className: "buddy-detail-host-avatar",
+              resolved: true
+            }) || "";
+            const metaText = window.SNORKYBuddyProfileCard?.formatProfileMetaText
+              ? window.SNORKYBuddyProfileCard.formatProfileMetaText(author, { includeNickname: true })
+              : `${escapeHtml(author.displayName)} · ${escapeHtml(author.gender || "비공개")}`;
+            detailHostInfo.innerHTML = `
+              ${avatarTrigger}
+              <span class="buddy-detail-host-meta">${escapeHtml(metaText)}</span>
+            `;
+          }
         }
         window.SNORKYBuddyProfileCard.renderConfirmedParticipants(detailConfirmedProfiles, post, author).then((participants) => {
           if (Array.isArray(participants) && detailCapacity) {
@@ -1696,14 +1722,11 @@
 
           if (filters.requiredLevel && posts.length > 0) {
             const reqLvl = filters.requiredLevel;
-            const standardLevels = ["없음", "AIDA 1", "AIDA 2", "AIDA 3", "AIDA 4", "Instructor"];
+            const certModule = window.SNORKYCertification;
             posts = posts.filter(p => {
-              const pLvl = (p.host_aida_level || "없음").trim();
-              if (reqLvl === "없음") {
-                return !pLvl || pLvl === "없음";
-              }
-              if (reqLvl === "기타") {
-                return pLvl && !standardLevels.includes(pLvl);
+              const pLvl = (p.host_aida_level || p.participant_level || "전체").trim();
+              if (certModule?.matchPostLevelRequirement) {
+                return certModule.matchPostLevelRequirement(reqLvl, pLvl);
               }
               return pLvl === reqLvl;
             });
@@ -1722,14 +1745,10 @@
           const currentSession = window.SNORKYAuthSession?.get?.();
           const currentUserId = currentSession?.user?.id ? String(currentSession.user.id) : null;
 
-          if (sb && currentUserId) {
+          if (currentUserId && window.SNORKYFriends?.getBlockedUserIds) {
             try {
-              const { data: blocks } = await sb
-                .from("buddy_blocks")
-                .select("blocked_user_id")
-                .eq("user_id", currentUserId);
-              if (blocks && blocks.length > 0) {
-                const blockedSet = new Set(blocks.map(b => String(b.blocked_user_id)));
+              const blockedSet = await window.SNORKYFriends.getBlockedUserIds(currentUserId);
+              if (blockedSet && blockedSet.size > 0) {
                 posts = posts.filter(p => !blockedSet.has(String(p.user_id)));
               }
             } catch (blockErr) {
@@ -1750,19 +1769,33 @@
             try {
               const myNick = currentSession.user.customNickname || null;
               const myAvatar = currentSession.user.customAvatarUrl || currentSession.user.profileImageUrl || null;
-              const myAida = currentSession.user.aidaLevel || null;
-              const myGender = currentSession.user.gender || null;
-              const myBio = currentSession.user.bio || null;
+              const rawAida = currentSession.user.aidaLevel || null;
+              const myAida = (rawAida && typeof rawAida === "string") ? rawAida.replace(/\s*✓$/, "").trim() : (rawAida || "없음");
+              const rawGender = currentSession.user.gender || "비공개";
+              const myGender = ["남성", "여성", "비공개"].includes(rawGender) ? rawGender : "비공개";
+              const rawBio = currentSession.user.bio || null;
+              const myBio = (rawBio && typeof rawBio === "string") ? rawBio.trim().slice(0, 100) : null;
+              const validAges = ["20대", "30대", "40대", "50대", "60대", "70대"];
+              const rawAge = currentSession.user.ageGroup;
+              const myAge = (rawAge && validAges.includes(String(rawAge).trim())) ? String(rawAge).trim() : null;
+              const rawRegion = currentSession.user.activityRegion;
+              const myRegion = (rawRegion && typeof rawRegion === "string" && rawRegion.trim() && rawRegion.trim() !== "미설정") ? rawRegion.trim() : null;
+              const rawDepth = currentSession.user.activityDepth;
+              const myDepth = (rawDepth && typeof rawDepth === "string" && rawDepth.trim() && rawDepth.trim() !== "미설정") ? rawDepth.trim() : null;
 
               await sb.from("user_profiles").upsert({
-                provider_user_id: currentUserId,
+                provider: currentSession.provider || "kakao",
+                provider_user_id: String(currentUserId),
                 custom_nickname: myNick,
                 custom_avatar_url: myAvatar,
-                aida_level: myAida,
+                aida_level: myAida || "없음",
                 gender: myGender,
                 bio: myBio,
+                age_group: myAge,
+                activity_region: myRegion,
+                activity_depth: myDepth,
                 updated_at: new Date().toISOString()
-              }, { onConflict: "provider_user_id" });
+              }, { onConflict: "provider,provider_user_id" });
             } catch (syncErr) {
               console.warn("[BuddyPosts] Profile sync warning:", syncErr);
             }
@@ -1785,10 +1818,11 @@
             try {
               const { data: profs } = await sb
                 .from("user_profiles")
-                .select("provider_user_id, custom_nickname, custom_avatar_url, avatar_type, aida_level, gender, bio")
+                .select("provider_user_id, custom_nickname, custom_avatar_url, avatar_type, aida_level, gender, bio, age_group, activity_region, activity_depth")
                 .in("provider_user_id", authorIds);
               (profs || []).forEach(pr => {
                 profilesMap.set(String(pr.provider_user_id), pr);
+                window.SNORKYBuddyProfileCard?.setCachedProfile?.(String(pr.provider_user_id), pr);
               });
             } catch (err) {
               console.warn("[BuddyPosts] Failed to fetch author profiles:", err);
@@ -2016,11 +2050,15 @@
         await loadAndRenderPosts();
         loadUserNotifications();
 
-        // URL 파라미터(post_id) 자동 상세 오픈
+        // URL 파라미터(post_id / openPostId) 자동 상세 오픈
         const urlParams = new URLSearchParams(window.location.search);
-        const targetPostId = Number(urlParams.get("post_id"));
+        const targetPostId = Number(urlParams.get("post_id") || urlParams.get("openPostId"));
         if (targetPostId && !isNaN(targetPostId)) {
           openPostDetailModal(targetPostId);
+          try {
+            const cleanUrl = window.location.pathname;
+            window.history.replaceState({}, document.title, cleanUrl);
+          } catch (_) {}
         }
       }
 

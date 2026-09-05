@@ -152,12 +152,9 @@
 
   // Supabase 실내센터 데이터 비동기 로드
   async function loadIndoorCenters(sbClient) {
-    const sb = sbClient || (window.getSnorkySupabase ? window.getSnorkySupabase() : window.snorkySupabase);
-    if (!sb) {
-      return window.SNORKYIndoorCenters || INDOOR_CENTERS;
-    }
-
     try {
+      const sb = sbClient || (window.getSnorkySupabase && window.supabase?.createClient ? window.getSnorkySupabase() : window.snorkySupabase);
+      if (!sb) return window.SNORKYIndoorCenters || INDOOR_CENTERS;
       const { data, error } = await sb
         .from("indoor_diving_centers")
         .select("*")
@@ -241,16 +238,23 @@
       countEl, sortSelect, cardsGrid, emptyState, detailModal, toastEl;
 
   // Selected Center for Modal
+  let activeCenter = null;
   async function init() {
-    await loadIndoorCenters();
-
     if (!document.getElementById("indoorCardsGrid") && !document.getElementById("indoorSearchInput")) {
+      await loadIndoorCenters();
       return;
     }
     bindDOMElements();
     bindEvents();
     renderFilterUi();
     render();
+    const refreshCenters = async () => {
+      await loadIndoorCenters();
+      renderFilterUi();
+      render();
+    };
+    window.addEventListener("snorky:supabase-ready", refreshCenters, { once: true });
+    await refreshCenters();
 
     try {
       const urlParams = new URLSearchParams(window.location.search);
@@ -612,7 +616,7 @@
           subRegionOptionsHost.innerHTML = "";
         } else {
           const subRegions = Array.from(new Set(
-            INDOOR_CENTERS
+            window.SNORKYIndoor.getCenters()
               .filter(c => c.region === state.selectedRegion && c.subRegion)
               .map(c => c.subRegion)
           )).sort((a, b) => a.localeCompare(b, "ko"));
@@ -800,7 +804,7 @@
   }
 
   function getFilteredCenters() {
-    return INDOOR_CENTERS.filter(center => {
+    return window.SNORKYIndoor.getCenters().filter(center => {
       // 검색어 필터 (센터명, 지역, 주소)
       if (state.searchQuery) {
         const query = state.searchQuery;
@@ -950,6 +954,8 @@
   }
 
   function openDetailModal(center) {
+    if (typeof center === "string") center = window.SNORKYIndoor.getCenters().find(item => item.id === center);
+    if (!center) return;
     activeCenter = center;
     if (!detailModal) return;
 
