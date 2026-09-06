@@ -637,7 +637,7 @@
         return {
           userId: targetId,
           displayName: p.custom_nickname || `버디_${String(targetId).slice(-4)}`,
-          avatarUrl: p.custom_avatar_url || "",
+          avatarUrl: p.avatar_type !== "none" ? (p.custom_avatar_url || "") : "",
           gender: p.gender || "비공개",
           ageGroup: p.age_group || "",
           aidaLevel: p.aida_level || "",

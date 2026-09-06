@@ -1100,11 +1100,12 @@
           displayName = post.user_id ? `버디_${String(post.user_id).slice(-4)}` : "다이버";
         }
 
+        const avatarDisabled = prof?.avatar_type === "none" || (!prof && isMe && currentSession?.user?.avatarType === "none");
         let avatarUrl = null;
-        if (prof && prof.avatar_type !== "none") {
+        if (prof && !avatarDisabled) {
           avatarUrl = prof.custom_avatar_url || null;
         }
-        if (!avatarUrl && isMe && currentSession?.user) {
+        if (!avatarUrl && !avatarDisabled && isMe && currentSession?.user) {
           avatarUrl = currentSession.user.customAvatarUrl || currentSession.user.profileImageUrl || null;
         }
 
@@ -1221,7 +1222,7 @@
         }
 
         const effectiveNick = prof?.custom_nickname || session?.user?.customNickname || session?.user?.nickname || "";
-        const effectiveAvatar = (prof && prof.avatar_type === "custom" && prof.custom_avatar_url) ? prof.custom_avatar_url : (session?.user?.customAvatarUrl || session?.user?.profileImageUrl || "");
+        const effectiveAvatar = prof?.avatar_type === "none" ? "" : (prof?.custom_avatar_url || session?.user?.customAvatarUrl || session?.user?.profileImageUrl || "");
         const profileBio = (prof?.bio || session?.user?.bio || "").trim();
         const hasProfile = Boolean(effectiveNick && profileBio);
 
@@ -1788,8 +1789,17 @@
 
           if (sb && currentUserId && currentSession?.user) {
             try {
-              const myNick = currentSession.user.customNickname || null;
-              const myAvatar = currentSession.user.customAvatarUrl || currentSession.user.profileImageUrl || null;
+              const profileKey = String(currentUserId);
+              const { data: savedProfile, error: savedProfileError } = await sb.from("user_profiles")
+                .select("custom_nickname, custom_avatar_url, avatar_type")
+                .eq("provider", "kakao").eq("provider_user_id", profileKey).maybeSingle();
+              if (savedProfileError) throw savedProfileError;
+              const loginNick = currentSession.user.customNickname || currentSession.user.nickname || null;
+              const loginAvatar = currentSession.user.customAvatarUrl || currentSession.user.profileImageUrl || null;
+              const myNick = String(savedProfile?.custom_nickname || "").trim() || loginNick;
+              const myAvatar = savedProfile?.avatar_type === "none"
+                ? (savedProfile.custom_avatar_url || null)
+                : (String(savedProfile?.custom_avatar_url || "").trim() || loginAvatar);
               const rawAida = currentSession.user.aidaLevel || null;
               const myAida = (rawAida && typeof rawAida === "string") ? rawAida.replace(/\s*✓$/, "").trim() : (rawAida || "없음");
               const rawGender = currentSession.user.gender || "비공개";
@@ -1805,8 +1815,8 @@
               const myDepth = (rawDepth && typeof rawDepth === "string" && rawDepth.trim() && rawDepth.trim() !== "미설정") ? rawDepth.trim() : null;
 
               await sb.from("user_profiles").upsert({
-                provider: currentSession.provider || "kakao",
-                provider_user_id: String(currentUserId),
+                provider: "kakao",
+                provider_user_id: profileKey,
                 custom_nickname: myNick,
                 custom_avatar_url: myAvatar,
                 aida_level: myAida || "없음",

@@ -486,7 +486,8 @@
           (res.data || []).forEach(function (p) {
             profileCache[p.provider_user_id] = {
               nickname: p.custom_nickname || null,
-              avatarUrl: (p.avatar_type === "custom" && p.custom_avatar_url) ? p.custom_avatar_url : null,
+              avatarUrl: (p.avatar_type !== "none" && p.custom_avatar_url) ? p.custom_avatar_url : null,
+              avatarType: p.avatar_type || "default",
               aidaLevel: p.aida_level || "없음",
               certificationStatus: p.certification_status || null,
               gender: p.gender || "비공개",
@@ -498,7 +499,7 @@
             window.SNORKYBuddyProfileCard?.setCachedProfile?.(p.provider_user_id, p);
           });
           missing.forEach(function (id) {
-            if (!(id in profileCache)) profileCache[id] = { nickname: null, avatarUrl: null, aidaLevel: "없음", gender: "비공개", ageGroup: "", activityRegion: "", activityDepth: "", bio: "" };
+            if (!(id in profileCache)) profileCache[id] = { nickname: null, avatarUrl: null, avatarType: "default", aidaLevel: "없음", gender: "비공개", ageGroup: "", activityRegion: "", activityDepth: "", bio: "" };
           });
         } catch (_) {}
       }
@@ -524,8 +525,9 @@
       var profile = profileCache[id] || null;
       var fallbackInfo = fallback || {};
       var isCurrentUser = id && id === currentUserId;
-      var avatarUrl = profile && profile.avatarUrl ? profile.avatarUrl : "";
-      if (!avatarUrl && isCurrentUser && session.user.avatarType !== "none") {
+      var avatarDisabled = profile && profile.avatarType === "none";
+      var avatarUrl = !avatarDisabled && profile && profile.avatarUrl ? profile.avatarUrl : "";
+      if (!avatarUrl && !avatarDisabled && isCurrentUser && session.user.avatarType !== "none") {
         avatarUrl = session.user.customAvatarUrl || session.user.profileImageUrl || "";
       }
       var rawAida = (profile && profile.aidaLevel) || (isCurrentUser ? session.user.aidaLevel : null) || fallbackInfo.aidaLevel || "없음";
@@ -534,7 +536,7 @@
 
       return {
         displayName: getDisplayName(userId, fallbackInfo.displayName),
-        avatarUrl: avatarUrl || fallbackInfo.avatarUrl || "",
+        avatarUrl: avatarDisabled ? "" : (avatarUrl || fallbackInfo.avatarUrl || ""),
         gender: (profile && profile.gender) || (isCurrentUser ? session.user.gender : null) || fallbackInfo.gender || "비공개",
         ageGroup: (profile && profile.ageGroup) || (isCurrentUser ? session.user.ageGroup : null) || fallbackInfo.ageGroup || "",
         activityRegion: (profile && profile.activityRegion) || (isCurrentUser ? session.user.activityRegion : null) || fallbackInfo.activityRegion || "",
@@ -572,9 +574,11 @@
       var isCurrentUser = id && id === currentUserId;
       var displayName = (profile && profile.nickname) ||
         (isCurrentUser ? (session.user.customNickname || session.user.nickname) : null) ||
+        post.host_name ||
         (id ? "버디_" + id.slice(-4) : "다이버");
-      var avatarUrl = profile && profile.avatarUrl ? profile.avatarUrl : null;
-      if (!avatarUrl && isCurrentUser && session.user.avatarType !== "none") {
+      var avatarDisabled = profile && profile.avatarType === "none";
+      var avatarUrl = !avatarDisabled && profile && profile.avatarUrl ? profile.avatarUrl : null;
+      if (!avatarUrl && !avatarDisabled && isCurrentUser && session.user.avatarType !== "none") {
         avatarUrl = session.user.customAvatarUrl || session.user.profileImageUrl || null;
       }
       var rawAida = (profile && (profile.aidaLevel || profile.aida_level)) ||
@@ -1015,7 +1019,7 @@
 
         var statusLabel = { PENDING: "대기중", APPROVED: "승인", REJECTED: "거절", CANCELED: "취소" };
         containerEl.innerHTML = apps.map(function (app) {
-          var name = getDisplayName(app.applicant_user_id, null);
+          var name = getDisplayName(app.applicant_user_id, app.applicant_nickname || null);
           var avatarSrc = getDisplayAvatar(app.applicant_user_id);
           var aidaRaw = app.applicant_aida_level || getDisplayAidaLevel(app.applicant_user_id);
           var cleanAida = (aidaRaw && aidaRaw !== "없음") ? String(aidaRaw).replace(/\s*✓$/, "").trim() : "레벨 없음";

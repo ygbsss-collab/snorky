@@ -1,0 +1,87 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>SNORKY 운영 콘솔</title>
+  <link rel="stylesheet" href="./public/css/admin-page.css">
+  <link rel="stylesheet" href="./public/css/condition-analysis-overlay.css?v=20260901_custom_v1">
+</head>
+<body>
+  <main class="admin-shell">
+    <header class="admin-topbar">
+      <div class="admin-brand"><span class="admin-brand-mark">S</span><div><strong>SNORKY</strong><span>Operations Console</span></div></div>
+      <div class="admin-topbar-actions">
+        <span class="admin-env-badge"><i></i>PRODUCTION</span>
+        <div class="admin-profile"><span class="admin-avatar">A</span><div><strong>Administrator</strong><span id="adminProfileEmail">관리자 계정</span></div></div>
+        <button id="adminExit" class="admin-logout" type="button">로그아웃</button>
+      </div>
+    </header>
+
+    <nav class="admin-console-nav" aria-label="관리자 메뉴">
+      <button class="is-active" data-admin-tab="dashboard" type="button"><span>⌂</span>대시보드</button>
+      <button data-admin-tab="users" id="adminUserManager" type="button"><span>♙</span>사용자</button>
+      <button data-admin-tab="certification" id="adminCertificationManager" type="button"><span>✓</span>자격 인증</button>
+      <button data-admin-tab="reports" id="adminReportManager" type="button"><span>!</span>신고/제재</button>
+      <button data-admin-tab="services" type="button"><span>◇</span>서비스 관리</button>
+    </nav>
+
+    <section class="admin-auth-state">
+      <span id="adminPageStatus" class="admin-page-status">관리자 인증 확인 중</span>
+    </section>
+
+    <section class="admin-workspace">
+      <div id="adminLoginPanel" class="admin-login-card">
+        <p class="admin-eyebrow">SECURE ACCESS</p>
+        <h1>운영 콘솔 로그인</h1>
+        <p>관리자 계정으로 로그인해 주세요.</p>
+        <form id="adminLoginForm">
+          <label for="adminEmail">이메일<input id="adminEmail" type="email" autocomplete="username" required></label>
+          <label for="adminPassword">비밀번호<input id="adminPassword" type="password" autocomplete="current-password" required></label>
+          <div id="adminLoginError" class="admin-login-error"></div>
+          <button type="submit">관리자 로그인</button>
+        </form>
+      </div>
+
+      <div id="adminPageIntro" hidden>
+        <section class="admin-tab-panel" data-admin-panel="dashboard">
+          <header class="admin-section-head"><div><p class="admin-eyebrow">OVERVIEW</p><h1>운영 대시보드</h1><p>SNORKY 서비스의 주요 운영 현황입니다.</p></div><span class="admin-data-note">실시간 조회 기준</span></header>
+          <div class="admin-kpi-grid">
+            <article class="admin-kpi"><span class="admin-kpi-icon is-blue">♙</span><div><span>총 회원</span><strong id="adminKpiTotalUsers">-</strong><small>전체 가입 계정</small></div></article>
+            <article class="admin-kpi"><span class="admin-kpi-icon is-green">●</span><div><span>활성 사용자</span><strong id="adminKpiActiveUsers">-</strong><small>현재 정상 이용</small></div></article>
+            <article class="admin-kpi"><span class="admin-kpi-icon is-amber">✓</span><div><span>자격 인증 대기</span><strong id="adminKpiPendingCertifications">-</strong><small>검토 필요</small></div></article>
+            <article class="admin-kpi"><span class="admin-kpi-icon is-red">!</span><div><span>미처리 신고</span><strong id="adminKpiPendingReports">-</strong><small>운영 조치 필요</small></div></article>
+          </div>
+          <div class="admin-dashboard-grid">
+            <article class="admin-card admin-alert-card"><div class="admin-card-head"><div><p class="admin-eyebrow">URGENT</p><h2>긴급 운영 알림</h2></div><span id="adminUrgentCount" class="admin-count-pill">-</span></div><div id="adminUrgentAlerts" class="admin-alert-list"><p>운영 데이터를 확인하는 중입니다.</p></div></article>
+            <article class="admin-card"><div class="admin-card-head"><div><p class="admin-eyebrow">INFRASTRUCTURE</p><h2>서비스 사용량</h2></div><span class="admin-placeholder-pill">연동 예정</span></div><div class="admin-usage-list"><div><span>Database</span><strong>-</strong><i></i></div><div><span>Storage</span><strong>-</strong><i></i></div><div><span>API / Edge Function</span><strong>-</strong><i></i></div></div></article>
+          </div>
+        </section>
+        <section class="admin-tab-panel" data-admin-panel="users"><header class="admin-section-head"><div><p class="admin-eyebrow">MEMBERS</p><h1>사용자 관리</h1><p>계정 상태를 확인하고 필요한 제재를 적용합니다.</p></div></header><div id="adminUsersHost"></div></section>
+        <section class="admin-tab-panel" data-admin-panel="certification"><header class="admin-section-head"><div><p class="admin-eyebrow">VERIFICATION</p><h1>자격 인증</h1><p>신청 정보와 자격 정보를 확인해 처리합니다.</p></div></header><div id="adminCertificationHost"></div></section>
+        <section class="admin-tab-panel" data-admin-panel="reports"><header class="admin-section-head"><div><p class="admin-eyebrow">TRUST &amp; SAFETY</p><h1>신고/제재</h1><p>신고 이력과 상세 내용을 검토하고 조치합니다.</p></div></header><div id="adminReportsHost"></div></section>
+        <section class="admin-tab-panel" data-admin-panel="services"><header class="admin-section-head"><div><p class="admin-eyebrow">SERVICE</p><h1>서비스 관리</h1><p>SNORKY 서비스 운영 항목을 관리합니다.</p></div></header><div class="admin-service-grid"><article class="admin-card"><span>지역/다이빙 포인트</span><strong>서비스 데이터 관리</strong><small>기존 관리자 기능에서 관리할 수 있습니다.</small></article><article class="admin-card"><span>실내 다이빙센터</span><strong>센터 정보 관리</strong><small>기존 관리자 기능에서 관리할 수 있습니다.</small></article><article class="admin-card is-disabled"><span>운영 설정</span><strong>준비 중</strong><small>추가 연동 없이 UI 자리만 제공합니다.</small></article></div></section>
+      </div>
+    </section>
+
+    <nav class="admin-bottom-nav" aria-label="모바일 관리자 메뉴">
+      <button class="is-active" data-admin-tab="dashboard" type="button"><span>⌂</span>홈</button>
+      <button data-admin-tab="users" type="button"><span>♙</span>사용자</button>
+      <button data-admin-tab="certification" type="button"><span>✓</span>인증</button>
+      <button data-admin-tab="reports" type="button"><span>!</span>신고</button>
+      <button data-admin-tab="services" type="button"><span>◇</span>서비스</button>
+    </nav>
+  </main>
+
+  <script async src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" onload="window.dispatchEvent(new Event('snorky:supabase-ready'))"></script>
+  <script src="./public/js/supabase-client.js?v=20260820_stitch_v76"></script>
+  <script src="./public/js/supabase-admin.js?v=20260905_moderation_v1"></script>
+  <script src="./public/js/admin-moderation.js?v=20260905_v1"></script>
+  <script>
+    document.getElementById('adminLoginForm')?.addEventListener('submit',event=>{event.preventDefault();window.SNORKYAdmin?.login()});
+    document.getElementById('adminExit')?.addEventListener('click',()=>window.SNORKYAdmin?.logout());
+    window.addEventListener('snorky:supabase-ready',()=>{document.getElementById('adminPageStatus').textContent='운영 환경 연결됨'});
+    window.addEventListener('snorky:admin-state',event=>{const authorized=Boolean(event.detail?.authorized);document.getElementById('adminLoginPanel').hidden=authorized;document.getElementById('adminPageIntro').hidden=!authorized;document.getElementById('adminPageStatus').textContent=authorized?'관리자 인증 완료':'관리자 로그인 필요';const email=event.detail?.email||document.getElementById('adminEmail')?.value;if(email)document.getElementById('adminProfileEmail').textContent=email;if(authorized)document.querySelector('[data-admin-tab="dashboard"]')?.click()});
+  </script>
+</body>
+</html>

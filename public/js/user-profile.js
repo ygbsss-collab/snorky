@@ -64,10 +64,53 @@
     return !duplicateProfile;
   }
 
+  async function ensureProfileDefaults(provider, providerUserId, sourceUser) {
+    const sb = getSupabase();
+    if (!sb || !providerUserId) return null;
+    const normalizedProvider = provider || "kakao";
+    const normalizedUserId = String(providerUserId);
+    const sessionUser = sourceUser || window.SNORKYAuthSession?.get?.()?.user || {};
+    const loginNickname = String(sessionUser.nickname || "").trim() || null;
+    const loginAvatarUrl = String(sessionUser.profileImageUrl || "").trim() || null;
+    const { data: existing, error: selectError } = await sb.from("user_profiles")
+      .select("custom_nickname, custom_avatar_url, avatar_type")
+      .eq("provider", normalizedProvider).eq("provider_user_id", normalizedUserId).maybeSingle();
+    if (selectError) throw selectError;
+    if (!existing) {
+      const { error } = await sb.from("user_profiles").upsert({
+        provider: normalizedProvider,
+        provider_user_id: normalizedUserId,
+        custom_nickname: loginNickname,
+        custom_avatar_url: loginAvatarUrl,
+        avatar_type: "default",
+        updated_at: new Date().toISOString()
+      }, { onConflict: "provider,provider_user_id" });
+      if (error) throw error;
+      return null;
+    }
+    const updates = {};
+    if (!String(existing.custom_nickname || "").trim() && loginNickname) updates.custom_nickname = loginNickname;
+    if (existing.avatar_type !== "none" && !String(existing.custom_avatar_url || "").trim() && loginAvatarUrl) {
+      updates.custom_avatar_url = loginAvatarUrl;
+      if (!existing.avatar_type) updates.avatar_type = "default";
+    }
+    if (Object.keys(updates).length) {
+      updates.updated_at = new Date().toISOString();
+      const { error } = await sb.from("user_profiles").update(updates)
+        .eq("provider", normalizedProvider).eq("provider_user_id", normalizedUserId);
+      if (error) throw error;
+    }
+    return { ...existing, ...updates };
+  }
+
   async function fetchRemoteProfile(provider, providerUserId) {
     const sb = getSupabase();
     if (!sb || !providerUserId) return null;
     try {
+      const session = window.SNORKYAuthSession?.get?.();
+      if (session?.user?.id && String(session.user.id) === String(providerUserId)) {
+        await ensureProfileDefaults(provider, providerUserId, session.user);
+      }
       const { data, error } = await sb
         .from("user_profiles")
         .select("custom_nickname, custom_avatar_url, avatar_type, aida_level, certification_status, banned, suspended_until, gender, bio, age_group, activity_region, activity_depth")
@@ -337,6 +380,7 @@
   }
 
   global.SNORKYUserProfile = Object.freeze({
+    ensureProfileDefaults,
     fetchRemoteProfile,
     validateNickname,
     checkNicknameAvailability,

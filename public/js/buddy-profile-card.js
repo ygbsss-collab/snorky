@@ -105,8 +105,9 @@
     const sessionUser = getSessionUser();
     const isCurrentUser = Boolean(id && sessionUser?.id && id === String(sessionUser.id));
 
-    let avatarUrl = stored?.avatar_type !== "none" ? stored?.custom_avatar_url || "" : "";
-    if (!avatarUrl && isCurrentUser && sessionUser?.avatarType !== "none") {
+    const avatarDisabled = stored?.avatar_type === "none" || (!stored && isCurrentUser && sessionUser?.avatarType === "none");
+    let avatarUrl = !avatarDisabled ? stored?.custom_avatar_url || "" : "";
+    if (!avatarUrl && !avatarDisabled && isCurrentUser && sessionUser?.avatarType !== "none") {
       avatarUrl = sessionUser.customAvatarUrl || sessionUser.profileImageUrl || "";
     }
 
@@ -121,7 +122,7 @@
         (isCurrentUser ? sessionUser?.customNickname || sessionUser?.nickname : "") ||
         fallback.displayName ||
         (id ? `버디_${id.slice(-4)}` : "다이버"),
-      avatarUrl: avatarUrl || fallback.avatarUrl || "",
+      avatarUrl: avatarDisabled ? "" : (avatarUrl || fallback.avatarUrl || ""),
       gender: stored?.gender || (isCurrentUser ? sessionUser?.gender : "") || fallback.gender || "비공개",
       ageGroup: stored?.age_group || (isCurrentUser ? sessionUser?.ageGroup : "") || fallback.ageGroup || "",
       activityRegion: stored?.activity_region || (isCurrentUser ? sessionUser?.activityRegion : "") || fallback.activityRegion || "",
@@ -150,6 +151,11 @@
     trigger.dataset.buddyProfileBio = data.bio || "";
     trigger.dataset.buddyProfileResolved = resolved ? "true" : "false";
     trigger.setAttribute("aria-label", `${data.displayName || "다이버"} 프로필 카드 열기`);
+    const image = trigger.querySelector(".buddy-profile-photo-image");
+    if (image) {
+      image.src = data.avatarUrl || DEFAULT_AVATAR;
+      image.onerror = () => { image.onerror = null; image.src = DEFAULT_AVATAR; };
+    }
   }
 
   function renderTrigger({ userId, profile, className = "", resolved = true }) {
