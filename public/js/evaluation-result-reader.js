@@ -11,6 +11,7 @@
   let todayCacheTime = 0;
   const pointSlotsCache = new Map();
   const dryRunResults = new Map();
+  const onDemandRefreshInFlight = new Map();
 
   function registerDryRunResults(pointId, rows, expiresAt) {
     const id = String(pointId || "");
@@ -46,8 +47,92 @@
     return kst.toISOString().slice(0, 10);
   }
 
+  function getKstDateByOffset(dayOffset) {
+    const date = new Date(`${getKstDateString()}T00:00:00Z`);
+    date.setUTCDate(date.getUTCDate() + Number(dayOffset || 0));
+    return date.toISOString().slice(0, 10);
+  }
+
+  function filterRowsByDateRange(rows, startDate, endDate) {
+    return (Array.isArray(rows) ? rows : []).filter(row => {
+      const targetDate = String(row?.target_date || "").slice(0, 10);
+      return targetDate >= startDate && targetDate <= endDate;
+    });
+  }
+
+  const REQUIRED_MARINE_METRIC_KEYS = [
+    "wave_height",
+    "sea_temperature",
+  ];
+
+  const REQUIRED_WIND_METRIC_KEYS = [
+    "wind_speed",
+    "wind_direction_degree",
+  ];
+
+  function hasFiniteMetrics(metrics, keys) {
+    return keys.every(key => Number.isFinite(metrics[key]));
+  }
+
+  function hasMetricKeys(metrics, keys) {
+    return keys.every(key => Object.prototype.hasOwnProperty.call(metrics, key));
+  }
+
+  function hasCurrentMetrics(row) {
+    const metrics = row?.metrics;
+    if (!metrics || typeof metrics !== "object") return false;
+
+    const mode = String(row?.mode || "");
+    if (mode === "TODAY" || mode === "TODAY_HOURLY") {
+      return hasMetricKeys(metrics, [
+        ...REQUIRED_MARINE_METRIC_KEYS,
+        ...REQUIRED_WIND_METRIC_KEYS,
+      ]);
+    }
+    if (!hasFiniteMetrics(metrics, REQUIRED_MARINE_METRIC_KEYS)) return false;
+    if (mode === "SHORT") {
+      const targetDate = String(row?.target_date || "").slice(0, 10);
+      return targetDate >= getKstDateByOffset(1)
+        && targetDate <= getKstDateByOffset(3);
+    }
+    return mode === "MID";
+  }
+
+  function filterCurrentMetricRows(rows) {
+    return (Array.isArray(rows) ? rows : []).filter(hasCurrentMetrics);
+  }
+
   function getSbClient() {
     return window.getSnorkySupabase ? window.getSnorkySupabase() : window.snorkySupabase;
+  }
+
+  async function triggerOnDemandRefresh(pointId) {
+    const numericPointId = Number(pointId);
+    if (!Number.isSafeInteger(numericPointId) || numericPointId <= 0) return false;
+    const key = String(numericPointId);
+    const running = onDemandRefreshInFlight.get(key);
+    if (running) return running;
+
+    const task = (async () => {
+      const sb = typeof window.getSnorkySupabase === "function" ? window.getSnorkySupabase() : null;
+      if (!sb?.functions?.invoke) return false;
+      const { data, error } = await sb.functions.invoke(
+        "point-evaluation-refresh",
+        { body: { point_id: numericPointId } }
+      );
+      if (error || data?.ok === false) {
+        throw error || new Error(data?.error || "ON_DEMAND_REFRESH_FAILED");
+      }
+      return true;
+    })().catch((error) => {
+      console.warn(`[SNORKY Result Reader] On-Demand refresh failed for point ${numericPointId}:`, error?.message || error);
+      return false;
+    }).finally(() => {
+      onDemandRefreshInFlight.delete(key);
+    });
+
+    onDemandRefreshInFlight.set(key, task);
+    return task;
   }
 
   function getResultHour(row) {
@@ -122,6 +207,22 @@
     return 99;
   }
 
+  function parseQueryOptions(forceRefresh, options) {
+    let force = false;
+    let opt = {};
+    if (typeof forceRefresh === "object" && forceRefresh !== null) {
+      opt = forceRefresh;
+      force = Boolean(opt.forceRefresh);
+    } else {
+      force = Boolean(forceRefresh);
+      if (typeof options === "object" && options !== null) {
+        opt = options;
+      }
+    }
+    const allowOnDemand = typeof opt.allowOnDemand === "boolean" ? opt.allowOnDemand : true;
+    return { forceRefresh: force, allowOnDemand, options: opt };
+  }
+
   function formatSafetyBlockSummary(warningOrWarnings, reasons = []) {
     const labels = [];
     const warnings = Array.isArray(warningOrWarnings) ? warningOrWarnings : [warningOrWarnings].filter(Boolean);
@@ -144,10 +245,39 @@
    * Loads all TODAY results for all active points for today's KST date.
    * Returns Map<point_id, ResultRow>
    */
-  async function loadTodayResults(forceRefresh = false) {
+  async function loadTodayResults(forceRefresh = false, pointId = null, options = {}) {
+    let force = false;
+    let targetPid = null;
+    let opt = {};
+
+    if (typeof forceRefresh === "object" && forceRefresh !== null) {
+      opt = forceRefresh;
+      force = Boolean(opt.forceRefresh);
+      targetPid = opt.pointId ?? null;
+    } else {
+      force = Boolean(forceRefresh);
+      if (typeof pointId === "object" && pointId !== null) {
+        opt = pointId;
+        targetPid = opt.pointId ?? null;
+      } else {
+        targetPid = pointId;
+        if (typeof options === "object" && options !== null) {
+          opt = options;
+        }
+      }
+    }
+    const allowOnDemand = typeof opt.allowOnDemand === "boolean" ? opt.allowOnDemand : true;
     const now = Date.now();
-    if (!forceRefresh && todayCache && now - todayCacheTime < CACHE_TTL_MS) {
-      return todayCache;
+    const requestedPointId = targetPid === null || targetPid === undefined ? "" : String(targetPid);
+    const rawDryRowsForPoint = requestedPointId ? getDryRunRows(requestedPointId, "TODAY") : null;
+    const dryRowsForPoint = rawDryRowsForPoint ? filterCurrentMetricRows(rawDryRowsForPoint) : null;
+    if (!force && todayCache && now - todayCacheTime < CACHE_TTL_MS) {
+      if (dryRowsForPoint?.length) {
+        const map = new Map(todayCache);
+        map.set(requestedPointId, dryRowsForPoint[0]);
+        return map;
+      }
+      if (!requestedPointId || todayCache.has(requestedPointId)) return todayCache;
     }
 
     const sb = getSbClient();
@@ -158,27 +288,40 @@
 
     const todayDate = getKstDateString();
     try {
-      const { data, error } = await sb
+      const queryToday = () => sb
         .from("point_evaluation_results")
         .select("*")
         .eq("mode", "TODAY")
         .eq("target_date", todayDate)
         .order("evaluated_at", { ascending: false });
+      const firstResult = await queryToday();
+      let data = filterCurrentMetricRows(firstResult.data || []);
+      const error = firstResult.error;
 
       if (error) {
         console.warn("[SNORKY Result Reader] Failed to load TODAY results:", error.message);
         return todayCache || new Map();
       }
 
+      const requestedRowExists = requestedPointId && data.some(row => String(row.point_id) === requestedPointId);
+      if (allowOnDemand && requestedPointId && !rawDryRowsForPoint && !requestedRowExists && await triggerOnDemandRefresh(requestedPointId)) {
+        const retryResult = await queryToday();
+        if (retryResult.error) {
+          console.warn("[SNORKY Result Reader] Failed to reload TODAY results:", retryResult.error.message);
+        } else {
+          data = filterCurrentMetricRows(retryResult.data || []);
+        }
+      }
+
       const map = new Map();
-      (data || []).forEach(row => {
-        const pointId = String(row.point_id);
-        if (!map.has(pointId)) map.set(pointId, row);
+      data.forEach(row => {
+        const pid = String(row.point_id);
+        if (!map.has(pid)) map.set(pid, row);
       });
 
-      for (const [pointId] of dryRunResults) {
-        const customToday = getDryRunRows(pointId, "TODAY");
-        if (customToday?.length) map.set(pointId, customToday[0]);
+      for (const [pid] of dryRunResults) {
+        const customToday = filterCurrentMetricRows(getDryRunRows(pid, "TODAY"));
+        if (customToday?.length) map.set(pid, customToday[0]);
       }
 
       todayCache = map;
@@ -191,15 +334,18 @@
   }
 
   /**
-   * Loads SHORT results (+1~+3 days, 15 slots) for a specific point.
+   * Loads SHORT results (+1~+3 days, 21 slots) for a specific point.
    */
-  async function loadShortResultsForPoint(pointId, forceRefresh = false) {
+  async function loadShortResultsForPoint(pointId, forceRefresh = false, options = {}) {
+    const { forceRefresh: force, allowOnDemand } = parseQueryOptions(forceRefresh, options);
     const dryRows = getDryRunRows(pointId, "SHORT");
-    if (dryRows) return dryRows;
-    const cacheKey = `SHORT_${pointId}`;
+    const startDate = getKstDateByOffset(1);
+    const endDate = getKstDateByOffset(3);
+    if (dryRows) return filterCurrentMetricRows(filterRowsByDateRange(dryRows, startDate, endDate));
+    const cacheKey = `SHORT_${pointId}_${startDate}_${endDate}`;
     const now = Date.now();
     const cached = pointSlotsCache.get(cacheKey);
-    if (!forceRefresh && cached && now - cached.time < CACHE_TTL_MS) {
+    if (!force && cached && now - cached.time < CACHE_TTL_MS) {
       return cached.data;
     }
 
@@ -207,21 +353,35 @@
     if (!sb) return [];
 
     try {
-      const { data, error } = await sb
+      const queryShort = () => sb
         .from("point_evaluation_results")
         .select("*")
         .eq("point_id", Number(pointId))
         .eq("mode", "SHORT")
+        .gte("target_date", startDate)
+        .lte("target_date", endDate)
         .order("target_date", { ascending: true })
         .order("period_start", { ascending: true });
+      const firstResult = await queryShort();
+      let data = filterCurrentMetricRows(firstResult.data || []);
+      const error = firstResult.error;
 
       if (error) {
         console.warn(`[SNORKY Result Reader] Failed to load SHORT for point ${pointId}:`, error.message);
         return [];
       }
 
-      pointSlotsCache.set(cacheKey, { data: data || [], time: now });
-      return data || [];
+      if (allowOnDemand && data.length !== 21 && await triggerOnDemandRefresh(pointId)) {
+        const retryResult = await queryShort();
+        if (retryResult.error) {
+          console.warn(`[SNORKY Result Reader] Failed to reload SHORT for point ${pointId}:`, retryResult.error.message);
+        } else {
+          data = filterCurrentMetricRows(retryResult.data || []);
+        }
+      }
+
+      pointSlotsCache.set(cacheKey, { data, time: Date.now() });
+      return data;
     } catch (err) {
       console.warn(`[SNORKY Result Reader] Error in loadShortResultsForPoint:`, err);
       return [];
@@ -231,13 +391,16 @@
   /**
    * Loads MID results (+4~+6 days, 6 slots: AM/PM) for a specific point.
    */
-  async function loadMidResultsForPoint(pointId, forceRefresh = false) {
+  async function loadMidResultsForPoint(pointId, forceRefresh = false, options = {}) {
+    const { forceRefresh: force, allowOnDemand } = parseQueryOptions(forceRefresh, options);
     const dryRows = getDryRunRows(pointId, "MID");
-    if (dryRows) return dryRows;
-    const cacheKey = `MID_${pointId}`;
+    const startDate = getKstDateByOffset(4);
+    const endDate = getKstDateByOffset(6);
+    if (dryRows) return filterRowsByDateRange(dryRows, startDate, endDate);
+    const cacheKey = `MID_${pointId}_${startDate}_${endDate}`;
     const now = Date.now();
     const cached = pointSlotsCache.get(cacheKey);
-    if (!forceRefresh && cached && now - cached.time < CACHE_TTL_MS) {
+    if (!force && cached && now - cached.time < CACHE_TTL_MS) {
       return cached.data;
     }
 
@@ -245,21 +408,35 @@
     if (!sb) return [];
 
     try {
-      const { data, error } = await sb
+      const queryMid = () => sb
         .from("point_evaluation_results")
         .select("*")
         .eq("point_id", Number(pointId))
         .eq("mode", "MID")
+        .gte("target_date", startDate)
+        .lte("target_date", endDate)
         .order("target_date", { ascending: true })
         .order("period_start", { ascending: true });
+      const firstResult = await queryMid();
+      let data = firstResult.data || [];
+      const error = firstResult.error;
 
       if (error) {
         console.warn(`[SNORKY Result Reader] Failed to load MID for point ${pointId}:`, error.message);
         return [];
       }
 
-      pointSlotsCache.set(cacheKey, { data: data || [], time: now });
-      return data || [];
+      if (allowOnDemand && !data.length && await triggerOnDemandRefresh(pointId)) {
+        const retryResult = await queryMid();
+        if (retryResult.error) {
+          console.warn(`[SNORKY Result Reader] Failed to reload MID for point ${pointId}:`, retryResult.error.message);
+        } else {
+          data = retryResult.data || [];
+        }
+      }
+
+      pointSlotsCache.set(cacheKey, { data, time: Date.now() });
+      return data;
     } catch (err) {
       console.warn(`[SNORKY Result Reader] Error in loadMidResultsForPoint:`, err);
       return [];
@@ -267,15 +444,16 @@
   }
 
   /**
-   * Loads the canonical 29-result aggregate for a given point:
-   * TODAY (1) + TODAY_HOURLY (7) + SHORT (15) + MID (6).
+   * Loads the canonical 35-result aggregate for a given point:
+   * TODAY (1) + TODAY_HOURLY (7) + SHORT (21) + MID (6).
    */
-  async function loadAllSlotsForPoint(pointId, forceRefresh = false) {
+  async function loadAllSlotsForPoint(pointId, forceRefresh = false, options = {}) {
+    const { forceRefresh: force, options: opt } = parseQueryOptions(forceRefresh, options);
     const [todayMap, todayHourlySlots, shortSlots, midSlots] = await Promise.all([
-      loadTodayResults(forceRefresh),
-      loadTodayHourly(pointId, forceRefresh),
-      loadShortResultsForPoint(pointId, forceRefresh),
-      loadMidResultsForPoint(pointId, forceRefresh),
+      loadTodayResults(force, pointId, opt),
+      loadTodayHourly(pointId, force, opt),
+      loadShortResultsForPoint(pointId, force, opt),
+      loadMidResultsForPoint(pointId, force, opt),
     ]);
 
     return {
@@ -336,14 +514,15 @@
   /**
    * Loads TODAY_HOURLY results (7 slots: 03, 06, 09, 12, 15, 18, 21) for a specific point.
    */
-  async function loadTodayHourly(pointId, forceRefresh = false) {
+  async function loadTodayHourly(pointId, forceRefresh = false, options = {}) {
+    const { forceRefresh: force, allowOnDemand } = parseQueryOptions(forceRefresh, options);
     const dryRows = getDryRunRows(pointId, "TODAY_HOURLY");
-    if (dryRows) return dryRows;
+    if (dryRows) return filterCurrentMetricRows(dryRows);
     const todayDate = getKstDateString();
     const cacheKey = `TODAY_HOURLY_${pointId}_${todayDate}`;
     const now = Date.now();
     const cached = pointSlotsCache.get(cacheKey);
-    if (!forceRefresh && cached && now - cached.time < CACHE_TTL_MS) {
+    if (!force && cached && now - cached.time < CACHE_TTL_MS) {
       return cached.data;
     }
 
@@ -351,21 +530,33 @@
     if (!sb) return [];
 
     try {
-      const { data, error } = await sb
+      const queryTodayHourly = () => sb
         .from("point_evaluation_results")
         .select("*")
         .eq("point_id", Number(pointId))
         .eq("mode", "TODAY_HOURLY")
         .eq("target_date", todayDate)
         .order("period_start", { ascending: true });
+      const firstResult = await queryTodayHourly();
+      let data = filterCurrentMetricRows(firstResult.data || []);
+      const error = firstResult.error;
 
       if (error) {
         console.warn(`[SNORKY Result Reader] Failed to load TODAY_HOURLY for point ${pointId}:`, error.message);
         return [];
       }
 
-      pointSlotsCache.set(cacheKey, { data: data || [], time: now });
-      return data || [];
+      if (allowOnDemand && data.length !== 7 && await triggerOnDemandRefresh(pointId)) {
+        const retryResult = await queryTodayHourly();
+        if (retryResult.error) {
+          console.warn(`[SNORKY Result Reader] Failed to reload TODAY_HOURLY for point ${pointId}:`, retryResult.error.message);
+        } else {
+          data = filterCurrentMetricRows(retryResult.data || []);
+        }
+      }
+
+      pointSlotsCache.set(cacheKey, { data, time: Date.now() });
+      return data;
     } catch (err) {
       console.warn(`[SNORKY Result Reader] Error in loadTodayHourly:`, err);
       return [];
@@ -374,8 +565,10 @@
 
   window.SNORKYEvaluationResults = Object.freeze({
     getKstDateString,
+    triggerOnDemandRefresh,
     loadTodayResults,
     loadTodayHourly,
+    getResultHour,
     selectCurrentTodayHourlySlot,
     formatSafetyBlockSummary,
     loadShortResultsForPoint,

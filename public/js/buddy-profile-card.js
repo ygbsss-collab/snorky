@@ -2,8 +2,6 @@
   "use strict";
 
   const DEFAULT_AVATAR = "./public/images/snorky-symbol.png";
-  const profileCache = new Map();
-  const pendingProfileFetches = new Map();
 
   function escapeHtml(value) {
     return String(value ?? "")
@@ -23,17 +21,11 @@
   }
 
   function invalidateCache(userId) {
-    if (userId) {
-      profileCache.delete(String(userId));
-    } else {
-      profileCache.clear();
-    }
+    global.SNORKYUserProfile?.invalidateUserProfile?.(userId);
   }
 
   function setCachedProfile(userId, profile) {
-    if (userId && profile) {
-      profileCache.set(String(userId), profile);
-    }
+    return global.SNORKYUserProfile?.setCachedUserProfile?.(userId, profile) || null;
   }
 
   async function fetchProfiles(userIds, force = false) {
@@ -43,32 +35,10 @@
         .filter((id) => id && id !== "null" && id !== "undefined" && id !== "[object Object]")
     ));
 
-    if (force) {
-      validIds.forEach((id) => profileCache.delete(id));
-    }
-
-    const missingIds = validIds.filter((id) => !profileCache.has(id));
-    const sb = getSupabase();
-    if (!sb || !missingIds.length) return;
-
     try {
-      const { data, error } = await sb
-        .from("user_profiles")
-        .select("provider_user_id, custom_nickname, custom_avatar_url, avatar_type, aida_level, certification_status, gender, bio, age_group, activity_region, activity_depth")
-        .in("provider_user_id", missingIds);
-
-      if (error) {
-        console.warn("[BuddyProfileCard] 프로필 조회 쿼리 오류:", error?.message || error);
-        return;
-      }
-      (data || []).forEach((profile) => {
-        if (profile && profile.provider_user_id) {
-          profileCache.set(String(profile.provider_user_id), profile);
-        }
-      });
-      missingIds.forEach((id) => {
-        if (!profileCache.has(id)) profileCache.set(id, null);
-      });
+      await Promise.all(validIds.map((id) => global.SNORKYUserProfile?.getUserProfile?.(id, {
+        forceRefresh: force,
+      })));
     } catch (err) {
       console.warn("[BuddyProfileCard] 프로필 조회 예외:", err?.message || err);
     }
@@ -101,32 +71,29 @@
 
   function resolveProfile(userId, fallback = {}) {
     const id = String(userId || "");
-    const stored = profileCache.get(id) || null;
+    const stored = global.SNORKYUserProfile?.getCachedUserProfile?.(id) || null;
     const sessionUser = getSessionUser();
     const isCurrentUser = Boolean(id && sessionUser?.id && id === String(sessionUser.id));
-
-    const avatarDisabled = stored?.avatar_type === "none" || (!stored && isCurrentUser && sessionUser?.avatarType === "none");
-    let avatarUrl = !avatarDisabled ? stored?.custom_avatar_url || "" : "";
-    if (!avatarUrl && !avatarDisabled && isCurrentUser && sessionUser?.avatarType !== "none") {
-      avatarUrl = sessionUser.customAvatarUrl || sessionUser.profileImageUrl || "";
-    }
+    const effectiveSource = stored || (isCurrentUser ? sessionUser : { providerUserId: id });
+    const avatarUrl = global.SNORKYUserProfile?.getAvatarUrl?.(
+      effectiveSource,
+      isCurrentUser ? sessionUser : fallback.avatarUrl
+    );
+    const avatarDisabled = (stored?.avatarType || (isCurrentUser ? sessionUser?.avatarType : null)) === "none";
 
     const fallbackAida = cleanProfileAidaLevel(fallback.aidaLevel || fallback.aida_level);
     const sessionAida = isCurrentUser ? cleanProfileAidaLevel(sessionUser?.aidaLevel || sessionUser?.aida_level) : "";
-    const storedAida = cleanProfileAidaLevel(stored?.aida_level);
+    const storedAida = cleanProfileAidaLevel(stored?.aidaLevel);
     const cleanAida = storedAida || sessionAida || fallbackAida || "";
     const isVerified = checkIsVerified(stored) || (isCurrentUser && checkIsVerified(sessionUser)) || checkIsVerified(fallback);
 
     return {
-      displayName: stored?.custom_nickname ||
-        (isCurrentUser ? sessionUser?.customNickname || sessionUser?.nickname : "") ||
-        fallback.displayName ||
-        (id ? `버디_${id.slice(-4)}` : "다이버"),
-      avatarUrl: avatarDisabled ? "" : (avatarUrl || fallback.avatarUrl || ""),
+      displayName: global.SNORKYUserProfile?.getDisplayName?.(effectiveSource, fallback.displayName) || "다이버",
+      avatarUrl: avatarDisabled ? "" : (avatarUrl || ""),
       gender: stored?.gender || (isCurrentUser ? sessionUser?.gender : "") || fallback.gender || "비공개",
-      ageGroup: stored?.age_group || (isCurrentUser ? sessionUser?.ageGroup : "") || fallback.ageGroup || "",
-      activityRegion: stored?.activity_region || (isCurrentUser ? sessionUser?.activityRegion : "") || fallback.activityRegion || "",
-      activityDepth: stored?.activity_depth || (isCurrentUser ? sessionUser?.activityDepth : "") || fallback.activityDepth || "",
+      ageGroup: stored?.ageGroup || (isCurrentUser ? sessionUser?.ageGroup : "") || fallback.ageGroup || "",
+      activityRegion: stored?.activityRegion || (isCurrentUser ? sessionUser?.activityRegion : "") || fallback.activityRegion || "",
+      activityDepth: stored?.activityDepth || (isCurrentUser ? sessionUser?.activityDepth : "") || fallback.activityDepth || "",
       aidaLevel: cleanAida,
       isVerified: Boolean(isVerified && cleanAida),
       bio: stored?.bio || (isCurrentUser ? sessionUser?.bio : "") || fallback.bio || ""
@@ -224,7 +191,7 @@
 
     // 1. 닉네임 (옵션)
     if (includeNickname) {
-      const rawName = extractStringVal(profile.displayName || profile.nickname || profile.custom_nickname) || "다이버";
+      const rawName = global.SNORKYUserProfile?.getDisplayName?.(profile, profile.displayName) || "다이버";
       items.push(rawName);
     }
 
@@ -448,7 +415,7 @@
         if (!global.SNORKYFriends?.reportUser) throw new Error("신고 모듈을 불러오지 못했습니다.");
         await global.SNORKYFriends.reportUser({
           reporterId: sessionUser?.id || "",
-          reporterNickname: sessionUser?.customNickname || sessionUser?.nickname || "",
+          reporterNickname: global.SNORKYUserProfile?.getDisplayName?.(sessionUser) || "다이버",
           targetId: targetUser.userId,
           targetNickname: targetUser.displayName || "",
           reason,
@@ -697,18 +664,10 @@
     const rawId = userId !== null && userId !== undefined ? String(userId).trim() : "";
     const id = (rawId && rawId !== "null" && rawId !== "undefined" && rawId !== "[object Object]") ? rawId : "";
     if (id) {
-      if (forceRefresh || !profileCache.has(id)) {
-        if (!pendingProfileFetches.has(id)) {
-          const fetchPromise = fetchProfiles([id], forceRefresh).finally(() => {
-            pendingProfileFetches.delete(id);
-          });
-          pendingProfileFetches.set(id, fetchPromise);
-        }
-        try {
-          await pendingProfileFetches.get(id);
-        } catch (error) {
-          console.warn("[BuddyProfileCard] 프로필 조회 실패:", error?.message || error);
-        }
+      try {
+        await global.SNORKYUserProfile?.getUserProfile?.(id, { forceRefresh });
+      } catch (error) {
+        console.warn("[BuddyProfileCard] 프로필 조회 실패:", error?.message || error);
       }
     }
     const resolved = resolveProfile(id, fallback);

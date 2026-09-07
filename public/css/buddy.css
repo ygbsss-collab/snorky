@@ -764,7 +764,8 @@ html, body {
 }
 .buddy-chat-btn svg,
 .mybuddy-action-btn.buddy-chat-btn svg {
-  stroke: #191600;
+  fill: currentColor;
+  flex-shrink: 0;
 }
 
 /* ─────────────────────────────────────────────────────────────

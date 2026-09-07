@@ -142,6 +142,15 @@
             <span id="placeNoticeText">SNORKY 포인트 선택 시 참가자도 포인트 상세예보를 바로 확인할 수 있어요.</span>
           </div>
         </div>
+
+        <div class="buddy-field" style="margin-top:14px">
+          <label class="buddy-label">강사 유무</label>
+          <div class="buddy-chip-group" id="instructorGroup">
+            <button type="button" class="buddy-chip-btn active" data-val="false">강사 없음</button>
+            <button type="button" class="buddy-chip-btn" data-val="true">강사 있음</button>
+          </div>
+          <input type="hidden" id="hasInstructorInput" value="false">
+        </div>
       </section>
 
       <!-- 섹션 3: 모집 인원 및 성별 -->
@@ -226,7 +235,6 @@
           <label class="buddy-label">연락 수단 선택<span class="required">*</span></label>
           <div class="buddy-chip-group" id="contactMethodGroup">
             <button type="button" class="buddy-chip-btn active" data-val="open_chat">카카오 오픈채팅</button>
-            <button type="button" class="buddy-chip-btn" data-val="later">추후 설정</button>
           </div>
           <input type="hidden" id="contactMethodInput" value="open_chat">
         </div>
@@ -238,13 +246,6 @@
           <span class="buddy-helper">승인된 참가자에게만 대화방 링크가 안내되며, 공개 목록에는 노출되지 않습니다.</span>
         </div>
 
-        <!-- 추후 설정 안내 (추후 설정 선택 시) -->
-        <div id="laterNoticeArea" class="buddy-notice-card" style="display:none;margin-top:10px">
-          <span class="buddy-notice-icon" aria-hidden="true">
-            <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-          </span>
-          <span class="buddy-notice-text">링크 없이 등록할 수 있습니다. 참가자 승인 전까지 오픈채팅방 링크를 설정해 주세요.</span>
-        </div>
       </section>
 
       <!-- 폼 하단 등록 버튼 (고정 해제, 폼 바로 아래 자연스러운 배치) -->

@@ -1,15 +1,25 @@
 export const MARINE_HOURLY_FIELDS = [
   "wave_height",
+  "wave_direction",
   "wave_period",
+  "swell_wave_height",
+  "swell_wave_direction",
+  "swell_wave_period",
   "ocean_current_velocity",
+  "ocean_current_direction",
   "sea_surface_temperature"
 ] as const;
 
 export type MarineRow = {
   forecastAt: string;
   wave_height: number | null;
+  wave_direction: number | null;
   wave_period: number | null;
+  swell_wave_height: number | null;
+  swell_wave_direction: number | null;
+  swell_wave_period: number | null;
   ocean_current_velocity: number | null;
+  ocean_current_direction: number | null;
   sea_surface_temperature: number | null;
 };
 
@@ -55,8 +65,13 @@ export function normalizeMarine(payload: any): MarineRow[] {
     .map((forecastAt: string, index: number) => ({
       forecastAt,
       wave_height: finite(hourly.wave_height?.[index]),
+      wave_direction: finite(hourly.wave_direction?.[index]),
       wave_period: finite(hourly.wave_period?.[index]),
+      swell_wave_height: finite(hourly.swell_wave_height?.[index]),
+      swell_wave_direction: finite(hourly.swell_wave_direction?.[index]),
+      swell_wave_period: finite(hourly.swell_wave_period?.[index]),
       ocean_current_velocity: currentToMs(hourly.ocean_current_velocity?.[index]),
+      ocean_current_direction: finite(hourly.ocean_current_direction?.[index]),
       sea_surface_temperature: finite(hourly.sea_surface_temperature?.[index])
     }))
     .filter((row: MarineRow) =>

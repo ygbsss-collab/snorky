@@ -382,16 +382,14 @@
       if (!validTargetIds.length) return [];
 
       // 4) 프로필 정보 조회
-      const { data: profileRows, error: profileErr } = await sb
-        .from("user_profiles")
-        .select("provider_user_id, custom_nickname, custom_avatar_url, avatar_type, aida_level, gender, bio, age_group, activity_region, activity_depth")
-        .in("provider_user_id", validTargetIds);
-
-      if (profileErr) throw profileErr;
+      const profileRows = await Promise.all(validTargetIds.map((userId) =>
+        global.SNORKYUserProfile?.getUserProfile?.(userId, { forceRefresh: true })
+      ));
 
       const profileMap = new Map();
       (profileRows || []).forEach((p) => {
-        profileMap.set(String(p.provider_user_id), p);
+        const profileUserId = p?.providerUserId ?? p?.userId ?? p?.id;
+        if (profileUserId && p && typeof p === "object") profileMap.set(String(profileUserId), p);
       });
 
       // 5) 인증 정보 일괄 확인
@@ -404,21 +402,25 @@
 
       // 6) 프렌즈 리스트 구성 (등록 순서 유지)
       return validTargetIds.map((targetId) => {
-        const p = profileMap.get(targetId) || {};
-        const isVerified = certMap.get(targetId)?.status === "APPROVED" ||
-          (global.SNORKYCertification ? global.SNORKYCertification.checkIsVerified(p) : false);
+        const p = profileMap.get(targetId) || null;
+        const profileLoaded = Boolean(p);
+        const certificationStatus = p?.certificationStatus ?? p?.certification_status;
+        const profileVerified = ["approved", "verified", "complete", "인증완료"].includes(String(certificationStatus || "").trim().toLowerCase());
+        const isVerified = profileLoaded && (certMap.get(targetId)?.status === "APPROVED" || profileVerified ||
+          (global.SNORKYCertification ? global.SNORKYCertification.checkIsVerified(p) : false));
+        const aidaLevel = p?.aidaLevel ?? p?.aida_level ?? "";
 
         return {
           userId: targetId,
-          displayName: p.custom_nickname || `버디_${targetId.slice(-4)}`,
-          avatarUrl: p.avatar_type !== "none" ? (p.custom_avatar_url || "") : "",
-          gender: p.gender || "비공개",
-          ageGroup: p.age_group || "",
-          aidaLevel: p.aida_level || "",
-          activityRegion: p.activity_region || "",
-          activityDepth: p.activity_depth || "",
-          isVerified: Boolean(isVerified && p.aida_level),
-          bio: p.bio || ""
+          displayName: profileLoaded ? (global.SNORKYUserProfile?.getDisplayName?.(p, `버디_${targetId.slice(-4)}`) || `버디_${targetId.slice(-4)}`) : `버디_${targetId.slice(-4)}`,
+          avatarUrl: profileLoaded ? (global.SNORKYUserProfile?.getAvatarUrl?.(p) || "") : "",
+          gender: profileLoaded ? (p.gender || "비공개") : "비공개",
+          ageGroup: profileLoaded ? (p.ageGroup ?? p.age_group ?? "") : "",
+          aidaLevel,
+          activityRegion: profileLoaded ? (p.activityRegion ?? p.activity_region ?? "") : "",
+          activityDepth: profileLoaded ? (p.activityDepth ?? p.activity_depth ?? "") : "",
+          isVerified: Boolean(isVerified && aidaLevel),
+          bio: profileLoaded ? (p.bio || "") : ""
         };
       });
     } catch (err) {
@@ -428,6 +430,56 @@
   }
 
   // 6. 사용자 차단하기 (차단 등록 + 기존 프렌즈 관계 즉시 삭제)
+  async function cancelBuddyRelationshipsForBlock(sb, myUserId, targetUserId) {
+    const { data: posts, error: postsError } = await sb
+      .from("buddy_posts")
+      .select("id, user_id, capacity, current_count, status")
+      .in("user_id", [myUserId, targetUserId]);
+    if (postsError) throw postsError;
+    const postMap = new Map((posts || []).map((post) => [Number(post.id), post]));
+    const postIds = Array.from(postMap.keys()).filter(Boolean);
+    if (!postIds.length) return [];
+
+    const { data: applications, error: applicationsError } = await sb
+      .from("buddy_applications")
+      .select("id, buddy_post_id, applicant_user_id, status")
+      .in("buddy_post_id", postIds)
+      .in("applicant_user_id", [myUserId, targetUserId])
+      .in("status", ["PENDING", "APPROVED"]);
+    if (applicationsError) throw applicationsError;
+
+    const affected = (applications || []).filter((application) => {
+      const post = postMap.get(Number(application.buddy_post_id));
+      if (!post) return false;
+      const hostId = String(post.user_id);
+      const applicantId = String(application.applicant_user_id);
+      return (hostId === myUserId && applicantId === targetUserId) ||
+        (hostId === targetUserId && applicantId === myUserId);
+    });
+    if (!affected.length) return [];
+
+    const { error: cancelError } = await sb
+      .from("buddy_applications")
+      .update({ status: "CANCELED" })
+      .in("id", affected.map((application) => application.id));
+    if (cancelError) throw cancelError;
+
+    const approvedByPost = new Map();
+    affected.filter((application) => application.status === "APPROVED").forEach((application) => {
+      const postId = Number(application.buddy_post_id);
+      approvedByPost.set(postId, (approvedByPost.get(postId) || 0) + 1);
+    });
+    for (const [postId, approvedCount] of approvedByPost) {
+      const post = postMap.get(postId);
+      const currentCount = Math.max(1, (Number(post.current_count) || 1) - approvedCount);
+      const capacity = Math.max(1, Number(post.capacity) || 2);
+      const status = post.status === "CLOSED" && currentCount < capacity ? "RECRUITING" : post.status;
+      const { error: postError } = await sb.from("buddy_posts").update({ current_count: currentCount, status }).eq("id", postId);
+      if (postError) throw postError;
+    }
+    return Array.from(new Set(affected.map((application) => Number(application.buddy_post_id)).filter(Boolean)));
+  }
+
   async function blockUser(myUserId, targetUserId) {
     if (!myUserId || !targetUserId) {
       throw new Error("차단할 수 없는 사용자입니다.");
@@ -474,6 +526,8 @@
         throw blockErr;
       }
 
+      const affectedPostIds = await cancelBuddyRelationshipsForBlock(sb, normMyId, normTargetId);
+
       // 2) 기존 프렌즈 관계가 있으면 즉시 삭제
       await removeFriend(normMyId, normTargetId).catch(() => {});
 
@@ -485,6 +539,9 @@
         global.dispatchEvent(new CustomEvent("snorky:friends-changed", {
           detail: { action: "block", targetUserId: normTargetId }
         }));
+        affectedPostIds.forEach((postId) => global.dispatchEvent(new CustomEvent("snorky:buddy-changed", {
+          detail: { postId }
+        })));
       }
 
       return { ok: true };
@@ -610,16 +667,14 @@
       if (!blockedUserIds.length) return [];
 
       // 2) 프로필 정보 조회
-      const { data: profileRows, error: profileErr } = await sb
-        .from("user_profiles")
-        .select("provider_user_id, custom_nickname, custom_avatar_url, avatar_type, aida_level, gender, bio, age_group, activity_region, activity_depth")
-        .in("provider_user_id", blockedUserIds);
-
-      if (profileErr) throw profileErr;
+      const profileRows = await Promise.all(blockedUserIds.map((userId) =>
+        global.SNORKYUserProfile?.getUserProfile?.(userId, { forceRefresh: true })
+      ));
 
       const profileMap = new Map();
       (profileRows || []).forEach((p) => {
-        profileMap.set(String(p.provider_user_id), p);
+        const profileUserId = p?.providerUserId ?? p?.userId ?? p?.id;
+        if (profileUserId && p && typeof p === "object") profileMap.set(String(profileUserId), p);
       });
 
       // 3) 인증 정보 일괄 확인
@@ -632,19 +687,23 @@
 
       // 4) 차단 리스트 구성
       return blockedUserIds.map((targetId) => {
-        const p = profileMap.get(String(targetId)) || {};
-        const isVerified = certMap.get(String(targetId)) || (global.SNORKYCertification ? global.SNORKYCertification.checkIsVerified(p) : false);
+        const p = profileMap.get(String(targetId)) || null;
+        const profileLoaded = Boolean(p);
+        const certificationStatus = p?.certificationStatus ?? p?.certification_status;
+        const profileVerified = ["approved", "verified", "complete", "인증완료"].includes(String(certificationStatus || "").trim().toLowerCase());
+        const isVerified = profileLoaded && (certMap.get(String(targetId)) || profileVerified || (global.SNORKYCertification ? global.SNORKYCertification.checkIsVerified(p) : false));
+        const aidaLevel = p?.aidaLevel ?? p?.aida_level ?? "";
         return {
           userId: targetId,
-          displayName: p.custom_nickname || `버디_${String(targetId).slice(-4)}`,
-          avatarUrl: p.avatar_type !== "none" ? (p.custom_avatar_url || "") : "",
-          gender: p.gender || "비공개",
-          ageGroup: p.age_group || "",
-          aidaLevel: p.aida_level || "",
-          activityRegion: p.activity_region || "",
-          activityDepth: p.activity_depth || "",
-          isVerified: Boolean(isVerified && p.aida_level),
-          bio: p.bio || ""
+          displayName: profileLoaded ? (global.SNORKYUserProfile?.getDisplayName?.(p, `버디_${String(targetId).slice(-4)}`) || `버디_${String(targetId).slice(-4)}`) : `버디_${String(targetId).slice(-4)}`,
+          avatarUrl: profileLoaded ? (global.SNORKYUserProfile?.getAvatarUrl?.(p) || "") : "",
+          gender: profileLoaded ? (p.gender || "비공개") : "비공개",
+          ageGroup: profileLoaded ? (p.ageGroup ?? p.age_group ?? "") : "",
+          aidaLevel,
+          activityRegion: profileLoaded ? (p.activityRegion ?? p.activity_region ?? "") : "",
+          activityDepth: profileLoaded ? (p.activityDepth ?? p.activity_depth ?? "") : "",
+          isVerified: Boolean(isVerified && aidaLevel),
+          bio: profileLoaded ? (p.bio || "") : ""
         };
       });
     } catch (err) {

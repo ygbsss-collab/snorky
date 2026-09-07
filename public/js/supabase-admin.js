@@ -11,11 +11,11 @@ const values=value=>Array.isArray(value)?value:[];
 const message=(target,error,fallback)=>{const node=el(target);if(node)node.textContent=error?.message||fallback;};
 
 async function verifyAdmin(user){
-  if(!user){authorized=false;setAdminMode(false);return false}
+  if(!user){authorized=false;if(typeof setAdminMode==="function")setAdminMode(false);return false}
   const result=await sb().from("admin_users").select("user_id").eq("user_id",user.id).maybeSingle();
   if(result.error)throw result.error;
   authorized=Boolean(result.data);
-  setAdminMode(authorized);
+  if(typeof setAdminMode==="function")setAdminMode(authorized);else window.dispatchEvent(new CustomEvent("snorky:admin-state",{detail:{authorized}}));
   return authorized;
 }
 
@@ -39,18 +39,18 @@ async function login(){
       await sb().auth.signOut();
       throw new Error("admin_users 관리자 권한이 없습니다.");
     }
-    closeAdminLogin();
+    if(typeof closeAdminLogin==="function")closeAdminLogin();
   }catch(error){console.error("[SNORKY Admin] 로그인 실패",error);errorNode.textContent=error.message||"로그인하지 못했습니다."}
 }
 
 async function logout(){
   try{await sb().auth.signOut()}catch(error){console.error("[SNORKY Admin] 로그아웃 실패",error)}
-  authorized=false;cancelCoordinateEdit();closePointEditModal();setAdminMode(false);
+  authorized=false;if(typeof cancelCoordinateEdit==="function")cancelCoordinateEdit();if(typeof closePointEditModal==="function")closePointEditModal();if(typeof setAdminMode==="function")setAdminMode(false);
 }
 
 async function restoreSession(){
   try{const result=await sb().auth.getSession();if(result.error)throw result.error;await verifyAdmin(result.data.session?.user||null)}
-  catch(error){authorized=false;setAdminMode(false);console.warn("[SNORKY Admin] 세션 확인 실패",error)}
+  catch(error){authorized=false;if(typeof setAdminMode==="function")setAdminMode(false);console.warn("[SNORKY Admin] 세션 확인 실패",error)}
 }
 
 async function reload(preferredPointId,preferredRegionId){
@@ -511,6 +511,20 @@ async function moderateUserReportAdmin(reportId, status, actionType, actionReaso
   return result.data;
 }
 
+async function loadUsersAdmin(search = "") {
+  await requireAdmin();
+  const result = await sb().rpc("get_admin_users", { p_search: search || null });
+  if (result.error) throw result.error;
+  return result.data || [];
+}
+
+async function moderateUserAdmin(userId, actionType, actionReason) {
+  await requireAdmin();
+  const result = await sb().rpc("moderate_user_direct", { p_user_id: userId, p_action_type: actionType, p_action_reason: actionReason || null });
+  if (result.error) throw result.error;
+  return result.data;
+}
+
 window.SNORKYAdmin = {
   login,
   logout,
@@ -533,7 +547,9 @@ window.SNORKYAdmin = {
   loadCertificationRequestsAdmin,
   reviewCertificationRequestAdmin,
   loadUserReportsAdmin,
-  moderateUserReportAdmin
+  moderateUserReportAdmin,
+  loadUsersAdmin,
+  moderateUserAdmin
 };
 addAdminRegion=function(){return addRegion()};renameAdminRegion=function(id){return renameRegion(id)};deleteAdminRegion=function(id){return deleteRegion(id)};
 saveNewPoint=function(){return saveNew()};savePointDetailOverride=function(){return saveDetail()};persistPointCoordinate=function(regionName,point){return persistCoordinates(regionName,point)};
@@ -541,6 +557,6 @@ saveCoordinateEdit=function(){return savePin()};
 deleteManagedPoint=function(point){return deletePoint(point)};refreshPointPhotos=function(point){return renderPhotos(point)};
 bindSecretEntry();
 window.addEventListener("load",bindSecretEntry,{once:true});
-function initializeAuth(){sb().auth.onAuthStateChange(event=>{if(event==="SIGNED_OUT"){authorized=false;setAdminMode(false)}});restoreSession()}
+function initializeAuth(){sb().auth.onAuthStateChange(event=>{if(event==="SIGNED_OUT"){authorized=false;if(typeof setAdminMode==="function")setAdminMode(false)}});restoreSession()}
 if(window.supabase?.createClient)initializeAuth();else window.addEventListener("snorky:supabase-ready",initializeAuth,{once:true});
 })();

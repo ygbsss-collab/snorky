@@ -3,6 +3,7 @@
 
   const KAKAO_JAVASCRIPT_KEY = "c29f1a71a53af406429520da0df21772";
   const STATE_STORAGE_KEY = "snorky_kakao_oauth_state";
+  const PROFILE_ENSURE_PENDING_KEY = "snorky_profile_ensure_pending_v1";
   const button = document.getElementById("kakaoLoginButton");
   const errorMessage = document.getElementById("loginError");
 
@@ -80,45 +81,11 @@
     };
   }
 
-  async function ensureKakaoUserProfile(session) {
-    let sb = typeof global.getSnorkySupabase === "function" ? global.getSnorkySupabase() : null;
-    for (let attempt = 0; !sb && attempt < 40; attempt += 1) {
-      await new Promise((resolve) => global.setTimeout(resolve, 50));
-      sb = typeof global.getSnorkySupabase === "function" ? global.getSnorkySupabase() : null;
-    }
-    if (!sb || !session?.user?.id) throw new Error("Supabase 프로필 저장소를 초기화하지 못했습니다.");
-    const provider = "kakao";
-    const providerUserId = String(session.user.id);
-    const loginNickname = String(session.user.nickname || "").trim() || null;
-    const loginAvatarUrl = String(session.user.profileImageUrl || "").trim() || null;
-    const { data: existing, error: selectError } = await sb.from("user_profiles")
-      .select("custom_nickname, custom_avatar_url, avatar_type")
-      .eq("provider", provider).eq("provider_user_id", providerUserId).maybeSingle();
-    if (selectError) throw selectError;
-    if (!existing) {
-      const { error } = await sb.from("user_profiles").upsert({
-        provider,
-        provider_user_id: providerUserId,
-        custom_nickname: loginNickname,
-        custom_avatar_url: loginAvatarUrl,
-        avatar_type: "default",
-        updated_at: new Date().toISOString()
-      }, { onConflict: "provider,provider_user_id" });
-      if (error) throw error;
-      return;
-    }
-    const updates = {};
-    if (!String(existing.custom_nickname || "").trim() && loginNickname) updates.custom_nickname = loginNickname;
-    if (existing.avatar_type !== "none" && !String(existing.custom_avatar_url || "").trim() && loginAvatarUrl) {
-      updates.custom_avatar_url = loginAvatarUrl;
-      if (!existing.avatar_type) updates.avatar_type = "default";
-    }
-    if (Object.keys(updates).length) {
-      updates.updated_at = new Date().toISOString();
-      const { error } = await sb.from("user_profiles").update(updates)
-        .eq("provider", provider).eq("provider_user_id", providerUserId);
-      if (error) throw error;
-    }
+  function queueProfileEnsure(session) {
+    try { localStorage.setItem(PROFILE_ENSURE_PENDING_KEY, "1"); } catch (_) {}
+    Promise.resolve().then(() => global.SNORKYUserProfile?.ensureUserProfile?.(session)).catch((error) => {
+      console.warn("[SNORKY Auth] deferred profile ensure failed:", error?.message || error);
+    });
   }
 
   async function handleCallback() {
@@ -149,7 +116,7 @@
       const authResult = await exchangeCode(code, getRedirectUri());
       const session = global.SNORKYAuthSession.create("kakao", authResult.user);
       global.SNORKYAuthSession.save(session);
-      await ensureKakaoUserProfile(session);
+      queueProfileEnsure(session);
       cleanCallbackUrl();
       global.location.replace(new URL("./index.html?fromLogin=1", global.location.href));
     } catch (_) {
@@ -166,7 +133,7 @@
       initializeKakao();
       const state = createState();
       sessionStorage.setItem(STATE_STORAGE_KEY, state);
-      global.Kakao.Auth.authorize({ redirectUri: getRedirectUri(), state });
+      global.Kakao.Auth.authorize({ redirectUri: getRedirectUri(), state, throughTalk: false });
     } catch (_) {
       showError("카카오 로그인을 시작하지 못했습니다. 잠시 후 다시 시도해 주세요.");
     }
@@ -185,7 +152,7 @@
       const state = "delete_" + createState();
       sessionStorage.setItem(STATE_STORAGE_KEY + "_reauth", state);
       const targetUri = customRedirectUri || getRedirectUri();
-      global.Kakao.Auth.authorize({ redirectUri: targetUri, state });
+      global.Kakao.Auth.authorize({ redirectUri: targetUri, state, throughTalk: false });
     },
   };
 

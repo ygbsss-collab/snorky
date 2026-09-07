@@ -194,6 +194,27 @@ async function queryKmaWeatherDbCache(client: SupabaseClient, gridKey: string) {
   }
 }
 
+function getKmaHourlyKstDate(hourly: any): string | null {
+  const raw = String(hourly?.datetime || "").trim().replace(" ", "T");
+  if (!raw) return null;
+
+  if (/(?:Z|[+-]\d{2}:?\d{2})$/i.test(raw)) {
+    const parsed = new Date(raw);
+    return Number.isNaN(parsed.getTime()) ? null : getKstDateString(parsed);
+  }
+
+  const dateMatch = raw.match(/^(\d{4}-\d{2}-\d{2})/);
+  return dateMatch ? dateMatch[1] : null;
+}
+
+function hasCurrentKmaHourly(cache: any, todayKst: string): boolean {
+  const hourly = cache?.forecast_data?.hourly;
+  return Array.isArray(hourly) && hourly.some((item) => {
+    const forecastDate = getKmaHourlyKstDate(item);
+    return forecastDate !== null && forecastDate >= todayKst;
+  });
+}
+
 /**
  * Cache Loader: Loads fresh caches from Supabase for a given point.
  * If Cache MISS, performs on-demand single fetch bootstrap.
@@ -247,7 +268,7 @@ export async function loadPointCaches(client: SupabaseClient, point: SnorkyPoint
   ]);
 
   let marineCache = marineRes;
-  let kmaWeatherCache = kmaWeatherRes;
+  let kmaWeatherCache = hasCurrentKmaHourly(kmaWeatherRes, todayKst) ? kmaWeatherRes : null;
   let rn1History = rn1Res || [];
   let midWeather = midWeatherRes;
   const cacheStatus = point.is_custom_point ? {
@@ -282,7 +303,10 @@ export async function loadPointCaches(client: SupabaseClient, point: SnorkyPoint
         await fetch(`${supabaseUrl}/functions/v1/kma-weather-cache?nx=${nx}&ny=${ny}`, {
           headers: { apikey: serviceKey, Authorization: `Bearer ${serviceKey}` }
         });
-        kmaWeatherCache = await queryKmaWeatherDbCache(client, gridKey);
+        const refreshedKmaWeather = await queryKmaWeatherDbCache(client, gridKey);
+        kmaWeatherCache = hasCurrentKmaHourly(refreshedKmaWeather, todayKst)
+          ? refreshedKmaWeather
+          : null;
       } catch (_) {}
     }));
   }

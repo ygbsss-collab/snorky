@@ -6,9 +6,19 @@ import { resolveWarningCodes, getOrFetchRegions, type RegionRecord } from "../_s
 
 const cors = {
   "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-snorky-refresh-secret, x-snorky-user-id",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-scheduler-token, x-snorky-refresh-secret, x-snorky-user-id",
   "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
 };
+
+const DEFAULT_BATCH_SIZE = 8;
+const MAX_BATCH_SIZE = 12;
+const DEFAULT_RESULT_FRESH_MINUTES = 30;
+const REQUIRED_MODE_COUNTS = {
+  TODAY: 1,
+  TODAY_HOURLY: 7,
+  SHORT: 21,
+  MID: 6,
+} as const;
 
 const json = (data: unknown, status = 200) =>
   new Response(JSON.stringify(data), {
@@ -28,13 +38,27 @@ function getClient(): SupabaseClient {
 
 function isAuthorized(request: Request): boolean {
   const envGetter = (globalThis as any).Deno?.env?.get ? (globalThis as any).Deno.env.get.bind((globalThis as any).Deno.env) : (k: string) => process.env[k];
-  const secret = envGetter("SNORKY_REFRESH_SECRET") || envGetter("KMA_AUTOMATION_SCHEDULER_TOKEN");
-  if (!secret) return true; // Local development mode
+  const secret = envGetter("KMA_REFRESH_SECRET");
+  if (!secret) return false;
   const header =
     request.headers.get("x-scheduler-token") ||
     request.headers.get("x-snorky-refresh-secret") ||
     request.headers.get("authorization");
   return header === secret || header === `Bearer ${secret}`;
+}
+
+function isAnonAuthorized(request: Request): boolean {
+  const envGetter = (globalThis as any).Deno?.env?.get ? (globalThis as any).Deno.env.get.bind((globalThis as any).Deno.env) : (k: string) => process.env[k];
+  const anonKey = String(envGetter("SUPABASE_ANON_KEY") || "");
+  const apiKey = String(request.headers.get("apikey") || "");
+  const authorization = String(request.headers.get("authorization") || "").replace(/^Bearer\s+/i, "");
+  if (anonKey && (apiKey === anonKey || authorization === anonKey)) return true;
+  return apiKey.startsWith("sb_publishable_") && authorization === apiKey;
+}
+
+function parsePointId(value: unknown): number | null {
+  const pointId = Number(value);
+  return Number.isSafeInteger(pointId) && pointId > 0 && pointId <= 2_147_483_647 ? pointId : null;
 }
 
 function isCustomUserRequest(request: Request, body: any): boolean {
@@ -144,6 +168,201 @@ async function evaluateCustomPoint(client: SupabaseClient, body: any): Promise<R
   return task;
 }
 
+type EvaluationMode = keyof typeof REQUIRED_MODE_COUNTS;
+
+interface FreshEvaluationLookup {
+  fresh: boolean;
+  status: "HIT" | "MISS" | "STALE";
+  rows: Array<Record<string, any>>;
+  counts: Record<EvaluationMode, number>;
+  evaluatedAt: string | null;
+}
+
+function getKstDateString(date = new Date()): string {
+  return new Intl.DateTimeFormat("en-CA", {
+    timeZone: "Asia/Seoul",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).format(date);
+}
+
+function addUtcDays(dateString: string, days: number): string {
+  const date = new Date(`${dateString}T00:00:00Z`);
+  date.setUTCDate(date.getUTCDate() + days);
+  return date.toISOString().slice(0, 10);
+}
+
+function getResultFreshMinutes(): number {
+  const envGetter = (globalThis as any).Deno?.env?.get ? (globalThis as any).Deno.env.get.bind((globalThis as any).Deno.env) : (k: string) => process.env[k];
+  const configured = Number(envGetter("POINT_EVALUATION_FRESH_MINUTES"));
+  return Number.isFinite(configured) && configured > 0 ? configured : DEFAULT_RESULT_FRESH_MINUTES;
+}
+
+const REQUIRED_MARINE_METRIC_KEYS = [
+  "wave_height",
+  "sea_temperature",
+] as const;
+
+const REQUIRED_WIND_METRIC_KEYS = [
+  "wind_speed",
+  "wind_direction_degree",
+] as const;
+
+function hasFiniteMetrics(
+  metrics: Record<string, any>,
+  keys: readonly string[]
+): boolean {
+  return keys.every((key) => Number.isFinite(metrics[key]));
+}
+
+function hasMetricKeys(
+  metrics: Record<string, any>,
+  keys: readonly string[]
+): boolean {
+  return keys.every((key) => Object.prototype.hasOwnProperty.call(metrics, key));
+}
+
+function hasCurrentMetrics(row: Record<string, any>, todayKst: string): boolean {
+  if (row.mode === "MID") return true;
+  const metrics = row.metrics;
+  if (!metrics || typeof metrics !== "object") return false;
+
+  const mode = String(row.mode);
+  if (mode === "TODAY" || mode === "TODAY_HOURLY") {
+    return hasMetricKeys(metrics, [
+      ...REQUIRED_MARINE_METRIC_KEYS,
+      ...REQUIRED_WIND_METRIC_KEYS,
+    ]);
+  }
+  if (!hasFiniteMetrics(metrics, REQUIRED_MARINE_METRIC_KEYS)) return false;
+  if (mode === "SHORT") {
+    const targetDate = String(row.target_date || "").slice(0, 10);
+    if (targetDate === addUtcDays(todayKst, 3)) return true;
+    return targetDate >= addUtcDays(todayKst, 1)
+      && targetDate <= addUtcDays(todayKst, 2)
+      && hasFiniteMetrics(metrics, REQUIRED_WIND_METRIC_KEYS);
+  }
+  return false;
+}
+
+function isInCurrentModeHorizon(row: Record<string, any>, todayKst: string): boolean {
+  const mode = String(row.mode);
+  const targetDate = String(row.target_date || "").slice(0, 10);
+  if (mode === "TODAY" || mode === "TODAY_HOURLY") return targetDate === todayKst;
+  if (mode === "SHORT") {
+    return targetDate >= addUtcDays(todayKst, 1) && targetDate <= addUtcDays(todayKst, 3);
+  }
+  if (mode === "MID") {
+    return targetDate >= addUtcDays(todayKst, 4) && targetDate <= addUtcDays(todayKst, 6);
+  }
+  return false;
+}
+
+async function findFreshEvaluationResults(
+  client: SupabaseClient,
+  pointId: number | string,
+  now = new Date()
+): Promise<FreshEvaluationLookup> {
+  const todayKst = getKstDateString(now);
+  const horizonEnd = addUtcDays(todayKst, 6);
+  const cutoffMs = now.getTime() - getResultFreshMinutes() * 60_000;
+  const { data, error } = await client
+    .from("point_evaluation_results")
+    .select("*")
+    .eq("point_id", Number(pointId))
+    .in("mode", Object.keys(REQUIRED_MODE_COUNTS))
+    .gte("target_date", todayKst)
+    .lte("target_date", horizonEnd)
+    .order("target_date", { ascending: true })
+    .order("period_start", { ascending: true });
+
+  if (error) throw error;
+  const rows = (data || []) as Array<Record<string, any>>;
+  const freshRows = rows.filter((row) => {
+    const evaluatedMs = new Date(String(row.evaluated_at || "")).getTime();
+    return Number.isFinite(evaluatedMs)
+      && evaluatedMs >= cutoffMs
+      && isInCurrentModeHorizon(row, todayKst)
+      && hasCurrentMetrics(row, todayKst);
+  });
+  const counts = { TODAY: 0, TODAY_HOURLY: 0, SHORT: 0, MID: 0 } as Record<EvaluationMode, number>;
+  freshRows.forEach((row) => {
+    const mode = String(row.mode) as EvaluationMode;
+    if (mode in counts) counts[mode] += 1;
+  });
+  const fresh = (Object.entries(REQUIRED_MODE_COUNTS) as Array<[EvaluationMode, number]>)
+    .every(([mode, requiredCount]) => counts[mode] === requiredCount);
+  const evaluatedAt = freshRows.reduce<string | null>((latest, row) => {
+    const value = String(row.evaluated_at || "");
+    return value && (!latest || value > latest) ? value : latest;
+  }, null);
+
+  return {
+    fresh,
+    status: fresh ? "HIT" : (rows.length ? "STALE" : "MISS"),
+    rows: freshRows,
+    counts,
+    evaluatedAt,
+  };
+}
+
+const pointEvaluationInFlight = new Map<string, Promise<Record<string, unknown>>>();
+
+async function evaluatePointOnDemand(
+  client: SupabaseClient,
+  pointId: number
+): Promise<Record<string, unknown>> {
+  const key = String(pointId);
+  const running = pointEvaluationInFlight.get(key);
+  if (running) return running;
+
+  const task = (async () => {
+    const cached = await findFreshEvaluationResults(client, pointId);
+    if (cached.fresh) {
+      return {
+        ok: true,
+        point_id: pointId,
+        cache: "HIT",
+        evaluated: false,
+        evaluated_at: cached.evaluatedAt,
+        counts: cached.counts,
+        results: cached.rows,
+      };
+    }
+
+    const points = await loadActiveSnorkyPoints(client);
+    const point = points.find((candidate) => String(candidate.id) === key);
+    if (!point) throw new Error("POINT_NOT_FOUND");
+
+    const result = await evaluateAndStorePoint(client, point, undefined, {
+      modes: ["TODAY", "TODAY_HOURLY", "SHORT", "MID"],
+    });
+    if (result.error) throw new Error(result.error);
+
+    return {
+      ok: true,
+      point_id: pointId,
+      point_name: point.name,
+      cache: cached.status,
+      evaluated: true,
+      persisted: true,
+      evaluated_at: new Date().toISOString(),
+      counts: {
+        TODAY: result.today_count,
+        TODAY_HOURLY: result.today_hourly_count,
+        SHORT: result.short_count,
+        MID: result.mid_count,
+      },
+      total_upserted: result.total_upserted,
+      results: result.results,
+    };
+  })().finally(() => pointEvaluationInFlight.delete(key));
+
+  pointEvaluationInFlight.set(key, task);
+  return task;
+}
+
 export interface EvaluationRefreshReport {
   ok: boolean;
   run_id: string;
@@ -152,14 +371,19 @@ export interface EvaluationRefreshReport {
   successful_points: number;
   failed_points: number;
   total_records_upserted: number;
+  batch_offset?: number;
+  batch_size?: number;
+  has_more?: boolean;
   details: Array<{
     point_id: string | number;
     point_name: string;
     today_count: number;
+    today_hourly_count?: number;
     short_count: number;
     mid_count: number;
     total_upserted: number;
     status: "SUCCESS" | "ERROR";
+    cache_status?: "HIT" | "MISS" | "STALE";
     error?: string | null;
   }>;
 }
@@ -174,6 +398,8 @@ export async function runPointEvaluationBatch(
     dryRun?: boolean;
     evaluatedAt?: string;
     modes?: Array<"TODAY" | "TODAY_HOURLY" | "SHORT" | "MID">;
+    batchOffset?: number;
+    batchSize?: number;
   } = {}
 ): Promise<EvaluationRefreshReport> {
   const runId = crypto.randomUUID();
@@ -181,9 +407,16 @@ export async function runPointEvaluationBatch(
 
   // 1. Load active points with environments and warning area codes
   const allPoints = await loadActiveSnorkyPoints(client);
-  const targetPoints = options.pointIds?.length
+  const matchingPoints = options.pointIds?.length
     ? allPoints.filter(p => options.pointIds!.map(String).includes(String(p.id)))
     : allPoints;
+  const batchOffset = Math.max(0, Math.floor(Number(options.batchOffset) || 0));
+  const batchSize = options.batchSize && Number(options.batchSize) > 0
+    ? Math.min(MAX_BATCH_SIZE, Math.floor(Number(options.batchSize)))
+    : undefined;
+  const targetPoints = batchSize
+    ? matchingPoints.slice(batchOffset, batchOffset + batchSize)
+    : matchingPoints;
 
   const details: EvaluationRefreshReport["details"] = [];
   let successfulPoints = 0;
@@ -193,6 +426,26 @@ export async function runPointEvaluationBatch(
   // 2. Evaluate each point with fault isolation
   for (const point of targetPoints) {
     try {
+      if (!options.dryRun) {
+        const cached = await findFreshEvaluationResults(client, point.id);
+        if (cached.fresh) {
+          successfulPoints++;
+          details.push({
+            point_id: point.id,
+            point_name: point.name,
+            today_count: cached.counts.TODAY,
+            today_hourly_count: cached.counts.TODAY_HOURLY,
+            short_count: cached.counts.SHORT,
+            mid_count: cached.counts.MID,
+            total_upserted: 0,
+            status: "SUCCESS",
+            cache_status: "HIT",
+            error: null,
+          });
+          continue;
+        }
+      }
+
       const result: OrchestrationResult = await evaluateAndStorePoint(
         client,
         point,
@@ -210,10 +463,12 @@ export async function runPointEvaluationBatch(
           point_id: point.id,
           point_name: point.name,
           today_count: result.today_count,
+          today_hourly_count: result.today_hourly_count,
           short_count: result.short_count,
           mid_count: result.mid_count,
           total_upserted: 0,
           status: "ERROR",
+          cache_status: "MISS",
           error: result.error,
         });
       } else {
@@ -223,10 +478,12 @@ export async function runPointEvaluationBatch(
           point_id: point.id,
           point_name: point.name,
           today_count: result.today_count,
+          today_hourly_count: result.today_hourly_count,
           short_count: result.short_count,
           mid_count: result.mid_count,
           total_upserted: result.total_upserted,
           status: "SUCCESS",
+          cache_status: "MISS",
           error: null,
         });
       }
@@ -237,10 +494,12 @@ export async function runPointEvaluationBatch(
         point_id: point.id,
         point_name: point.name,
         today_count: 0,
+        today_hourly_count: 0,
         short_count: 0,
         mid_count: 0,
         total_upserted: 0,
         status: "ERROR",
+        cache_status: "MISS",
         error: String(pointError?.message || pointError),
       });
     }
@@ -254,6 +513,9 @@ export async function runPointEvaluationBatch(
     successful_points: successfulPoints,
     failed_points: failedPoints,
     total_records_upserted: totalRecordsUpserted,
+    batch_offset: batchOffset,
+    batch_size: targetPoints.length,
+    has_more: batchOffset + targetPoints.length < matchingPoints.length,
     details,
   };
 }
@@ -280,9 +542,10 @@ if (typeof (globalThis as any).Deno !== "undefined" && (globalThis as any).Deno?
       }
 
       const customRequest = Boolean(body?.custom_point);
-      if (!isAuthorized(request) && !isCustomUserRequest(request, body)) {
-        return json({ ok: false, error: "UNAUTHORIZED" }, 401);
-      }
+      const schedulerAuthorized = isAuthorized(request);
+      const requestUrl = new URL(request.url);
+      const rawPointId = body?.point_id ?? requestUrl.searchParams.get("point_id");
+      const hasSinglePointRequest = rawPointId !== undefined && rawPointId !== null && String(rawPointId).trim() !== "";
 
       if (customRequest) {
         if (!isCustomUserRequest(request, body)) {
@@ -300,11 +563,49 @@ if (typeof (globalThis as any).Deno !== "undefined" && (globalThis as any).Deno?
         }
       }
 
+      if (hasSinglePointRequest) {
+        const pointId = parsePointId(rawPointId);
+        if (!pointId) return json({ ok: false, error: "INVALID_POINT_ID" }, 400);
+        if (!schedulerAuthorized && !isAnonAuthorized(request)) {
+          return json({ ok: false, error: "UNAUTHORIZED" }, 401);
+        }
+        try {
+          return json(await evaluatePointOnDemand(client, pointId), 200);
+        } catch (pointError: any) {
+          const message = String(pointError?.message || pointError);
+          return json({
+            ok: false,
+            point_id: pointId,
+            error: message === "POINT_NOT_FOUND" ? "POINT_NOT_FOUND" : "POINT_EVALUATION_FAILED",
+            message,
+          }, message === "POINT_NOT_FOUND" ? 404 : 500);
+        }
+      }
+
+      if (!schedulerAuthorized) {
+        return json({ ok: false, error: "UNAUTHORIZED" }, 401);
+      }
+
+      const requestedBatchSize = Number(body?.batch_size);
+      const batchSize = Number.isFinite(requestedBatchSize) && requestedBatchSize > 0
+        ? Math.min(MAX_BATCH_SIZE, Math.floor(requestedBatchSize))
+        : DEFAULT_BATCH_SIZE;
+      const requestedBatchIndex = Number(body?.batch_index);
+      const batchIndex = Number.isFinite(requestedBatchIndex) && requestedBatchIndex >= 0
+        ? Math.floor(requestedBatchIndex)
+        : 0;
+      const requestedBatchOffset = Number(body?.batch_offset);
+      const batchOffset = Number.isFinite(requestedBatchOffset) && requestedBatchOffset >= 0
+        ? Math.floor(requestedBatchOffset)
+        : batchIndex * batchSize;
+
       const report = await runPointEvaluationBatch(client, {
         pointIds: body?.point_ids,
         dryRun: Boolean(body?.dry_run),
         evaluatedAt: body?.evaluated_at,
         modes: body?.modes,
+        batchOffset,
+        batchSize,
       });
 
       return json(report, 200);

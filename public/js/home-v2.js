@@ -1327,7 +1327,7 @@ async function showPointPreviewCard(point){
   let resultRow=null;
   if(resultReader?.loadTodayHourly&&resultReader?.selectCurrentTodayHourlySlot){
     try{
-      const hourlyRows=await resultReader.loadTodayHourly(pointId);
+      const hourlyRows=await resultReader.loadTodayHourly(pointId, false, { allowOnDemand: false });
       resultRow=resultReader.selectCurrentTodayHourlySlot(hourlyRows);
     }catch(error){
       console.warn(`[SNORKY Map Preview] TODAY_HOURLY 조회 실패: ${pointId}`,error);

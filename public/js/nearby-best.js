@@ -2,13 +2,10 @@
 "use strict";
 
 const ALLOWED_RADII=[30,50,100,200,300];
-const MIN_RECOMMENDATION_SCORE=50;
 const MAX_RESULTS=3;
 const POINT_PAGE_SIZE=1000;
 const ENVIRONMENT_BATCH_SIZE=100;
 const EVALUATION_CACHE_TTL=20*60*1000;
-const evaluationCache=new Map();
-let detailedFailureLogs=0;
 const state={running:false,radius:300,coordinates:null};
 
 function escapeHtml(value){return String(value??"").replace(/[&<>"]/g,char=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"})[char])}
@@ -22,7 +19,6 @@ function validCoordinate(value){return value!==null&&value!==undefined&&value!==
 function validPointCoordinates(point){return validCoordinate(point.lat)&&validCoordinate(point.lng)&&Number(point.lat)>=-90&&Number(point.lat)<=90&&Number(point.lng)>=-180&&Number(point.lng)<=180}
 // When an active column is introduced, include it in POINT_LOCATION_COLUMNS and this predicate will exclude active=false rows.
 function isRecommendationActive(point){return point.active!==false}
-function scoreLabel(score){const value=Number(score);if(!Number.isFinite(value))return"보통";if(value>=80)return"매우좋음";if(value>=65)return"좋음";if(value>=50)return"보통";if(value>=35)return"나쁨";return"매우나쁨"}
 function activePoint(point){const points=Array.isArray(window.SNORKY_ACTIVE_POINTS)?window.SNORKY_ACTIVE_POINTS:[];return points.find(item=>String(item.supabaseId??item.id)===String(point.id))||point}
 function pointImage(point){const images=Array.isArray(activePoint(point)?.images)?activePoint(point).images:[],primary=images.find(image=>image.isPrimary||image.is_primary)||images[0];return primary?.url||primary?.publicUrl||primary?.public_url||""}
 function passesOfficialMarineAdvisoryGate(point){return (point.v12?.safety==="PASS")||(window.SNORKYMarineSafety?.statusForPoint(point).status==="PASS")}
@@ -43,8 +39,6 @@ function selectRecommendablePoints(points,limit=10){
     })
     .slice(0,limit);
 }
-function valueAt(values,index){const value=values?.[index];return validCoordinate(value)?Number(value):null}
-
 function createDialog(){
   const overlay=document.createElement("div");
   overlay.id="nearbyBestOverlay";
@@ -142,70 +136,10 @@ async function fetchCandidateEnvironments(sb,candidates){
 }
 
 function createDiagnostics(){return{weatherRequests:0,marineRequests:0,weatherHttpErrors:0,marineHttpErrors:0,timeouts:0,status429:0,status403:0,status5xx:0}}
-function stageError(stage,error,details={}){const wrapped=new Error(error?.message||String(error));wrapped.stage=stage;wrapped.cause=error;Object.assign(wrapped,details,error?.requestDetails?{requestDetails:error.requestDetails}:{});return wrapped}
-async function fetchMarine(point,diagnostics){const cached=await window.SNORKYOpenMeteoMarineCache?.fetch(point.supabaseId??point.id,point.name,point.lat,point.lng);diagnostics.marineRequests+=1;if(cached)return cached;console.warn("[SNORKY NEARBY BEST] Marine 캐시 없음",point.name);return null}
-
-function buildCurrentRow(marine,kmaCache){
-  const marineTimes=marine?.hourly?.time||[],marineIndex=new Map(marineTimes.map((time,index)=>[time,index]));
-  const kmaTimes=window.SNORKYKmaWeatherCache?.hourlyTimestamps(kmaCache)||[];
-  const allTimes=[...new Set([...marineTimes,...kmaTimes])].sort();
-  const now=Date.now(),available=allTimes.map(time=>({time,mIndex:marineIndex.get(time)})).filter(item=>item.mIndex!==undefined&&new Date(`${item.time}:00+09:00`).getTime()<=now);
-  const selected=available.at(-1);if(!selected)throw new Error("현재 시간대의 해양 예보가 없습니다.");
-  const mi=selected.mIndex;
-  const kma=window.SNORKYKmaWeatherCache?.nearestHourly(kmaCache,selected.time);
-  const merged=window.SNORKYKmaWeatherCache?.mergeWeatherData(kma,{});
-  const row={
-    date:selected.time.slice(0,10),hour:Number(selected.time.slice(11,13)),timestamp:selected.time,
-    temperature:merged?.temperature??null,wind_speed:merged?.windSpeed??null,wind_direction_degree:merged?.windDirectionDegree??null,
-    wave_height:valueAt(marine.hourly.wave_height,mi),wave_period:valueAt(marine.hourly.wave_period,mi),current_speed:valueAt(marine.hourly.ocean_current_velocity,mi),sea_temperature:valueAt(marine.hourly.sea_surface_temperature,mi),
-    precipitation:merged?.precipitation??null,precipitation_probability:merged?.precipitationProbability??null,cloud_cover:null,pressure:null,precipitation_24h:null,isMockData:false,
-    weather_source:kma?"kma_cache":"unavailable"
-  };
-  row.wind_direction=typeof window.degreeToKoreanWindDirection==="function"?window.degreeToKoreanWindDirection(row.wind_direction_degree):(typeof degreeToKoreanWindDirection==="function"?degreeToKoreanWindDirection(row.wind_direction_degree):"--");
-  const visibility=typeof window.estimateUnderwaterVisibility==="function"?window.estimateUnderwaterVisibility(row):(typeof estimateUnderwaterVisibility==="function"?estimateUnderwaterVisibility(row):{score:70,label:"보통",range:"3~5m"});
-  row.underwater_visibility_score=visibility.score;row.underwater_visibility_label=visibility.label;row.underwater_visibility_range=visibility.range;
-  return row;
-}
-async function scoreCandidate(point,diagnostics){
-  const cacheKey=String(point.id??point.supabaseId),cached=evaluationCache.get(cacheKey);
-  if(cached&&Date.now()-cached.cachedAt<EVALUATION_CACHE_TTL)return{...point,...cached.result,fromCache:true};
-  const kmaRequest=window.SNORKYKmaWeatherCache?.fetch(point.lat,point.lng)??Promise.resolve(null),[marineResult,kmaResult]=await Promise.allSettled([fetchMarine(point,diagnostics),kmaRequest]);
-  if(marineResult.status==="rejected")throw stageError("marine",marineResult.reason);
-  const marine=marineResult.value;
-  if(!marine)throw stageError("marine",new Error("해양 데이터를 불러오지 못했습니다."));
-  let row;
-  try{row=buildCurrentRow(marine,kmaResult.status==="fulfilled"?kmaResult.value:null)}catch(error){throw stageError("environment",error)}
-  let result;
-  try{result=typeof window.calculateEnvironmentComponentPreview==="function"?window.calculateEnvironmentComponentPreview({environment:point.environment},row):(typeof calculateEnvironmentComponentPreview==="function"?calculateEnvironmentComponentPreview({environment:point.environment},row):{score:80,hardLabel:null})}catch(error){throw stageError("score",error)}
-  if(!Number.isFinite(result?.score))throw stageError("score",new Error("Today 점수 결과가 유효하지 않습니다."));
-  // V1.2 공통 평가 엔진 추가 호출 — 기존 score/hardLabel 흐름은 그대로 유지
-  let v12=null;
-  try{
-    if(window.SNORKYEval?.evaluateWithMarineKma){
-      v12=window.SNORKYEval.evaluateWithMarineKma(row,{...point,environment:point.environment},marine);
-    }
-  }catch(v12Err){console.warn("[SNORKYEval] scoreCandidate v12 평가 실패",v12Err?.message)}
-  const scored={score:result.score,hardLabel:result.hardLabel,timestamp:row.timestamp,row,v12,_marineRef:marine};
-  evaluationCache.set(cacheKey,{cachedAt:Date.now(),result:scored});
-  return {...point,...scored,fromCache:false};
-}
-async function mapWithConcurrency(items,limit,worker){
-  const results=new Array(items.length);let next=0;
-  async function run(){while(next<items.length){const index=next++,point=items[index];try{results[index]=await worker(point)}catch(error){const stage=error?.stage||"unknown";if(detailedFailureLogs<3){detailedFailureLogs+=1;console.error("[NearbyBEST] point calculation failed",{pointId:point.id??point.supabaseId,pointName:point.name,latitude:point.lat,longitude:point.lng,stage,error:error?.message||String(error),requests:error?.requestResults||[error?.requestDetails].filter(Boolean)})}results[index]={...point,stage,error:error?.message||String(error)}}}}
-  await Promise.all(Array.from({length:Math.min(limit,items.length)},run));return results;
-}
-
-function reusableTodayScores(){
-  const snapshot=window.SNORKYTodayBest?.getSnapshot?.();
-  if(!snapshot||Date.now()-Number(snapshot.createdAt)>EVALUATION_CACHE_TTL)return new Map();
-  return new Map((snapshot.rows||[]).filter(point=>!point.error&&(Number.isFinite(point.v12?.conditionScore)||Number.isFinite(point.score))).map(point=>[String(point.id),point]));
-}
-
 async function runNearbyBest(latitude,longitude,radius){
   state.coordinates={latitude,longitude};
   state.radius=radius;
   const diagnostics=createDiagnostics();
-  detailedFailureLogs=0;
   try{
     console.info("[SNORKY NEARBY BEST] 현재 위치",{latitude,longitude});console.info("[SNORKY NEARBY BEST] 선택 반경",`${radius}km`);setLoading("내 주변 포인트를 확인 중입니다.");
     const sb=await waitForSupabase();
@@ -317,10 +251,5 @@ document.addEventListener("click",event=>{const row=event.target.closest?.("#nea
 document.addEventListener("keydown",event=>{if(event.key!=="Enter"&&event.key!==" ")return;const row=event.target.closest?.("#nearbyBestOverlay [data-supabase-point-id]");if(!row)return;event.preventDefault();openPointDetail(row)});
 function openPointDetail(row){const source=row.closest(".nearby-points-section")?"nearbyPoint":"nearbyBest",pointId=row.dataset.supabasePointId;closeDialog();if(typeof window.openPointOnMap==="function"){window.openPointOnMap(pointId,source);}else{const returnState=captureReturnState();if(!window.SNORKYPointDetail?.openBySupabaseId(pointId,source,returnState))console.warn("[SNORKY BEST] Point 상세 진입 실패",{pointId})}}
 document.addEventListener("keydown",event=>{if(event.key==="Escape"&&getDialog().classList.contains("open"))closeDialog()});
-async function evaluatePoints(points){
-  const diagnostics=createDiagnostics(),normalized=points.filter(point=>isRecommendationActive(point)&&validPointCoordinates(point)).map(point=>({id:point.supabaseId||point.id,name:point.name||point[0],region:point.region||"",warningAreaCode:point.warningAreaCode||point.warning_area_code||null,landWarningAreaCode:point.landWarningAreaCode||point.land_warning_area_code||null,lat:Number(point.lat??point[1]),lng:Number(point.lng??point[2]),environment:point.environment??null}));
-  const scored=await mapWithConcurrency(normalized,3,point=>scoreCandidate(point,diagnostics));
-  return{scored,diagnostics};
-}
-window.SNORKYNearbyBest={open:openDialog,openAndSearch,setRadius,getRadius:()=>state.radius,getCoordinates:()=>state.coordinates,requestLocation,runNearbyBest,haversineKm,captureReturnState,restoreReturnState,evaluatePoints,clearEvaluationCache:()=>evaluationCache.clear()};
+window.SNORKYNearbyBest={open:openDialog,openAndSearch,setRadius,getRadius:()=>state.radius,getCoordinates:()=>state.coordinates,requestLocation,runNearbyBest,haversineKm,captureReturnState,restoreReturnState};
 })();

@@ -407,10 +407,10 @@ export interface CustomPointWarningCodes {
  *
  * DB regions 제공 시:
  *   - region 매칭 성공 시: DB의 공식 warning_area_code, land_warning_area_code 주입
- *   - region 매칭 실패 시: null 반환 → Safety UNKNOWN 처리
+ *   - region 매칭 실패 시: 전국 fallback 맵에서 공식 코드 재확인
  *
  * DB regions 미제공 시 (fallback):
- *   - 기존 5개 하드코딩 맵 fallback 수행
+ *   - 전국 하드코딩 맵 fallback 수행
  */
 export function resolveWarningCodes(
   kakaoRegion2DepthName: string,
@@ -430,16 +430,9 @@ export function resolveWarningCodes(
         matchedRegionId: matched.id,
       };
     }
-    // DB regions가 전달되었으나 매칭 실패한 경우 → null 반환 (UNKNOWN)
-    return {
-      seaCode: null,
-      landCode: null,
-      normalizedRegion,
-      midCodes: null,
-    };
   }
 
-  // DB regions 미제공 시 Fallback (기존 5개 하드코딩 맵)
+  // DB regions 미제공 또는 매칭 실패 시 전국 공식 코드 Fallback
   return {
     seaCode: getSeaWarningCode(normalizedRegion),
     landCode: getLandWarningCode(normalizedRegion),

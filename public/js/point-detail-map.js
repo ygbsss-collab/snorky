@@ -49,11 +49,22 @@
     "swell_wave_direction",
     "swell_wave_period",
     "ocean_current_velocity",
-    "ocean_current_direction"
+    "ocean_current_direction",
+    "sea_surface_temperature"
   ];
 
   let activeMarineData = null;
   const detailMarineCache = new Map();
+
+  async function invokeMarineCache(pointId, latitude, longitude) {
+    const body = { latitude, longitude };
+    const numericPointId = Number(pointId);
+    if (Number.isInteger(numericPointId) && numericPointId > 0) body.pointId = numericPointId;
+    const { data, error } = await window.getSnorkySupabase().functions.invoke("open-meteo-marine-cache", { body });
+    if (error) throw error;
+    if (data?.status !== "READY" || !data?.hourly || !Array.isArray(data.hourly.time)) return null;
+    return data;
+  }
 
   async function fetchDetailMapMarineData(point) {
     if (!point) return null;
@@ -70,32 +81,17 @@
       return cached.data;
     }
 
-    const url = `https://marine-api.open-meteo.com/v1/marine?latitude=${lat}&longitude=${lng}&hourly=${DETAIL_MAP_MARINE_FIELDS.join(",")}&velocity_unit=ms&timezone=Asia/Seoul&past_days=0&forecast_days=7`;
-
     try {
-      const res = await fetch(url);
-      if (!res.ok) {
-        console.warn("[SNORKY Detail Map] Marine data fetch failed HTTP", res.status);
-        return null;
-      }
-      const data = await res.json();
-      if (!data?.hourly || !Array.isArray(data.hourly.time)) return null;
+      const data = await invokeMarineCache(pt.supabaseId || pt.id, lat, lng);
+      if (!data) return null;
 
       const hourly = data.hourly;
-      const unit = String(data.hourly_units?.ocean_current_velocity || "km/h").toLowerCase();
-      const currentToMs = (val) => {
-        if (val === null || val === undefined || !Number.isFinite(Number(val))) return null;
-        const num = Number(val);
-        if (unit.includes("km")) return num / 3.6;
-        if (unit.includes("kn")) return num * 0.514444;
-        return num;
-      };
 
       const normalized = {
         pointId: pt.supabaseId || pt.id,
         latitude: lat,
         longitude: lng,
-        fetchedAt: new Date().toISOString(),
+        fetchedAt: data.fetchedAt || new Date().toISOString(),
         hourly: {
           time: hourly.time || [],
           wave_height: hourly.wave_height || [],
@@ -104,8 +100,9 @@
           swell_wave_height: hourly.swell_wave_height || [],
           swell_wave_direction: hourly.swell_wave_direction || [],
           swell_wave_period: hourly.swell_wave_period || [],
-          ocean_current_velocity: (hourly.ocean_current_velocity || []).map(currentToMs),
+          ocean_current_velocity: hourly.ocean_current_velocity || [],
           ocean_current_direction: hourly.ocean_current_direction || [],
+          sea_surface_temperature: hourly.sea_surface_temperature || [],
         },
       };
 
@@ -648,14 +645,8 @@
         }
       }
 
-      const lats = coords.map((p) => p.lat).join(",");
-      const lngs = coords.map((p) => p.lng).join(",");
-
-      const url = `https://marine-api.open-meteo.com/v1/marine?latitude=${lats}&longitude=${lngs}&hourly=sea_surface_temperature&timezone=Asia%2FSeoul`;
-      const res = await fetch(url);
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      const list = await res.json();
-      if (!Array.isArray(list) || list.length !== 16) throw new Error("Invalid SST array");
+      const list = await Promise.all(coords.map(point => invokeMarineCache(null, point.lat, point.lng)));
+      if (list.some(item => !item)) throw new Error("Invalid SST array");
 
       const grid = Array.from({ length: 4 }, () => Array(4).fill(null));
 

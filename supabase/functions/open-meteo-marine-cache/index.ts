@@ -13,6 +13,10 @@ const json = (body: unknown, status = 200) =>
   });
 
 const FIELDS = [...MARINE_HOURLY_FIELDS];
+const hasCurrentFields = (rows: any[]) => rows.length > 0 && rows.every(row => {
+  const normalized = row?.normalized_data;
+  return normalized && FIELDS.every(field => Object.prototype.hasOwnProperty.call(normalized, field));
+});
 
 async function fetchFromOpenMeteo(latitude: number, longitude: number) {
   const url = marineUrl(latitude, longitude);
@@ -38,21 +42,25 @@ Deno.serve(async request => {
   try {
     const input = request.method === "POST" ? await request.json().catch(() => ({})) : Object.fromEntries(new URL(request.url).searchParams),
           pointId = Number(input.pointId),
+          hasPointId = Number.isInteger(pointId) && pointId > 0,
           url = Deno.env.get("SUPABASE_URL"),
           key = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
-    if (!Number.isInteger(pointId) || pointId < 1) return json({ status: "ERROR", code: "INVALID_POINT", hourly: null }, 400);
     if (!url || !key) throw new Error("server configuration unavailable");
 
-    const db = createClient(url, key, { auth: { persistSession: false, autoRefreshToken: false } }),
-          pointResult = await db.from("points").select("id,lat,lng").eq("id", pointId).maybeSingle();
-    if (pointResult.error) throw pointResult.error;
-
-    let latitude = Number(pointResult.data?.lat), longitude = Number(pointResult.data?.lng);
-    if (!Number.isFinite(latitude) || !Number.isFinite(longitude)) {
-      latitude = Number(input.latitude);
-      longitude = Number(input.longitude);
+    const db = createClient(url, key, { auth: { persistSession: false, autoRefreshToken: false } });
+    let latitude = Number(input.latitude), longitude = Number(input.longitude);
+    if (hasPointId) {
+      const pointResult = await db.from("points").select("id,lat,lng").eq("id", pointId).maybeSingle();
+      if (pointResult.error) throw pointResult.error;
+      const pointLatitude = Number(pointResult.data?.lat), pointLongitude = Number(pointResult.data?.lng);
+      if (Number.isFinite(pointLatitude) && Number.isFinite(pointLongitude)) {
+        latitude = pointLatitude;
+        longitude = pointLongitude;
+      }
     }
-    if (!Number.isFinite(latitude) || !Number.isFinite(longitude)) return json({ status: "ERROR", code: "POINT_NOT_FOUND", hourly: null }, 404);
+    if (!Number.isFinite(latitude) || !Number.isFinite(longitude)) {
+      return json({ status: "ERROR", code: hasPointId ? "POINT_NOT_FOUND" : "INVALID_POINT", hourly: null }, hasPointId ? 404 : 400);
+    }
 
     const cacheKey = coordinateKey(latitude, longitude);
     const latest = await db.from("open_meteo_marine_cache")
@@ -75,7 +83,7 @@ Deno.serve(async request => {
         .order("forecast_at");
       if (rows.error) throw rows.error;
       const data = rows.data || [];
-      if (data.length) {
+      if (hasCurrentFields(data)) {
         const ageMinutes = (Date.now() - new Date(latest.data.fetched_at).getTime()) / 60000;
         const cacheStatus = ageMinutes < 360 ? "fresh" : ageMinutes <= 720 ? "grace" : "stale";
         const hourly: any = { time: data.map(row => row.normalized_data?.forecastAt ?? row.forecast_at) };

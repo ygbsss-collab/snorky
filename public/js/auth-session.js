@@ -7,7 +7,7 @@
     if (!user || user.id === undefined || user.id === null) return null;
     return {
       id: String(user.id),
-      nickname: String(user.nickname || "카카오 사용자"),
+      nickname: user.nickname !== undefined && user.nickname !== null && String(user.nickname).trim() ? String(user.nickname).trim() : null,
       profileImageUrl: user.profileImageUrl ? String(user.profileImageUrl) : null,
       customNickname: user.customNickname !== undefined && user.customNickname !== null && String(user.customNickname).trim() ? String(user.customNickname).trim() : null,
       customAvatarUrl: user.customAvatarUrl ? String(user.customAvatarUrl) : null,
@@ -71,6 +71,11 @@
     localStorage.removeItem(STORAGE_KEY);
   }
 
+  function getCurrentUserId() {
+    const session = get();
+    return session?.user?.id !== undefined && session?.user?.id !== null ? String(session.user.id) : null;
+  }
+
   function getEffectiveProfile(session) {
     if (!session || !session.user) {
       return {
@@ -81,25 +86,27 @@
         isCustomAvatar: false,
       };
     }
-    const customNick = session.user.customNickname ? String(session.user.customNickname).trim() : "";
-    const nickname = customNick || session.user.nickname || "카카오 사용자";
+    const commonProfile = global.SNORKYUserProfile;
+    const normalized = commonProfile?.normalizeUserProfile
+      ? commonProfile.normalizeUserProfile(session)
+      : session.user;
+    const customNick = normalized.customNickname ? String(normalized.customNickname).trim() : "";
+    const userId = normalized.providerUserId || normalized.id || session.user.id;
+    const nickname = commonProfile?.getDisplayName
+      ? commonProfile.getDisplayName(normalized)
+      : (customNick || normalized.nickname || (userId ? `버디_${String(userId).slice(-4)}` : "다이버"));
 
-    const avatarType = session.user.avatarType || "default";
-    let avatarUrl = null;
-    if (avatarType === "none") {
-      avatarUrl = null; // 기본 심볼/아이콘 강제 사용
-    } else if (avatarType === "custom" && session.user.customAvatarUrl) {
-      avatarUrl = session.user.customAvatarUrl;
-    } else {
-      avatarUrl = session.user.profileImageUrl || null;
-    }
+    const avatarType = normalized.avatarType || "default";
+    const avatarUrl = commonProfile?.getAvatarUrl
+      ? commonProfile.getAvatarUrl(normalized)
+      : (avatarType === "none" ? null : (normalized.customAvatarUrl || normalized.profileImageUrl || null));
 
     return {
       nickname,
       avatarUrl,
       avatarType,
       isCustomNickname: Boolean(customNick),
-      isCustomAvatar: avatarType === "custom" && Boolean(session.user.customAvatarUrl),
+      isCustomAvatar: avatarType !== "none" && Boolean(normalized.customAvatarUrl),
     };
   }
 
@@ -379,6 +386,7 @@
     save,
     get,
     clear,
+    getCurrentUserId,
     isLoggedIn,
     showLoginPrompt,
     getEffectiveProfile,

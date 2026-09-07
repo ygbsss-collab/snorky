@@ -1032,7 +1032,8 @@ function openPointDetailBySupabaseId(pointId,source='other',returnState=null){
   window.SNORKYEngagement?.exitFavorites();selectedRegionId=target.regionId;region=target.region;spot=target;
   pointDetailNavigation={source,returnState};
   if(isDirectRequest){
-    return load(target).then(()=>{
+    return load(target).then(async()=>{
+      await window.SNORKYMarineSafety?.ready;
       openPointModal(source,returnState,target);
       loadKakaoMapsSdk();
       return true;
@@ -1081,75 +1082,78 @@ async function load(targetPoint){
   const pointBtn=$('#pointDetailButton');if(pointBtn)pointBtn.disabled=false;
   const statusEl=$('#status');if(statusEl)statusEl.textContent=`${region} ${spotName} 예보를 불러오는 중입니다.`;
   try{
-    const marineRequest=(window.SNORKYOpenMeteoMarineCache?.fetch(pointId,spotName,spotLat,spotLng)??Promise.resolve(null)),
-          kmaRequest=window.SNORKYKmaWeatherCache?.fetch(spotLat,spotLng)??Promise.resolve(null),
-          [marineResult,kmaResult]=await Promise.allSettled([marineRequest,kmaRequest]),
-          m=marineResult.status==='fulfilled'?marineResult.value:null,
-          kmaCache=kmaResult.status==='fulfilled'?kmaResult.value:null;
-    console.info('[SNORKY DIAG] 1. Marine result:',{status:marineResult.status,reason:marineResult.reason?.message??marineResult.reason,hasM:Boolean(m),hourlyTimeLen:m?.hourly?.time?.length??0});
-    console.info('[SNORKY DIAG] 2. KMA result:',{status:kmaResult.status,reason:kmaResult.reason?.message??kmaResult.reason,hasKma:Boolean(kmaCache),hourlyLen:kmaCache?.forecastData?.hourly?.length??0});
-    if(!m)console.warn('Open-Meteo Marine 캐시 없음; 해양 필드 비어 있음',marineResult.reason);
-    if(!kmaCache)console.warn('KMA 기상 캐시 없음; 기상 필드 비어 있음',kmaResult.reason);
-    if(!m&&!kmaCache)throw Error('사용 가능한 기상 데이터가 없습니다');
-    const marineTimes=Array.isArray(m?.hourly?.time)?m.hourly.time:[];
-    const mi=new Map(marineTimes.map((t,i)=>[t,i])),kmaTimes=window.SNORKYKmaWeatherCache?.hourlyTimestamps(kmaCache)||[],timestamps=[...new Set([...marineTimes,...kmaTimes])].sort(),byDay={};
-    const forecastDates=[...new Set(timestamps.map(t=>t.slice(0,10)))];
-    const sunTimesByDate=new Map(forecastDates.map(date=>[date,calculateSunTimes({latitude:spotLat,longitude:spotLng,date})]));
-    const forecastSlotsByDate=new Map(forecastDates.map(date=>[date,timestamps.filter(t=>t.slice(0,10)===date&&Number(t.slice(11,13))%3===0)]));
-    const _diagNowMs=Date.now(),_diagNowUTC=new Date(_diagNowMs).toISOString(),_diagNowKST=new Date(_diagNowMs+9*3600000).toISOString().replace('Z','+09:00'),_diagTodayKST=_diagNowKST.slice(0,10);
-    const _diagKmaSample=(kmaTimes||[]).slice(0,3),_diagKmaLast=(kmaTimes||[]).slice(-1)[0]??null;
-    const _diagMarSample=(marineTimes||[]).slice(0,3),_diagMarLast=(marineTimes||[]).slice(-1)[0]??null;
-    const _diagKmaTodayCount=(kmaTimes||[]).filter(t=>t.slice(0,10)===_diagTodayKST).length;
-    const _diagMarTodayCount=(marineTimes||[]).filter(t=>t.slice(0,10)===_diagTodayKST).length;
-    const _diagTsTodayCount=timestamps.filter(t=>t.slice(0,10)===_diagTodayKST).length;
-    const _diagKmaFormatOk=(kmaTimes||[]).every(t=>/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/.test(t));
-    const _diagMarFormatOk=(marineTimes||[]).every(t=>/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/.test(t));
-    const _diagMarFetchedAt=m?.fetchedAt??null;
-    console.info('[SNORKY DIAG] 3. timestamp 비교',{
-      '① 현재시각 UTC': _diagNowUTC,
-      '① 현재시각 KST': _diagNowKST,
-      '① 오늘날짜(KST)': _diagTodayKST,
-      '② KMA 예보 총': (kmaTimes||[]).length, '② KMA 첫3': _diagKmaSample, '② KMA 마지막': _diagKmaLast,
-      '② KMA 오늘 매칭수': _diagKmaTodayCount, '② KMA timestamp 형식 OK': _diagKmaFormatOk,
-      '③ Marine hourly 총': (marineTimes||[]).length, '③ Marine 첫3': _diagMarSample, '③ Marine 마지막': _diagMarLast,
-      '③ Marine fetchedAt(캐시 생성시각)': _diagMarFetchedAt,
-      '③ Marine 오늘 매칭수': _diagMarTodayCount, '③ Marine timestamp 형식 OK': _diagMarFormatOk,
-      '④ 통합 timestamps 총': timestamps.length, '④ 통합 오늘 매칭수': _diagTsTodayCount,
-      '④ 통합 첫': timestamps[0]??null, '④ 통합 마지막': timestamps[timestamps.length-1]??null
-    });
-    timestamps.forEach(t=>{
-      const i=mi.get(t),kma=window.SNORKYKmaWeatherCache?.nearestHourly(kmaCache,t),merged=window.SNORKYKmaWeatherCache?.mergeWeatherData(kma,{})||{},row={date:t.slice(0,10),hour:+t.slice(11,13),timestamp:t,temperature:merged.temperature??null,wind_speed:merged.windSpeed??null,wind_direction_degree:merged.windDirectionDegree??null,open_meteo_temperature:merged.temperature??null,open_meteo_precipitation:merged.precipitation??null,weather_code:null,rain:null,showers:null,snowfall:null,wave_height:valueAt(m?.hourly?.wave_height,i),wave_period:valueAt(m?.hourly?.wave_period,i),current_speed:valueAt(m?.hourly?.ocean_current_velocity,i),sea_temperature:valueAt(m?.hourly?.sea_surface_temperature,i),precipitation:merged.precipitation??null,precipitation_probability:merged.precipitationProbability??null,sky_code:merged.skyCode??null,cloud_cover:merged.cloudCover??null,pressure:merged.pressure??null,precipitation_24h:null,isMockData:false,sources:{marine:{source:m?'open_meteo_marine':'unavailable',timestamp:t,isEstimated:false},weather:{source:kma?'kma_cache':'unavailable',timestamp:kma?.datetime||t,isEstimated:false}}};
-      row.wind_direction=degreeToKoreanWindDirection(row.wind_direction_degree);
-      try{
-        if(window.SNORKYEval?.evaluateWithMarineKma){
-          row.v12=window.SNORKYEval.evaluateWithMarineKma(row,spot,m,{evaluatedAt:row.timestamp,sunTimes:sunTimesByDate.get(row.date),forecastSlots:forecastSlotsByDate.get(row.date)||[]});
+    const resultReader=window.SNORKYEvaluationResults;
+    const pidStr=String(pointId||"");
+    const [todayMap,hourlyRows]=await Promise.all([
+      resultReader?.loadTodayResults?resultReader.loadTodayResults(false,pidStr,{allowOnDemand:true}).catch(()=>new Map()):Promise.resolve(new Map()),
+      resultReader?.loadTodayHourly?resultReader.loadTodayHourly(pidStr,false,{allowOnDemand:true}).catch(()=>[]):Promise.resolve([])
+    ]);
+
+    const todayRow=(todayMap&&typeof todayMap.get==="function"?todayMap.get(pidStr):null)||(hourlyRows?.length?resultReader?.selectCurrentTodayHourlySlot?.(hourlyRows):null);
+    const todayDate=resultReader?.getKstDateString?.()||new Date(Date.now()+9*3600000).toISOString().slice(0,10);
+    const sun=calculateSunTimes({latitude:spotLat,longitude:spotLng,date:todayDate});
+    const sunrise=todayRow?.metrics?.sun_times?.sunrise||todayRow?.metrics?.sunrise||sun?.sunrise||null;
+    const sunset=todayRow?.metrics?.sun_times?.sunset||todayRow?.metrics?.sunset||sun?.sunset||null;
+
+    const mappedRows=(hourlyRows||[]).map(r=>{
+      const h=resultReader?.getResultHour?.(r)??(r.hour!=null?Number(r.hour):null);
+      const metrics=r.metrics||{};
+      return {
+        ...r,
+        date:r.target_date||todayDate,
+        hour:h,
+        timestamp:r.period_start||r.forecast_time||`${r.target_date||todayDate}T${String(h).padStart(2,'0')}:00`,
+        temperature:r.temperature??metrics.temperature??null,
+        wind_speed:r.wind_speed??metrics.wind_speed??null,
+        wave_height:r.wave_height??metrics.wave_height??null,
+        sea_temperature:r.sea_temperature??metrics.sea_temperature??null,
+        score:r.condition_score!=null?Number(r.condition_score):null,
+        hardLabel:r.safety_status==="BLOCK"?"입수 금지":null,
+        v12:{
+          conditionScore:r.condition_score,
+          conditionStatus:r.condition_status,
+          safety:r.safety_status,
+          safetyReasons:r.safety_reasons||[],
+          qualityStatus:r.quality_status,
+          recommendation:r.recommendation,
+          visibilityGrade:r.visibility_grade??metrics.visibility_grade??null,
+          visibilityScore:r.visibility_score??metrics.visibility_score??null,
+          waveHeight:r.wave_height??metrics.wave_height??null,
+          seaTemperature:r.sea_temperature??metrics.sea_temperature??null,
+          windSpeed:r.wind_speed??metrics.wind_speed??null,
         }
-      }catch(_v12e){row.v12=null;}
-      row.score=row.v12?.conditionScore??null;
-      row.hardLabel=row.v12?.safety==="BLOCK"?"입수 금지":null;
-      (byDay[row.date]??=[]).push(row);
+      };
     });
-    const kmaDaily=Array.isArray(kmaCache?.forecastData?.daily)?kmaCache.forecastData.daily:[],kmaByDate=new Map(kmaDaily.map(d=>[String(d?.date||"").slice(0,10),d])),dayEntries=Object.entries(byDay).filter(([date])=>date>=_diagTodayKST),days=(dayEntries.length?dayEntries:Object.entries(byDay)).slice(0,7).map(([date,rows])=>{
-      const usable=rows.filter(x=>x.hour>=6&&x.hour<=18),values=key=>(usable.length?usable:rows).map(x=>x[key]).filter(Number.isFinite),avg=key=>{const valuesForKey=values(key);return valuesForKey.length?valuesForKey.reduce((sum,value)=>sum+value,0)/valuesForKey.length:null},kd=kmaByDate.get(date),temperatures=values('temperature'),tempMax=Number.isFinite(kd?.tempMax)?Number(kd.tempMax):(temperatures.length?Math.max(...temperatures):null),tempMin=Number.isFinite(kd?.tempMin)?Number(kd.tempMin):(temperatures.length?Math.min(...temperatures):null),precipProb=Number.isFinite(kd?.precipitationProbability)?Number(kd.precipitationProbability):avg('precipitation_probability');
-      const sun=sunTimesByDate.get(date)??calculateSunTimes({latitude:spotLat,longitude:spotLng,date}),sunrise=kd?.sunrise??kd?.sunriseTime??sun?.sunrise??null,sunset=kd?.sunset??kd?.sunsetTime??sun?.sunset??null;
-      return{date,score:Math.round(avg('score')??0),bestWindow:findBestEntryWindow(rows),precipitation:avg('precipitation'),precipitation_probability:precipProb,cloud_cover:avg('cloud_cover'),temperature_max:tempMax,temperature_min:tempMin,sunrise,sunset,weatherCode:null,rows}
-    });
-    if(!days.length)throw Error('시간별 예보 데이터가 없습니다');
-    const now=Date.now(),validTodayRows=days[0].rows.filter(r=>r.temperature!==null||r.wind_speed!==null),candidatePool=validTodayRows.length?validTodayRows:days[0].rows,pastRows=candidatePool.filter(row=>new Date(`${row.timestamp}:00+09:00`).getTime()<=now).sort((a,b)=>b.timestamp.localeCompare(a.timestamp)),futureRows=candidatePool.filter(row=>new Date(`${row.timestamp}:00+09:00`).getTime()>now).sort((a,b)=>a.timestamp.localeCompare(b.timestamp)),currentRow=pastRows[0]||futureRows[0]||days[0].rows[0],todayView={...currentRow,...days[0],currentWeather:currentRow,rows:days[0].rows,score:currentRow.score,hardLabel:currentRow.hardLabel};
-    window.SNORKY_LAST_LOADED_DATA={spot,days,todayView,kmaCache,marine:m};
-    console.info('[SNORKY TODAY DEBUG] A. load 완료 시:',{pointId:pointId||spotName,hasDays:Boolean(days),hasDay0:Boolean(days?.[0]),day0RowsLength:days?.[0]?.rows?.length||0,todayViewRowsLength:todayView?.rows?.length||0});
-    window.dispatchEvent(new CustomEvent('snorky:today-data-ready', { detail: window.SNORKY_LAST_LOADED_DATA }));
-    if(window.SNORKYTodayConditionDetail?.onDataReady){window.SNORKYTodayConditionDetail.onDataReady(window.SNORKY_LAST_LOADED_DATA);}
-    console.info('[SNORK] data source',{weather:'kma_cache',marine:m?'open_meteo_marine':'unavailable',underwaterVisibility:'calculated estimate',isMockData:false});
-    // V1 legacy DOM injections neutralized: data pipeline is dispatched to V2 via snorky:today-data-ready
+
+    const currentSlot=resultReader?.selectCurrentTodayHourlySlot?.(hourlyRows)||mappedRows[0]||null;
+    const todayScore=todayRow?.condition_score??currentSlot?.condition_score??null;
+    const todaySafety=todayRow?.safety_status??currentSlot?.safety_status??null;
+    const todayView={
+      spot,
+      date:todayDate,
+      score:todayScore!=null?Number(todayScore):null,
+      hardLabel:todaySafety==="BLOCK"?"입수 금지":null,
+      sunrise,
+      sunset,
+      rows:mappedRows,
+      todayRow,
+      currentWeather:currentSlot,
+    };
+    const days=[{date:todayDate,score:todayView.score,sunrise,sunset,rows:mappedRows}];
+    window.SNORKY_LAST_LOADED_DATA={spot,days,todayView,todayRow,hourlyRows};
+    console.info('[SNORKY TODAY DEBUG] load 완료 (Result Reader 기반):',{pointId:pidStr||spotName,hasDays:Boolean(days),rowsLength:mappedRows.length});
+    window.dispatchEvent(new CustomEvent('snorky:today-data-ready',{detail:window.SNORKY_LAST_LOADED_DATA}));
+    if(window.SNORKYTodayConditionDetail?.onDataReady){
+      window.SNORKYTodayConditionDetail.onDataReady(window.SNORKY_LAST_LOADED_DATA);
+    }
+
     const shortTime=v=>{if(!v)return'--:--';const str=String(v);if(str.includes('T'))return str.slice(11,16);if(/^\d{2}:\d{2}/.test(str))return str.slice(0,5);return str};
-    const sunriseEl=$('#sunriseInfo');if(sunriseEl)sunriseEl.textContent=`☀ 일출 ${days[0]?.sunrise?shortTime(days[0].sunrise):'--:--'}`;
-    const sunsetEl=$('#sunsetInfo');if(sunsetEl)sunsetEl.textContent=`☀ 일몰 ${days[0]?.sunset?shortTime(days[0].sunset):'--:--'}`;
+    const sunriseEl=$('#sunriseInfo');if(sunriseEl)sunriseEl.textContent=`☀ 일출 ${sunrise?shortTime(sunrise):'--:--'}`;
+    const sunsetEl=$('#sunsetInfo');if(sunsetEl)sunsetEl.textContent=`☀ 일몰 ${sunset?shortTime(sunset):'--:--'}`;
     const lastUpdatedEl=$('#lastUpdated');if(lastUpdatedEl)lastUpdatedEl.textContent=`마지막 업데이트 ${new Date().toLocaleTimeString('ko-KR',{hour:'2-digit',minute:'2-digit'})}`;
-    const statusEl2=$('#status');if(statusEl2)statusEl2.textContent=`업데이트 ${new Date().toLocaleString('ko-KR')} · 기상청 KMA · 해양 ${m?'Open-Meteo Marine':'데이터 없음'}`;
+    const statusEl2=$('#status');if(statusEl2)statusEl2.textContent=`업데이트 ${new Date().toLocaleString('ko-KR')} · 서버 종합 평가 (Supabase)`;
   }catch(e){
-    console.error('[SNORKY TODAY] REAL ERROR',{name:e?.name,message:e?.message,stack:e?.stack,error:e});
-    console.error('[SNORKY TODAY] load failed',{pointId:spot?.id??spot?.supabaseId,pointName:spotName,latitude:spotLat,longitude:spotLng,stage:'weather/marine fetch or data preparation',error:e,stack:e?.stack});
+    console.error('[SNORKY TODAY] load failed',{pointId:spot?.id??spot?.supabaseId,pointName:spotName,stage:'evaluation-result-reader load',error:e});
     const statusEl3=$('#status');if(statusEl3)statusEl3.textContent='데이터 연결 오류';
   }
   })();

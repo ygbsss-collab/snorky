@@ -253,6 +253,10 @@
     <div class="mybuddy-modal-card">
       <div class="mybuddy-modal-head">
         <h2 id="hostModalTitle" class="mybuddy-modal-title">내 공고 관리</h2>
+        <button type="button" id="btnShareHostPost" class="buddy-detail-btn" style="background:#fee500;color:#191919;font-size:12.5px;font-weight:700;padding:5px 10px;border-radius:14px;border:none;display:inline-flex;align-items:center;justify-content:center;gap:4px;cursor:pointer;">
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="#191919" aria-hidden="true" style="flex-shrink:0;"><path d="M12 3c-4.97 0-9 3.185-9 7.115 0 2.557 1.707 4.8 4.27 6.054-.188.702-.682 2.545-.78 2.94-.122.49.18.483.377.352.155-.103 2.466-1.675 3.47-2.36.544.08 1.102.13 1.663.13 4.97 0 9-3.186 9-7.116S16.97 3 12 3z"/></svg>
+          <span>공유하기</span>
+        </button>
         <button type="button" id="btnCloseHostModal" class="mybuddy-modal-close" aria-label="닫기">
           <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
         </button>
@@ -298,6 +302,10 @@
     <div class="mybuddy-modal-card">
       <div class="mybuddy-modal-head">
         <h2 id="appModalTitle" class="mybuddy-modal-title">신청한 공고</h2>
+        <button type="button" id="btnShareAppPost" class="buddy-detail-btn" style="background:#fee500;color:#191919;font-size:12.5px;font-weight:700;padding:5px 10px;border-radius:14px;border:none;display:inline-flex;align-items:center;justify-content:center;gap:4px;cursor:pointer;">
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="#191919" aria-hidden="true" style="flex-shrink:0;"><path d="M12 3c-4.97 0-9 3.185-9 7.115 0 2.557 1.707 4.8 4.27 6.054-.188.702-.682 2.545-.78 2.94-.122.49.18.483.377.352.155-.103 2.466-1.675 3.47-2.36.544.08 1.102.13 1.663.13 4.97 0 9-3.186 9-7.116S16.97 3 12 3z"/></svg>
+          <span>공유하기</span>
+        </button>
         <button type="button" id="btnCloseAppModal" class="mybuddy-modal-close" aria-label="닫기">
           <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
         </button>
@@ -327,7 +335,7 @@
         </div>
       </div>
       <div class="mybuddy-modal-actions">
-        <button type="button" id="abtnChat" class="mybuddy-action-btn primary" style="display:none"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex-shrink:0"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg> 버디 대화방 참여</button>
+        <button type="button" id="abtnChat" class="mybuddy-action-btn buddy-chat-btn" style="display:none"><svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor" aria-hidden="true" style="flex-shrink:0;"><path d="M12 3c-4.97 0-9 3.185-9 7.115 0 2.557 1.707 4.8 4.27 6.054-.188.702-.682 2.545-.78 2.94-.122.49.18.483.377.352.155-.103 2.466-1.675 3.47-2.36.544.08 1.102.13 1.663.13 4.97 0 9-3.186 9-7.116S16.97 3 12 3z"/></svg> <span>버디 대화방 참여</span></button>
         <button type="button" id="abtnCancel" class="mybuddy-action-btn muted">신청 취소</button>
       </div>
     </div>
@@ -386,6 +394,7 @@
   <script src="./public/js/supabase-client.js?v=20260820_stitch_v76"></script>
   <script async src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" onload="window.dispatchEvent(new Event('snorky:supabase-ready'))"></script>
   <script src="./public/js/auth-session.js?v=20260905_moderation_v1"></script>
+  <script src="./public/js/user-profile.js?v=20260907_profile_pipeline_v1"></script>
   <script src="./public/js/buddy-certification.js?v=20260905_v1"></script>
   <script src="./public/js/snorky-friends.js?v=20260905_testmode_v1"></script>
   <script src="./public/js/buddy-profile-card.js?v=20260905_testmode_v1"></script>
@@ -476,60 +485,38 @@
       return false;
     }
 
-    // 프로필 캐시
-    var profileCache = {};
     async function fetchProfiles(ids) {
-      var missing = ids.filter(function (id) { return !(id in profileCache); });
-      if (missing.length > 0 && getSb()) {
-        try {
-          var res = await getSb().from("user_profiles").select("provider_user_id, custom_nickname, custom_avatar_url, avatar_type, aida_level, certification_status, gender, bio, age_group, activity_region, activity_depth").in("provider_user_id", missing);
-          (res.data || []).forEach(function (p) {
-            profileCache[p.provider_user_id] = {
-              nickname: p.custom_nickname || null,
-              avatarUrl: (p.avatar_type !== "none" && p.custom_avatar_url) ? p.custom_avatar_url : null,
-              avatarType: p.avatar_type || "default",
-              aidaLevel: p.aida_level || "없음",
-              certificationStatus: p.certification_status || null,
-              gender: p.gender || "비공개",
-              ageGroup: p.age_group || "",
-              activityRegion: p.activity_region || "",
-              activityDepth: p.activity_depth || "",
-              bio: p.bio || ""
-            };
-            window.SNORKYBuddyProfileCard?.setCachedProfile?.(p.provider_user_id, p);
-          });
-          missing.forEach(function (id) {
-            if (!(id in profileCache)) profileCache[id] = { nickname: null, avatarUrl: null, avatarType: "default", aidaLevel: "없음", gender: "비공개", ageGroup: "", activityRegion: "", activityDepth: "", bio: "" };
-          });
-        } catch (_) {}
-      }
+      var validIds = Array.from(new Set((ids || []).map(String).filter(Boolean)));
+      try {
+        await Promise.all(validIds.map(function (id) {
+          return window.SNORKYUserProfile?.getUserProfile?.(id);
+        }));
+      } catch (_) {}
+    }
+    function getProfile(userId) {
+      var id = String(userId || "");
+      var cached = window.SNORKYUserProfile?.getCachedUserProfile?.(id);
+      if (cached) return cached;
+      if (id && id === currentUserId) return window.SNORKYUserProfile?.normalizeUserProfile?.(session) || session.user;
+      return window.SNORKYUserProfile?.normalizeUserProfile?.({ providerUserId: id }) || null;
     }
     function getDisplayName(userId, fallbackName) {
-      var id = String(userId || "");
-      if (id in profileCache && profileCache[id] && profileCache[id].nickname) return profileCache[id].nickname;
-      return fallbackName || (id ? "버디_" + id.slice(-4) : "다이버");
+      return window.SNORKYUserProfile.getDisplayName(getProfile(userId), fallbackName);
     }
     function getDisplayAvatar(userId) {
-      var id = String(userId || "");
-      if (id in profileCache && profileCache[id] && profileCache[id].avatarUrl) return profileCache[id].avatarUrl;
-      return "./public/images/snorky-symbol.png";
+      return window.SNORKYUserProfile.getAvatarUrl(getProfile(userId)) || "./public/images/snorky-symbol.png";
     }
     function getDisplayAidaLevel(userId) {
-      var id = String(userId || "");
-      if (id in profileCache && profileCache[id] && profileCache[id].aidaLevel) return profileCache[id].aidaLevel;
-      return "없음";
+      return getProfile(userId)?.aidaLevel || "없음";
     }
 
     function getProfileCardInfo(userId, fallback) {
       var id = String(userId || "");
-      var profile = profileCache[id] || null;
+      var profile = getProfile(id);
       var fallbackInfo = fallback || {};
       var isCurrentUser = id && id === currentUserId;
       var avatarDisabled = profile && profile.avatarType === "none";
-      var avatarUrl = !avatarDisabled && profile && profile.avatarUrl ? profile.avatarUrl : "";
-      if (!avatarUrl && !avatarDisabled && isCurrentUser && session.user.avatarType !== "none") {
-        avatarUrl = session.user.customAvatarUrl || session.user.profileImageUrl || "";
-      }
+      var avatarUrl = window.SNORKYUserProfile.getAvatarUrl(profile, isCurrentUser ? session.user : null) || "";
       var rawAida = (profile && profile.aidaLevel) || (isCurrentUser ? session.user.aidaLevel : null) || fallbackInfo.aidaLevel || "없음";
       var cleanAida = (rawAida && rawAida !== "없음") ? String(rawAida).replace(/\s*✓$/, "").trim() : "없음";
       var isVerified = checkIsVerified(profile) || (isCurrentUser && checkIsVerified(session.user)) || checkIsVerified(fallbackInfo);
@@ -570,17 +557,11 @@
 
     function resolveCardAuthor(post) {
       var id = String(post.user_id || "");
-      var profile = profileCache[id] || null;
+      var profile = getProfile(id);
       var isCurrentUser = id && id === currentUserId;
-      var displayName = (profile && profile.nickname) ||
-        (isCurrentUser ? (session.user.customNickname || session.user.nickname) : null) ||
-        post.host_name ||
-        (id ? "버디_" + id.slice(-4) : "다이버");
+      var displayName = window.SNORKYUserProfile.getDisplayName(profile, post.host_name);
       var avatarDisabled = profile && profile.avatarType === "none";
-      var avatarUrl = !avatarDisabled && profile && profile.avatarUrl ? profile.avatarUrl : null;
-      if (!avatarUrl && !avatarDisabled && isCurrentUser && session.user.avatarType !== "none") {
-        avatarUrl = session.user.customAvatarUrl || session.user.profileImageUrl || null;
-      }
+      var avatarUrl = window.SNORKYUserProfile.getAvatarUrl(profile, isCurrentUser ? session.user : null);
       var rawAida = (profile && (profile.aidaLevel || profile.aida_level)) ||
         (isCurrentUser ? (session.user.aidaLevel || session.user.aida_level) : null) ||
         "없음";
@@ -609,6 +590,10 @@
     var activeTab = (requestedTab === "myApps" || requestedTab === "apps") ? "myApps" : "myPosts";
     var myPostsData = [];
     var myAppsData = [];
+
+    function dispatchBuddyChanged(postId) {
+      window.dispatchEvent(new CustomEvent("snorky:buddy-changed", { detail: { postId: Number(postId) } }));
+    }
 
     var tabMyPosts = document.getElementById("tabMyPosts");
     var tabMyApps = document.getElementById("tabMyApps");
@@ -657,7 +642,7 @@
       }
       try {
         var res = await sb.from("buddy_posts")
-          .select("id, user_id, activity_type, region, point_id, point_name, is_snorky_point, event_date, entry_time, capacity, current_count, difficulty, status, host_gender, host_aida_level, preferred_gender, description, open_chat_url, contact_method, created_at")
+          .select("id, user_id, activity_type, region, point_id, point_name, is_snorky_point, event_date, entry_time, has_instructor, capacity, current_count, difficulty, status, host_gender, host_aida_level, preferred_gender, description, open_chat_url, contact_method, created_at")
           .eq("user_id", currentUserId)
           .order("id", { ascending: false });
         if (res.error) {
@@ -750,16 +735,42 @@
         var isFull = totalCount >= capacity;
         var newStatus = isFull ? "CLOSED" : "RECRUITING";
 
-        await sb.from("buddy_posts").update({
+        var updateRes = await sb.from("buddy_posts").update({
           current_count: totalCount,
           status: newStatus
         }).eq("id", postId);
+        if (updateRes.error) throw updateRes.error;
 
         return { totalCount: totalCount, approvedCount: approvedCount, status: newStatus, capacity: capacity, isFull: isFull };
       } catch (e) {
         console.error("[my-buddy] syncPostParticipantCount error:", e);
         return null;
       }
+    }
+
+    function updateInstructorDetail(modalId, value) {
+      var modal = document.getElementById(modalId);
+      var difficulty = modal && modal.querySelector('[id$="detailDifficulty"]');
+      if (!difficulty || !difficulty.parentElement) return;
+      var row = modal.querySelector('[data-has-instructor-row]');
+      if (!row) {
+        row = document.createElement("div");
+        row.className = "mybuddy-info-item";
+        row.setAttribute("data-has-instructor-row", "true");
+        row.innerHTML = '<span class="mybuddy-info-label">강사 유무</span><strong class="mybuddy-info-val"></strong>';
+        difficulty.parentElement.parentElement.appendChild(row);
+      }
+      row.querySelector("strong").textContent = value ? "강사 있음" : "";
+    }
+
+    async function shareMyBuddyPost(post) {
+      if (!post) return;
+      var url = new URL("./buddy.html?post_id=" + encodeURIComponent(post.id), window.location.href).href;
+      var lines = [post.point_name, post.region, [post.event_date, post.entry_time].filter(Boolean).join(" "), (post.current_count || 1) + "/" + (post.capacity || 2), post.host_aida_level || post.participant_level, post.has_instructor === true ? "강사 있음" : ""].filter(Boolean);
+      var text = ["SNORKY 버디 모집"].concat(lines, url).join("\n");
+      if (navigator.share) { try { await navigator.share({ title: "SNORKY 버디 모집", text: text, url: url }); return; } catch (e) { if (e && e.name === "AbortError") return; } }
+      if (navigator.clipboard?.writeText) { try { await navigator.clipboard.writeText(text); showToast("버디 공고 링크를 복사했습니다."); return; } catch (_) {} }
+      prompt("아래 버디 공고 정보와 링크를 복사해 주세요.", text);
     }
 
     function updateHostDetailPostUI(post) {
@@ -796,9 +807,13 @@
     }
 
     async function openHostModal(postId) {
+      var shareHostButton = document.getElementById("btnShareHostPost");
+      var instructorDetailPost = myPostsData.find(function (item) { return Number(item.id) === Number(postId); });
+      updateInstructorDetail("hostDetailModal", instructorDetailPost && instructorDetailPost.has_instructor === true);
       var post = myPostsData.find(function (p) { return Number(p.id) === postId; });
       if (!post) return;
       currentHostPost = post;
+      if (shareHostButton) shareHostButton.onclick = function () { shareMyBuddyPost(post); };
 
       // 모달 진입 시 실제 승인자 수 기반으로 인원/상태 즉시 보정 (주최자 1 + 승인자 수)
       var syncRes = await syncPostParticipantCount(post.id);
@@ -915,7 +930,7 @@
         var sb = getSb();
         if (!sb) return;
         var res = await sb.from("buddy_posts").update({ status: "CLOSED" }).eq("id", post.id);
-        if (!res.error) { post.status = "CLOSED"; showToast("모집이 마감되었습니다."); hostModal.style.display = "none"; renderMyPosts(); }
+        if (!res.error) { post.status = "CLOSED"; hostModal.style.display = "none"; dispatchBuddyChanged(post.id); showToast("모집이 마감되었습니다."); renderMyPosts(); }
         else showToast("마감 처리 중 오류가 발생했습니다.");
       };
 
@@ -988,7 +1003,7 @@
           }
 
           var delRes = await sb.from("buddy_posts").delete().eq("id", post.id);
-          if (!delRes.error) { showToast("공고가 삭제되었습니다."); hostModal.style.display = "none"; await loadMyPosts(); renderMyPosts(); }
+          if (!delRes.error) { hostModal.style.display = "none"; dispatchBuddyChanged(post.id); showToast("공고가 삭제되었습니다."); await loadMyPosts(); renderMyPosts(); }
           else showToast("삭제 중 오류가 발생했습니다.");
         };
       };
@@ -1023,7 +1038,7 @@
           var avatarSrc = getDisplayAvatar(app.applicant_user_id);
           var aidaRaw = app.applicant_aida_level || getDisplayAidaLevel(app.applicant_user_id);
           var cleanAida = (aidaRaw && aidaRaw !== "없음") ? String(aidaRaw).replace(/\s*✓$/, "").trim() : "레벨 없음";
-          var isAppVerified = checkIsVerified(app) || checkIsVerified(profileCache[app.applicant_user_id]);
+          var isAppVerified = checkIsVerified(app) || checkIsVerified(getProfile(app.applicant_user_id));
           var aidaDisp = cleanAida !== "레벨 없음" ? (isAppVerified ? (cleanAida + " ✓") : cleanAida) : "레벨 없음";
           var gender = app.applicant_gender && app.applicant_gender !== "비공개" ? app.applicant_gender : null;
           var metaText = [gender, aidaDisp].filter(Boolean).join(" · ");
@@ -1090,6 +1105,7 @@
                   updateHostDetailPostUI(currentHostPost);
                 }
               }
+              dispatchBuddyChanged(currentHostPost && currentHostPost.id);
 
               // 신청자에게 참가 승인 알림 생성
               // TEST: 동일 user_id로 테스트 중인 경우에도 알림 INSERT 허용 (운영 시 분기 가능)
@@ -1150,6 +1166,7 @@
                   updateHostDetailPostUI(currentHostPost);
                 }
               }
+              dispatchBuddyChanged(currentHostPost && currentHostPost.id);
 
               // 승인 취소 알림 발송: "버디 참가 승인이 취소되었습니다." (TEST: 동일 user_id라도 허용)
               if (targetApp && targetApp.applicant_user_id && (
@@ -1199,6 +1216,7 @@
             var sb = getSb();
             var res = await sb.from("buddy_applications").update({ status: "REJECTED" }).eq("id", appId);
             if (!res.error) {
+              dispatchBuddyChanged(currentHostPost && currentHostPost.id);
               showToast("거절되었습니다.");
               await loadAndRenderApplicants(Number(currentHostPost && currentHostPost.id), containerEl);
             } else {
@@ -1235,15 +1253,19 @@
           return;
         }
         var rawApps = appRes.data || [];
-        var apps = rawApps.filter(function (a) { return a.status !== "CANCELED"; });
+        var apps = rawApps.filter(function (a) { return a.status === "PENDING" || a.status === "APPROVED"; });
         if (!apps.length) { myAppsData = []; return; }
 
         var postIds = apps.map(function (a) { return a.buddy_post_id; });
-        var postRes = await sb.from("buddy_posts").select("id, user_id, activity_type, region, point_id, point_name, is_snorky_point, event_date, entry_time, capacity, current_count, difficulty, status, host_gender, host_aida_level, preferred_gender, description, open_chat_url, contact_method, created_at").in("id", postIds);
+        var postRes = await sb.from("buddy_posts").select("id, user_id, activity_type, region, point_id, point_name, is_snorky_point, event_date, entry_time, has_instructor, capacity, current_count, difficulty, status, host_gender, host_aida_level, preferred_gender, description, open_chat_url, contact_method, created_at").in("id", postIds);
         if (postRes.error) {
           console.error("[my-buddy] loadMyApps posts query error:", postRes.error);
         }
         var rawPosts = postRes.data || [];
+        if (window.SNORKYFriends?.getBlockedUserIds) {
+          var blockedSet = await window.SNORKYFriends.getBlockedUserIds(currentUserId);
+          rawPosts = rawPosts.filter(function (post) { return !blockedSet.has(String(post.user_id)); });
+        }
         var posts = rawPosts.filter(function (p) {
           return window.SNORKYBuddyCard ? window.SNORKYBuddyCard.isPostWithinRetention(p, 30) : true;
         });
@@ -1341,10 +1363,14 @@
     appModal.addEventListener("click", function (e) { if (e.target === appModal) appModal.style.display = "none"; });
 
     async function openAppModal(appId, postId) {
+      var shareAppButton = document.getElementById("btnShareAppPost");
+      var instructorDetailApp = myAppsData.find(function (item) { return Number(item.app.id) === Number(appId) && Number(item.post.id) === Number(postId); });
+      updateInstructorDetail("appDetailModal", instructorDetailApp && instructorDetailApp.post.has_instructor === true);
       var entry = null;
       for (var i = 0; i < myAppsData.length; i++) {
         if (Number(myAppsData[i].app.id) === appId && Number(myAppsData[i].post.id) === postId) { entry = myAppsData[i]; break; }
       }
+      if (shareAppButton && entry) shareAppButton.onclick = function () { shareMyBuddyPost(entry.post); };
       if (!entry) return;
       currentAppEntry = entry;
       var app = entry.app; var post = entry.post;
@@ -1483,7 +1509,10 @@
           if (post.user_id && String(post.user_id) !== String(currentUserId)) {
             try {
               var session = window.SNORKYAuthSession?.get?.();
-              var myNickname = (session && session.user && (session.user.customNickname || session.user.nickname)) || getDisplayName(currentUserId, "참가자");
+              var myNickname = window.SNORKYUserProfile.getDisplayName(
+                window.SNORKYUserProfile.normalizeUserProfile(session),
+                "참가자"
+              );
               var notiRes = await sb.from("user_notifications").insert([{
                 user_id: String(post.user_id),
                 type: "buddy_participant_canceled",
@@ -1508,6 +1537,7 @@
         if (!res.error) {
           // 승인자 수 기반으로 모집인원/상태 실시간 동기화 및 원복
           await syncPostParticipantCount(post.id);
+          dispatchBuddyChanged(post.id);
           myAppsData = myAppsData.filter(function (item) { return Number(item.app.id) !== Number(app.id); });
           showToast("신청이 취소되었습니다.");
           appModal.style.display = "none";
@@ -1683,6 +1713,41 @@
         if (e.target === notiModal) notiModal.style.display = "none";
       });
     }
+
+    var buddyChangeRefresh = Promise.resolve();
+    window.addEventListener("snorky:buddy-changed", function (event) {
+      var postId = Number(event && event.detail && event.detail.postId);
+      if (!postId) return;
+      var reopenHost = hostModal && hostModal.style.display !== "none" && currentHostPost && Number(currentHostPost.id) === postId;
+      var reopenApp = appModal && appModal.style.display !== "none" && currentAppEntry && Number(currentAppEntry.post.id) === postId;
+      var openAppId = reopenApp ? Number(currentAppEntry.app.id) : null;
+      buddyChangeRefresh = buddyChangeRefresh.then(async function () {
+        await Promise.all([loadMyPosts(), loadMyApps()]);
+        if (activeTab === "myPosts") renderMyPosts();
+        else renderMyApps();
+        if (reopenHost) {
+          var freshHost = myPostsData.find(function (post) { return Number(post.id) === postId; });
+          if (freshHost) await openHostModal(postId);
+          else hostModal.style.display = "none";
+        }
+        if (reopenApp) {
+          var freshApp = myAppsData.find(function (entry) { return Number(entry.app.id) === openAppId && Number(entry.post.id) === postId; });
+          if (freshApp) await openAppModal(openAppId, postId);
+          else appModal.style.display = "none";
+        }
+      }).catch(function (error) {
+        console.warn("[my-buddy] buddy change refresh failed:", error);
+      });
+    });
+
+    window.addEventListener("snorky:user-blocked", function () {
+      if (appModal) appModal.style.display = "none";
+      loadMyApps().then(function () {
+        if (activeTab === "myApps") renderMyApps();
+      }).catch(function (error) {
+        console.warn("[my-buddy] block refresh failed:", error);
+      });
+    });
 
     // ── 초기 로드 ──
     async function initialize() {

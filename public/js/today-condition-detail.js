@@ -1489,11 +1489,12 @@
     // KMA 실제 특보 문구만 추출 (해양 수치 파고/수온 등 제외)
     const kmaWarningReasons = (Array.isArray(safetyReasons) ? safetyReasons : []).filter(reason => {
       const text = String(reason || "").trim();
-      return text.includes("발효 중") || /태풍|풍랑|폭풍해일|지진해일|호우|강풍/.test(text) && !/유의파고|파주기|수온|조류/.test(text);
+      return (text.includes("발효 중") || /태풍|풍랑|폭풍해일|지진해일|호우|강풍/.test(text))
+        && !/유의파고|파주기|수온|조류/.test(text);
     });
 
     // 클라이언트 실시간 특보 캐시 (있을 경우 보조 참조)
-    const liveSafety = window.SNORKYMarineSafety?.getPointMarineSafety?.(activePoint);
+    const liveSafety = window.SNORKYMarineSafety?.statusForPoint?.(activePoint);
     const liveWarnings = liveSafety?.warnings || (liveSafety?.warning ? [liveSafety.warning] : []);
     const liveWarningTexts = liveWarnings
       .map(w => `${w.areaName || w.regKo || w.regId || ""} ${w.warningName || "해상"}${w.levelName || "특보"} 발효 중`.trim())

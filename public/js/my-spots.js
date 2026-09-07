@@ -3,7 +3,7 @@
 
   const KAKAO_MAP_KEY = "c29f1a71a53af406429520da0df21772";
   const EVALUATION_TTL_MS = 60 * 60 * 1000;
-  const EVALUATION_CACHE_VERSION = 2;
+  const EVALUATION_CACHE_VERSION = 4;
   const MIN_ANALYSIS_VISIBLE_MS = 3_000;
   const CONDITION_FETCH_ERROR = "컨디션 데이터를 불러오지 못했습니다. 다시 시도해 주세요.";
   const ANALYSIS_STEPS = [
@@ -428,7 +428,7 @@
               name: spot.name,
               lat: spot.lat,
               lng: spot.lng,
-              region_2depth_name: spot.geocode.region2DepthName,
+              region_2depth_name: spot.geocode?.region2DepthName || spot.region || "",
             },
           }),
         });

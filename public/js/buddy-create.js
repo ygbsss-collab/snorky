@@ -4,6 +4,14 @@
   // 1. 세션 확인
   const session = window.SNORKYAuthSession?.get?.();
   const userId = session?.user?.id ? String(session.user.id) : null;
+  async function getCurrentUserProfile() {
+    if (!userId || !window.SNORKYUserProfile?.getUserProfile) return Promise.resolve(null);
+    try {
+      return await window.SNORKYUserProfile.getUserProfile(userId);
+    } catch (_) {
+      return null;
+    }
+  }
 
   const loginPrompt = document.getElementById("loginPrompt");
   const createFormWrap = document.getElementById("createFormWrap");
@@ -56,6 +64,7 @@
   const capacityMinusBtn = document.getElementById("capacityMinusBtn");
   const capacityPlusBtn = document.getElementById("capacityPlusBtn");
   const capacityBadge = document.getElementById("capacityBadge");
+  const hasInstructorInput = document.getElementById("hasInstructorInput");
   const hostAidaLevelSelect = document.getElementById("hostAidaLevelSelect");
   const hostAidaCustomInput = document.getElementById("hostAidaCustomInput");
   const descInput = document.getElementById("descInput");
@@ -292,6 +301,7 @@
   bindChipGroup("difficultyGroup", "difficultyInput");
   bindChipGroup("preferredGenderGroup", "preferredGenderInput");
   bindChipGroup("hostGenderGroup", "hostGenderInput");
+  bindChipGroup("instructorGroup", "hasInstructorInput");
 
   // 뒤로가기 버튼 바인딩 (직전 화면 복귀)
   const btnBack = document.getElementById("btnBack") || document.querySelector(".buddy-back");
@@ -483,6 +493,7 @@
     const preferredGender = document.getElementById("preferredGenderInput")?.value?.trim();
     const hostGender = document.getElementById("hostGenderInput")?.value?.trim();
     const capacity = parseInt(capacityInput?.value, 10);
+    const hasInstructor = hasInstructorInput?.value === "true";
     const description = descInput?.value?.trim() || "";
     const notificationEnabled = !!notificationToggle?.checked;
     const addToCalendar = !!addToCalendarToggle?.checked;
@@ -586,7 +597,7 @@
     // 오픈채팅 링크 검증 (카카오 오픈채팅 선택 시)
     if (contactMethod === "open_chat") {
       if (!openChatUrl) {
-        showToast("오픈채팅방 링크를 입력해 주세요. (또는 '추후 설정'을 선택하세요)");
+        showToast("오픈채팅방 링크를 입력해 주세요.");
         openChatUrlInput?.focus();
         return;
       }
@@ -612,6 +623,7 @@
       host_aida_level: finalHostAida,
       preferred_gender: preferredGender || "성별 무관",
       capacity: capacity,
+      has_instructor: hasInstructor,
       current_count: 1,
       difficulty: difficulty || "무관",
       description: description || null,
@@ -673,6 +685,7 @@
     btnSubmitFinal.textContent = "등록 중...";
 
     try {
+      const currentProfile = await getCurrentUserProfile();
       const postPayload = {
         user_id: validatedFormPayload.user_id,
         activity_type: validatedFormPayload.activity_type,
@@ -682,10 +695,11 @@
         is_snorky_point: validatedFormPayload.is_snorky_point,
         event_date: validatedFormPayload.event_date,
         entry_time: validatedFormPayload.entry_time,
-        host_gender: validatedFormPayload.host_gender,
-        host_aida_level: validatedFormPayload.host_aida_level,
+        host_gender: currentProfile?.gender || validatedFormPayload.host_gender,
+        host_aida_level: currentProfile?.aidaLevel || currentProfile?.aida_level || validatedFormPayload.host_aida_level,
         preferred_gender: validatedFormPayload.preferred_gender,
         capacity: validatedFormPayload.capacity,
+        has_instructor: validatedFormPayload.has_instructor,
         current_count: 1,
         difficulty: validatedFormPayload.difficulty,
         description: validatedFormPayload.description,
@@ -893,9 +907,7 @@
 
       // 3. 모집 대상 성별 (preferred_gender)
       setChipGroupValue("preferredGenderGroup", "preferredGenderInput", post.preferred_gender);
-
-      // 4. 주최자 성별 (host_gender)
-      setChipGroupValue("hostGenderGroup", "hostGenderInput", post.host_gender);
+      setChipGroupValue("instructorGroup", "hasInstructorInput", post.has_instructor === true ? "true" : "false");
 
       // 5. 날짜 (event_date) & 입수 시간 (entry_time)
       if (eventDateInput && post.event_date) {
@@ -1043,12 +1055,13 @@
         updateCapacityBadge(post.capacity);
       }
 
-      // 10. 주최자 성별 & AIDA 레벨 복원
-      if (post.host_gender) {
-        setChipGroupValue("hostGenderGroup", "hostGenderInput", post.host_gender);
+      // 10. 주최자 성별 & AIDA 레벨은 최신 user_profiles 기준으로 복원
+      const currentProfile = await getCurrentUserProfile();
+      if (currentProfile?.gender) {
+        setChipGroupValue("hostGenderGroup", "hostGenderInput", currentProfile.gender);
       }
       if (hostAidaLevelSelect) {
-        let savedLvl = post.host_aida_level || "전체";
+        let savedLvl = currentProfile?.aidaLevel || currentProfile?.aida_level || "전체";
         if (savedLvl === "무관" || savedLvl === "없음") savedLvl = "전체";
         hostAidaLevelSelect.value = savedLvl;
         if (!hostAidaLevelSelect.value) hostAidaLevelSelect.value = "전체";
@@ -1108,8 +1121,9 @@
       const postActivity = (post.activity_type || "").trim();
       const postDifficulty = (post.difficulty || "").trim();
       const postPrefGender = (post.preferred_gender || "").trim();
-      const postHostGender = (post.host_gender || "").trim();
-      const postLevel = (post.host_aida_level || "").trim();
+      const hostProfile = await getCurrentUserProfile();
+      const postHostGender = (hostProfile?.gender || "").trim();
+      const postLevel = (hostProfile?.aidaLevel || hostProfile?.aida_level || "").trim();
 
       // KST 오늘/주말/이번달 계산
       const now = new Date();
@@ -1195,7 +1209,7 @@
           if (postHostGender !== condHostGender) continue;
         }
 
-        // 7) 참여 레벨 조건 검사 (buddy_posts의 host_aida_level과 비교)
+        // 7) 참여 레벨 조건 검사 (최신 user_profiles와 비교)
         if (condLevel && condLevel !== "전체" && condLevel !== "" && condLevel !== "무관") {
           const certModule = window.SNORKYCertification;
           if (certModule?.matchPostLevelRequirement) {
@@ -1257,26 +1271,18 @@
     if (editPostId) {
       await loadEditPostData(editPostId);
     } else {
-      // 신규 등록: 현재 사용자의 프로필 성별/AIDA 레벨을 기본값으로 설정
-      let userLvl = session?.user?.aidaLevel || null;
-      let userGender = session?.user?.gender || null;
-      if ((!userLvl || !userGender) && userId) {
-        try {
-          const sb = getSbClient();
-          if (sb) {
-            const { data } = await sb.from("user_profiles").select("aida_level, gender").eq("provider_user_id", String(userId)).maybeSingle();
-            if (data?.aida_level) userLvl = data.aida_level;
-            if (data?.gender) userGender = data.gender;
-          }
-        } catch (_) {}
-      }
+      // 신규 등록: 최신 공통 user_profiles 값을 기본값으로 설정
+      const currentProfile = await getCurrentUserProfile();
+      const userLvl = currentProfile?.aidaLevel || currentProfile?.aida_level || null;
+      const userGender = currentProfile?.gender || null;
 
       if (["남성", "여성", "비공개"].includes(userGender)) {
         setChipGroupValue("hostGenderGroup", "hostGenderInput", userGender);
       }
 
       if (hostAidaLevelSelect) {
-        hostAidaLevelSelect.value = "전체";
+        hostAidaLevelSelect.value = userLvl || "전체";
+        if (!hostAidaLevelSelect.value) hostAidaLevelSelect.value = "전체";
       }
     }
   }

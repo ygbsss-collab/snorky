@@ -29,6 +29,41 @@ const json = (body: unknown, status = 200) =>
 const finite = (value: unknown) =>
   value === null || value === undefined || value === "" ? null : Number.isFinite(Number(value)) ? Number(value) : null;
 
+function getKstDateString(date = new Date()): string {
+  const kst = new Date(date.getTime() + 9 * 3600000);
+  return kst.toISOString().slice(0, 10);
+}
+
+function getHourlyKstDate(hourly: any): string | null {
+  const raw = String(hourly?.datetime || "").trim().replace(" ", "T");
+  if (!raw) return null;
+  if (/(?:Z|[+-]\d{2}:?\d{2})$/i.test(raw)) {
+    const parsed = new Date(raw);
+    return Number.isNaN(parsed.getTime()) ? null : getKstDateString(parsed);
+  }
+  const dateMatch = raw.match(/^(\d{4}-\d{2}-\d{2})/);
+  return dateMatch ? dateMatch[1] : null;
+}
+
+function hasCurrentOrFutureHourly(forecastData: any, todayKst: string): boolean {
+  return Array.isArray(forecastData?.hourly) && forecastData.hourly.some((hourly: any) => {
+    const forecastDate = getHourlyKstDate(hourly);
+    return forecastDate !== null && forecastDate >= todayKst;
+  });
+}
+
+function getCacheAgeMinutes(data: any): number {
+  const cachedAtMs = new Date(String(data?.fetched_at || data?.last_successful_at || "")).getTime();
+  return Number.isFinite(cachedAtMs) ? Math.max(0, (Date.now() - cachedAtMs) / 60000) : Number.POSITIVE_INFINITY;
+}
+
+function shouldRefreshCache(data: any, todayKst: string): boolean {
+  return !data
+    || data.stale === true
+    || getCacheAgeMinutes(data) > CACHE_STALE_MINUTES
+    || !hasCurrentOrFutureHourly(data.forecast_data, todayKst);
+}
+
 function getBase() {
   const p = Object.fromEntries(new Intl.DateTimeFormat("en-CA", {
     timeZone: "Asia/Seoul", year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit", hourCycle: "h23"
@@ -140,15 +175,25 @@ Deno.serve(async request => {
     if ((nx === null || ny === null) && latitude !== null && longitude !== null) ({ nx, ny } = toKmaGrid(latitude, longitude));
     if (nx === null || ny === null || !Number.isInteger(nx) || !Number.isInteger(ny) || nx < 1 || nx > 149 || ny < 1 || ny > 253) return json({ status: "ERROR", code: "INVALID_GRID", forecastData: null });
     const gridKey = `${nx}:${ny}`, client = createClient(url, key, { auth: { persistSession: false, autoRefreshToken: false } });
-    let { data, error } = await client.from("kma_weather_cache").select("grid_key,nx,ny,base_date,base_time,forecast_data,source_issued_at,fetched_at,last_successful_at,http_status,status").eq("grid_key", gridKey).eq("status", "fresh").order("fetched_at", { ascending: false }).order("base_date", { ascending: false }).order("base_time", { ascending: false }).limit(1).maybeSingle();
+    let { data, error } = await client.from("kma_weather_cache").select("grid_key,nx,ny,base_date,base_time,forecast_data,source_issued_at,fetched_at,last_successful_at,http_status,status,stale").eq("grid_key", gridKey).eq("status", "fresh").order("fetched_at", { ascending: false }).order("base_date", { ascending: false }).order("base_time", { ascending: false }).limit(1).maybeSingle();
     if (error) throw error;
-    if (!data) {
+    const todayKst = getKstDateString();
+    const fallbackData = data;
+    if (shouldRefreshCache(data, todayKst)) {
       const fetched = await fetchKmaOnDemand(client, nx, ny, gridKey);
-      if (fetched) data = fetched as any;
-      else return json({ status: "EMPTY", gridKey, nx, ny, forecastData: null, stale: false });
+      if (fetched) {
+        if (!hasCurrentOrFutureHourly(fetched.forecast_data, todayKst)) {
+          return json({ status: "ERROR", code: "INVALID_REFRESH_DATA", gridKey, nx, ny, forecastData: null, stale: true });
+        }
+        data = fetched as any;
+      } else if (fallbackData) {
+        data = fallbackData;
+      } else {
+        return json({ status: "EMPTY", gridKey, nx, ny, forecastData: null, stale: false });
+      }
     }
-    const ageMinutes = Math.max(0, (Date.now() - new Date(data.fetched_at).getTime()) / 60000),
-          stale = !Number.isFinite(ageMinutes) || ageMinutes > CACHE_STALE_MINUTES,
+    const ageMinutes = getCacheAgeMinutes(data),
+          stale = data.stale === true || !Number.isFinite(ageMinutes) || ageMinutes > CACHE_STALE_MINUTES || !hasCurrentOrFutureHourly(data.forecast_data, todayKst),
           forecastData = data.forecast_data;
     if (!forecastData || !Array.isArray(forecastData.hourly) || !Array.isArray(forecastData.daily)) return json({ status: "ERROR", code: "MALFORMED_CACHE", gridKey, nx, ny, forecastData: null, stale: true });
     return json({ status: "READY", gridKey: data.grid_key, nx: data.nx, ny: data.ny, baseDate: data.base_date, baseTime: data.base_time, sourceIssuedAt: data.source_issued_at, fetchedAt: data.fetched_at, lastSuccessfulAt: data.last_successful_at || data.fetched_at, httpStatus: data.http_status, cacheStatus: data.status, forecastData, ageMinutes: Math.round(ageMinutes * 10) / 10, stale });

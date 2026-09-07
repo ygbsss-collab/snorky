@@ -3,12 +3,124 @@
 
   const MAX_AVATAR_SIZE = 5 * 1024 * 1024; // 5MB
   const ALLOWED_MIME_TYPES = ["image/jpeg", "image/png", "image/webp"];
+  const PROFILE_ENSURE_PENDING_KEY = "snorky_profile_ensure_pending_v1";
+  const profileCache = new Map();
+  const pendingProfileFetches = new Map();
 
   function getSupabase() {
     if (typeof window.getSnorkySupabase === "function") {
       return window.getSnorkySupabase();
     }
     return null;
+  }
+
+  function cleanString(value) {
+    if (value === undefined || value === null) return null;
+    const cleaned = String(value).trim();
+    return cleaned || null;
+  }
+
+  function normalizeUserProfile(source) {
+    const root = source || {};
+    const user = root.user || root;
+    const providerUserId = cleanString(
+      user.providerUserId ?? user.provider_user_id ?? user.id ?? root.providerUserId ?? root.provider_user_id
+    );
+    const customNickname = cleanString(user.customNickname ?? user.custom_nickname);
+    const customAvatarUrl = cleanString(user.customAvatarUrl ?? user.custom_avatar_url);
+    const profileImageUrl = cleanString(user.profileImageUrl ?? user.profile_image_url);
+    const avatarType = cleanString(user.avatarType ?? user.avatar_type) || "default";
+
+    return {
+      provider: cleanString(root.provider ?? user.provider) || "kakao",
+      providerUserId,
+      customNickname,
+      nickname: cleanString(user.nickname),
+      customAvatarUrl,
+      profileImageUrl,
+      avatarType,
+      aidaLevel: cleanString(user.aidaLevel ?? user.aida_level) || "없음",
+      certificationStatus: cleanString(user.certificationStatus ?? user.certification_status),
+      qualificationStatus: cleanString(user.qualificationStatus ?? user.qualification_status),
+      verificationStatus: cleanString(user.verificationStatus ?? user.verification_status),
+      certificationVerified: user.certificationVerified === true,
+      aidaVerified: user.aidaVerified === true,
+      banned: user.banned === true,
+      suspendedUntil: cleanString(user.suspendedUntil ?? user.suspended_until),
+      gender: cleanString(user.gender) || "비공개",
+      bio: cleanString(user.bio),
+      ageGroup: cleanString(user.ageGroup ?? user.age_group),
+      activityRegion: cleanString(user.activityRegion ?? user.activity_region),
+      activityDepth: cleanString(user.activityDepth ?? user.activity_depth),
+      certifications: Array.isArray(user.certifications) ? user.certifications : (user.certifications || null),
+    };
+  }
+
+  function getDisplayName(profile, fallback) {
+    const normalized = normalizeUserProfile(profile);
+    const fallbackProfile = fallback && typeof fallback === "object" ? normalizeUserProfile(fallback) : null;
+    const fallbackName = fallbackProfile
+      ? (fallbackProfile.customNickname || fallbackProfile.nickname)
+      : cleanString(fallback);
+    return normalized.customNickname ||
+      normalized.nickname ||
+      fallbackName ||
+      (normalized.providerUserId ? `버디_${normalized.providerUserId.slice(-4)}` : "다이버");
+  }
+
+  function getAvatarUrl(profile, fallback) {
+    const normalized = normalizeUserProfile(profile);
+    if (normalized.avatarType === "none") return null;
+    let fallbackUrl = null;
+    if (fallback && typeof fallback === "object") {
+      const fallbackProfile = normalizeUserProfile(fallback);
+      if (fallbackProfile.avatarType !== "none") {
+        fallbackUrl = fallbackProfile.customAvatarUrl || fallbackProfile.profileImageUrl;
+      }
+    } else {
+      fallbackUrl = cleanString(fallback);
+    }
+    return normalized.customAvatarUrl || normalized.profileImageUrl || fallbackUrl || null;
+  }
+
+  function getProfileCacheKey(provider, providerUserId) {
+    return `${provider || "kakao"}:${String(providerUserId)}`;
+  }
+
+  function mergeWithCurrentSession(profile, providerUserId) {
+    const session = window.SNORKYAuthSession?.get?.();
+    if (!session?.user?.id || String(session.user.id) !== String(providerUserId)) return profile;
+    const sessionProfile = normalizeUserProfile(session);
+    if (!profile) return sessionProfile;
+    const storedProfile = normalizeUserProfile(profile);
+    return {
+      ...sessionProfile,
+      ...storedProfile,
+      provider: session.provider || storedProfile.provider || "kakao",
+      providerUserId: String(providerUserId),
+      nickname: storedProfile.nickname || sessionProfile.nickname,
+      profileImageUrl: storedProfile.profileImageUrl || sessionProfile.profileImageUrl,
+    };
+  }
+
+  function syncCurrentSession(profile) {
+    if (!profile?.providerUserId) return;
+    const session = window.SNORKYAuthSession?.get?.();
+    if (!session?.user?.id || String(session.user.id) !== profile.providerUserId) return;
+    window.SNORKYAuthSession?.updateProfile?.({
+      customNickname: profile.customNickname,
+      customAvatarUrl: profile.customAvatarUrl,
+      avatarType: profile.avatarType,
+      aidaLevel: profile.aidaLevel,
+      certificationStatus: profile.certificationStatus,
+      banned: profile.banned,
+      suspendedUntil: profile.suspendedUntil,
+      gender: profile.gender,
+      bio: profile.bio,
+      ageGroup: profile.ageGroup,
+      activityRegion: profile.activityRegion,
+      activityDepth: profile.activityDepth,
+    });
   }
 
   function validateNickname(value) {
@@ -103,42 +215,91 @@
     return { ...existing, ...updates };
   }
 
-  async function fetchRemoteProfile(provider, providerUserId) {
-    const sb = getSupabase();
-    if (!sb || !providerUserId) return null;
-    try {
-      const session = window.SNORKYAuthSession?.get?.();
-      if (session?.user?.id && String(session.user.id) === String(providerUserId)) {
-        await ensureProfileDefaults(provider, providerUserId, session.user);
+  async function getUserProfile(userId, options = {}) {
+    const normalizedUserId = cleanString(userId);
+    if (!normalizedUserId) return null;
+    const provider = options.provider || "kakao";
+    const cacheKey = getProfileCacheKey(provider, normalizedUserId);
+    if (options.forceRefresh) profileCache.delete(cacheKey);
+    if (profileCache.has(cacheKey)) return profileCache.get(cacheKey);
+    if (pendingProfileFetches.has(cacheKey)) return pendingProfileFetches.get(cacheKey);
+
+    const fetchPromise = (async () => {
+      const sb = options.supabase || getSupabase();
+      if (!sb) {
+        return mergeWithCurrentSession(null, normalizedUserId) ||
+          normalizeUserProfile({ provider, providerUserId: normalizedUserId });
       }
       const { data, error } = await sb
         .from("user_profiles")
-        .select("custom_nickname, custom_avatar_url, avatar_type, aida_level, certification_status, banned, suspended_until, gender, bio, age_group, activity_region, activity_depth")
-        .eq("provider", provider || "kakao")
-        .eq("provider_user_id", String(providerUserId))
+        .select("provider, provider_user_id, custom_nickname, custom_avatar_url, avatar_type, aida_level, certification_status, banned, suspended_until, gender, bio, age_group, activity_region, activity_depth")
+        .eq("provider", provider)
+        .eq("provider_user_id", normalizedUserId)
         .maybeSingle();
+      if (error) throw error;
 
-      if (error) {
-        console.warn("[SNORKY Profile] 프로필 조회 경고:", error.message);
-        return null;
+      const normalized = mergeWithCurrentSession(
+        data ? normalizeUserProfile(data) : null,
+        normalizedUserId
+      ) || normalizeUserProfile({ provider, providerUserId: normalizedUserId });
+      profileCache.set(cacheKey, normalized);
+      if (options.syncSession !== false) syncCurrentSession(normalized);
+      return normalized;
+    })().finally(() => pendingProfileFetches.delete(cacheKey));
+
+    pendingProfileFetches.set(cacheKey, fetchPromise);
+    return fetchPromise;
+  }
+
+  async function ensureUserProfile(session) {
+    const activeSession = session || window.SNORKYAuthSession?.get?.();
+    if (!activeSession?.user?.id) return null;
+    if (!getSupabase()) throw new Error("Supabase client is not ready.");
+    await ensureProfileDefaults(activeSession.provider || "kakao", activeSession.user.id, activeSession.user);
+    profileCache.delete(getProfileCacheKey(activeSession.provider || "kakao", activeSession.user.id));
+    return getUserProfile(activeSession.user.id, {
+      provider: activeSession.provider || "kakao",
+      forceRefresh: true,
+      syncSession: true,
+    });
+  }
+
+  function getCachedUserProfile(userId, provider = "kakao") {
+    const normalizedUserId = cleanString(userId);
+    if (!normalizedUserId) return null;
+    return profileCache.get(getProfileCacheKey(provider, normalizedUserId)) || null;
+  }
+
+  function setCachedUserProfile(userId, profile, provider = "kakao") {
+    const normalizedUserId = cleanString(userId);
+    if (!normalizedUserId || !profile) return null;
+    const normalized = mergeWithCurrentSession(normalizeUserProfile({
+      provider,
+      user: { ...profile, providerUserId: normalizedUserId },
+    }), normalizedUserId);
+    profileCache.set(getProfileCacheKey(provider, normalizedUserId), normalized);
+    return normalized;
+  }
+
+  function invalidateUserProfile(userId, provider = "kakao") {
+    if (userId === undefined || userId === null) {
+      profileCache.clear();
+      return;
+    }
+    profileCache.delete(getProfileCacheKey(provider, userId));
+  }
+
+  async function fetchRemoteProfile(provider, providerUserId) {
+    if (!providerUserId) return null;
+    try {
+      const session = window.SNORKYAuthSession?.get?.();
+      if (session?.user?.id && String(session.user.id) === String(providerUserId)) {
+        return await ensureUserProfile(session);
       }
-      if (data) {
-        window.SNORKYAuthSession?.updateProfile({
-          customNickname: data.custom_nickname,
-          customAvatarUrl: data.custom_avatar_url,
-          avatarType: data.avatar_type,
-          aidaLevel: data.aida_level || "없음",
-          certificationStatus: data.certification_status || null,
-          banned: data.banned === true,
-          suspendedUntil: data.suspended_until || null,
-          gender: data.gender || "비공개",
-          bio: data.bio || null,
-          ageGroup: data.age_group || null,
-          activityRegion: data.activity_region || null,
-          activityDepth: data.activity_depth || null,
-        });
-      }
-      return data;
+      return await getUserProfile(providerUserId, {
+        provider: provider || "kakao",
+        forceRefresh: true,
+      });
     } catch (err) {
       console.warn("[SNORKY Profile] 프로필 조회 실패:", err);
       return null;
@@ -380,7 +541,15 @@
   }
 
   global.SNORKYUserProfile = Object.freeze({
+    ensureUserProfile,
     ensureProfileDefaults,
+    getUserProfile,
+    getCachedUserProfile,
+    setCachedUserProfile,
+    invalidateUserProfile,
+    normalizeUserProfile,
+    getDisplayName,
+    getAvatarUrl,
     fetchRemoteProfile,
     validateNickname,
     checkNicknameAvailability,
@@ -389,4 +558,21 @@
     MAX_AVATAR_SIZE,
     ALLOWED_MIME_TYPES,
   });
+
+  async function resumePendingProfileEnsure() {
+    let isPending = false;
+    try { isPending = localStorage.getItem(PROFILE_ENSURE_PENDING_KEY) === "1"; } catch (_) {}
+    if (!isPending) return;
+    const session = window.SNORKYAuthSession?.get?.();
+    if (!session?.user?.id || !getSupabase()) return;
+    try {
+      await ensureUserProfile(session);
+      localStorage.removeItem(PROFILE_ENSURE_PENDING_KEY);
+    } catch (error) {
+      console.warn("[SNORKY Profile] deferred profile ensure failed:", error?.message || error);
+    }
+  }
+
+  Promise.resolve().then(resumePendingProfileEnsure);
+  global.addEventListener("snorky:supabase-ready", resumePendingProfileEnsure);
 })(window);

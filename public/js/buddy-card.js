@@ -63,6 +63,8 @@
   }
 
   function getPostStatusInfo(post) {
+    const currentCount = Math.max(1, Number(post?.current_count) || 1);
+    const capacity = Math.max(1, Number(post?.capacity) || 2);
     if (isPostExpired(post)) {
       return {
         text: "신청 불가",
@@ -72,7 +74,7 @@
         canApply: false
       };
     }
-    if (post?.status === "CLOSED") {
+    if (post?.status === "CLOSED" || currentCount >= capacity) {
       return {
         text: "모집마감",
         className: "buddy-post-status-closed",
@@ -88,6 +90,12 @@
       isExpired: false,
       canApply: true
     };
+  }
+
+  function getPostDisplayState(post) {
+    const currentCount = Math.max(1, Number(post?.current_count) || 1);
+    const capacity = Math.max(1, Number(post?.capacity) || 2);
+    return { currentCount, capacity, statusInfo: getPostStatusInfo(post) };
   }
 
   function isApprovedStatus(status) {
@@ -116,16 +124,18 @@
   }
 
   function render({ post, author, formattedDate, attributes, statusText, statusClass, pendingCount = 0 }) {
-    const statusInfo = getPostStatusInfo(post);
+    const displayState = getPostDisplayState(post);
+    const statusInfo = displayState.statusInfo;
     const finalStatusText = statusText !== undefined ? statusText : statusInfo.text;
     const finalStatusClass = statusClass !== undefined ? statusClass : statusInfo.className;
     const displayName = author?.displayName || "다이버";
     const isVerified = Boolean(author?.isVerified || checkIsVerified(author));
-    let rawAida = author?.aidaLevel && author.aidaLevel !== "없음" && author.aidaLevel !== "미설정" ? String(author.aidaLevel).replace(/\s*✓$/, "").trim() : "";
+    const authorAidaLevel = author?.aidaLevel || author?.aida_level || "";
+    let rawAida = authorAidaLevel && authorAidaLevel !== "없음" && authorAidaLevel !== "미설정" ? String(authorAidaLevel).replace(/\s*✓$/, "").trim() : "";
     if (rawAida.includes("이상") || rawAida === "전체" || rawAida === "무관" || rawAida === "무관 (전체)") {
       rawAida = "";
     }
-    const gender = author?.gender || post?.host_gender || "비공개";
+    const gender = author?.gender || "비공개";
     const hostProfile = {
       displayName,
       avatarUrl: author?.avatarUrl || "",
@@ -178,8 +188,9 @@
             <span class="buddy-meta-sep">·</span>
             <span>${escapeHtml(post?.entry_time || "시간미정")}</span>
             <span class="buddy-meta-sep">·</span>
-            <span>${escapeHtml(post?.current_count || 1)}/${escapeHtml(post?.capacity || 2)}명</span>
+            <span>${escapeHtml(displayState.currentCount)}/${escapeHtml(displayState.capacity)}명</span>
             <span class="buddy-meta-sep">·</span>
+            ${post?.has_instructor === true ? '<span>강사 있음</span><span class="buddy-meta-sep">·</span>' : ''}
             <span>${escapeHtml(post?.difficulty || "무관")}</span>
           </div>
           <div class="buddy-post-bottom-row">
@@ -200,6 +211,7 @@
     parseEventDateTime,
     isPostExpired,
     isPostWithinRetention,
-    getPostStatusInfo
+    getPostStatusInfo,
+    getPostDisplayState
   });
 })(window);

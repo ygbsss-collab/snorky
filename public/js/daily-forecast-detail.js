@@ -871,22 +871,6 @@
     const curSTxt  = fmt(curS, 2);
     const curGrade = (curSTxt !== "--") ? "참고" : "데이터 없음";
 
-    // 풍속
-    const windS    = val(row, ["wind_speed"]);
-    const windSTxt  = fmt(windS, 1);
-    const windSn    = Number(windS);
-    const windGrade = val(row, ["wind_speed_status"])
-      || (Number.isFinite(windSn)
-        ? (windSn <= 3 ? "좋음" : windSn <= 5 ? "보통" : windSn <= 8 ? "주의" : "나쁨")
-        : "데이터 없음");
-
-    // 풍향 — degree 또는 문자열 직접
-    const windDirRaw = val(row, ["wind_direction"]);
-    const windDeg    = val(row, ["wind_direction_degree"]);
-    const windDirTxt = windDirRaw
-      || (Number.isFinite(Number(windDeg)) ? degToWindDir(windDeg) : "--");
-    const windDirGrade = windDirTxt !== "--" ? "참고" : "데이터 없음";
-
     // 예상 수중시야 — visibility_score or grade 직접
     const visScore = val(row, ["visibility_score", "underwater_visibility", "visibility"]);
     const visGrade = val(row, ["visibility_grade", "underwater_visibility_grade"])
@@ -906,6 +890,21 @@
     ];
 
     if (!isMid) {
+      const windS = val(row, ["wind_speed"]);
+      const windSTxt = fmt(windS, 1);
+      const windSn = Number(windS);
+      const hasWindSpeed = windS !== null && windS !== undefined && windS !== "" && Number.isFinite(windSn);
+      const windGrade = val(row, ["wind_speed_status"])
+        || (hasWindSpeed
+          ? (windSn <= 3 ? "좋음" : windSn <= 5 ? "보통" : windSn <= 8 ? "주의" : "나쁨")
+          : "데이터 없음");
+      const windDirRaw = val(row, ["wind_direction"]);
+      const windDeg = val(row, ["wind_direction_degree"]);
+      const hasWindDegree = windDeg !== null && windDeg !== undefined && windDeg !== "" && Number.isFinite(Number(windDeg));
+      const windDirTxt = windDirRaw
+        || (hasWindDegree ? degToWindDir(windDeg) : "--");
+      const windDirGrade = windDirTxt !== "--" ? "참고" : "데이터 없음";
+
       cards.push(
         metricCard({ id: "wind",      title: "풍속",        icon: "air",               circleClass: "circle-wind",      value: windSTxt,  unit: windSTxt !== "--" ? "m/s" : "", grade: windGrade }),
         metricCard({ id: "direction", title: "풍향",        icon: "explore",           circleClass: "circle-direction", value: windDirTxt, unit: "",                            grade: windDirGrade })
@@ -989,34 +988,28 @@
     const kstNow   = new Date(Date.now() + 9 * 3600000);
     const todayStr = kstNow.toISOString().slice(0, 10);
 
-    // SHORT: +1~+3, MID: +4~+6
-    // 각 Row는 target_date 기준으로 그룹화
+    // KST 오늘 기준 +1~+6 고정 날짜 배열
+    const baseDate = new Date(`${todayStr}T00:00:00Z`);
+    const allDates = Array.from({ length: 6 }, (_, index) => {
+      const next = new Date(baseDate);
+      next.setUTCDate(next.getUTCDate() + index + 1);
+      return next.toISOString().slice(0, 10);
+    });
+    const shortDates = new Set(allDates.slice(0, 3));
+    const midDates = new Set(allDates.slice(3, 6));
+
+    // SHORT: +1~+3, MID: +4~+6만 target_date 기준으로 그룹화
     const shortGroups = {};
     _shortRows.forEach(r => {
       const d = dateOf(r);
-      if (d && d > todayStr) (shortGroups[d] = shortGroups[d] || []).push(r);
+      if (shortDates.has(d)) (shortGroups[d] = shortGroups[d] || []).push(r);
     });
 
     const midGroups = {};
     _midRows.forEach(r => {
       const d = dateOf(r);
-      if (d && d > todayStr) (midGroups[d] = midGroups[d] || []).push(r);
+      if (midDates.has(d)) (midGroups[d] = midGroups[d] || []).push(r);
     });
-
-    // +1~+6 날짜 목록 (오늘 이후 최대 6일)
-    const allDates = Array.from(
-      new Set([...Object.keys(shortGroups), ...Object.keys(midGroups)])
-    ).sort().slice(0, 6);
-
-    // 날짜 없어도 최대 6일 placeholder
-    for (let i = 1; i <= 6; i++) {
-      const next = new Date(kstNow);
-      next.setUTCDate(next.getUTCDate() + i);
-      const ds = next.toISOString().slice(0, 10);
-      if (!allDates.includes(ds)) allDates.push(ds);
-    }
-    allDates.sort();
-    allDates.splice(6);
 
     const daysEl   = _modal.querySelector("#dfDays");
     const rangeEl  = _modal.querySelector("#dfDateRange");
