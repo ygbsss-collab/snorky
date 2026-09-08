@@ -7,14 +7,14 @@
       status=status||v12.safety||pointOrScore.kma||pointOrScore.safety;
       score=v12.conditionScore??pointOrScore.score;
     }
-    if(status==="BLOCK")return "입수 금지";
-    if(status==="UNKNOWN")return "확인 필요";
+    if(status==="BLOCK")return "입수 비추천";
+    if(status==="UNKNOWN")return "안전정보 확인 필요";
     const value=Number(score);
     if(!Number.isFinite(value))return "확인 필요";
     if(value>=80)return "좋음";
     if(value>=65)return "보통";
     if(value>=50)return "주의";
-    return "나쁨";
+    return "주의 필요";
   }
   function getSnorkyConditionStatusInfo(pointOrScore,safety){
     const status=getSnorkyConditionStatus(pointOrScore,safety),info={status,color:"#64748b",dot:"⚪"};
@@ -22,7 +22,7 @@
     else if(status==="보통")Object.assign(info,{color:"#3b82f6",dot:"🔵"});
     else if(status==="주의")Object.assign(info,{color:"#f59e0b",dot:"🟡"});
     else if(status==="나쁨")Object.assign(info,{color:"#f97316",dot:"🟠"});
-    else if(status==="입수 금지")Object.assign(info,{color:"#ef4444",dot:"🔴"});
+    else if(status==="입수 비추천")Object.assign(info,{color:"#ef4444",dot:"🔴"});
     return info;
   }
   function rankSnorkyBestPoints(points,options={}){

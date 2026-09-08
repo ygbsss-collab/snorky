@@ -67,17 +67,18 @@ function formatPointScore(point){
   return Number.isFinite(Number(raw))?`${Math.round(Number(raw))}점`:"--";
 }
 function formatPointCondition(point){
-  return window.getSnorkyConditionStatus?.(point) || (function(){
+  const resultStatus=point?.conditionStatus||point?.condition_status||point?.v12?.conditionStatus||point?.v12?.condition_status;
+  return resultStatus || window.getSnorkyConditionStatus?.(point) || (function(){
     const v12=point?.v12;
     const safety=v12?.safety||point?.kma;
-    if(safety==="BLOCK")return"입수 금지";
-    if(safety==="UNKNOWN")return"확인 필요";
+    if(safety==="BLOCK")return"입수 비추천";
+    if(safety==="UNKNOWN")return"안전정보 확인 필요";
     const raw=v12?.conditionScore;
     if(!Number.isFinite(Number(raw)))return"확인 필요";
     if(raw>=80)return"좋음";
     if(raw>=65)return"보통";
     if(raw>=50)return"주의";
-    return"나쁨";
+    return"주의 필요";
   })();
 }
 function todayCard(point,index){
@@ -1362,12 +1363,13 @@ async function showPointPreviewCard(point){
 
   // 추천 상태: 추천 / 주의 / 비추천 / 야간 비추천 등
   let recommendationDisplay="--";
+  const resultConditionStatus=v12?.conditionStatus||resultRow?.condition_status||point?.conditionStatus||point?.condition_status;
   if(isBlocked){
-    recommendationDisplay="입수 금지";
+    recommendationDisplay=resultConditionStatus||window.getSnorkyConditionStatus?.(v12||point)||"입수 비추천";
   }else if(isUnknown){
-    recommendationDisplay="확인 필요";
+    recommendationDisplay=resultConditionStatus||window.getSnorkyConditionStatus?.(v12||point)||"안전정보 확인 필요";
   }else{
-    recommendationDisplay=window.getSnorkyConditionStatus?.(v12||point)||"보통";
+    recommendationDisplay=resultConditionStatus||window.getSnorkyConditionStatus?.(v12||point)||"보통";
   }
 
   // 예상 수중시야: TODAY Result의 visibility_grade 우선 매핑
@@ -1388,7 +1390,7 @@ async function showPointPreviewCard(point){
   let warningHtml="";
   if(isBlocked){
     const safetySummary=resultReader?.formatSafetyBlockSummary?.(liveSafety?.warnings||liveWarning,v12?.safetyReasons)
-      ||"입수 금지 · 기타 안전 위험";
+      ||"입수 비추천 · 기타 안전 위험";
     warningHtml=`<div class="snorky-map-preview-warning"><span class="snorky-map-warning-text">${escapeHtml(safetySummary)}</span></div>`;
   }else if(isUnknown){
     warningHtml=`<div class="snorky-map-preview-warning"><span class="snorky-map-warning-text">안전 정보 확인 필요</span></div>`;
@@ -1472,16 +1474,17 @@ function mapRankRow(point,index){
 
   const v12=evalItem?.v12||point.v12||null;
   const safetyStatus=v12?.safety||window.SNORKYMarineSafety?.statusForPoint(point)?.status||"UNKNOWN";
+  const resultConditionStatus=evalItem?.condition_status||evalItem?.conditionStatus||v12?.conditionStatus||v12?.condition_status||point.conditionStatus||point.condition_status;
   let scoreText="";
   if(safetyStatus==="BLOCK"){
-    scoreText="입수 금지";
+    scoreText=resultConditionStatus||window.getSnorkyConditionStatus?.(v12||point)||"입수 비추천";
   }else if(safetyStatus==="UNKNOWN"){
-    scoreText="확인 필요";
+    scoreText=resultConditionStatus||window.getSnorkyConditionStatus?.(v12||point)||"안전정보 확인 필요";
   }else if(v12&&Number.isFinite(v12.conditionScore)){
-    const status=window.getSnorkyConditionStatus?.(v12)||"보통";
+    const status=resultConditionStatus||window.getSnorkyConditionStatus?.(v12)||"보통";
     scoreText=`${Math.round(v12.conditionScore)}점 · ${status}`;
   }else if(Number.isFinite(Number(point.score))){
-    const status=window.getSnorkyConditionStatus?.(point.score)||"보통";
+    const status=resultConditionStatus||window.getSnorkyConditionStatus?.(point.score)||"보통";
     scoreText=`${Math.round(Number(point.score))}점 · ${status}`;
   }else if(evalItem?.score!=null&&Number.isFinite(Number(evalItem.score))){
     const status=window.getSnorkyConditionStatus?.(evalItem.score)||"보통";

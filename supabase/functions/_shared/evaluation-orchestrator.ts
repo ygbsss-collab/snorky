@@ -180,31 +180,71 @@ async function queryMarineDbCache(client: SupabaseClient, cacheKey: string) {
 
 async function queryKmaWeatherDbCache(client: SupabaseClient, gridKey: string) {
   try {
+    const todayCompact = getKstDateString().replace(/-/g, "");
+    const previousCompact = addDays(getKstDateString(), -1).replace(/-/g, "");
     const res = await client
       .from("kma_weather_cache")
       .select("forecast_data, base_date, base_time, fetched_at, status")
       .eq("grid_key", gridKey)
-      .order("base_date", { ascending: false })
-      .order("base_time", { ascending: false })
-      .limit(1)
-      .maybeSingle();
-    return res.data || null;
+      .in("base_date", [previousCompact, todayCompact])
+      .order("base_date", { ascending: true })
+      .order("base_time", { ascending: true })
+      .order("fetched_at", { ascending: true });
+
+    const cacheRows = (Array.isArray(res.data) ? res.data : [])
+      .filter((row: any) => {
+        const baseDate = String(row?.base_date || "");
+        const baseTime = String(row?.base_time || "").padStart(4, "0");
+        const hasHourly = Array.isArray(row?.forecast_data?.hourly) && row.forecast_data.hourly.length > 0;
+        return hasHourly && (baseDate === todayCompact || (baseDate === previousCompact && baseTime === "2300"));
+      })
+      .sort((a: any, b: any) => {
+        const aIssue = `${a.base_date}${String(a.base_time || "").padStart(4, "0")}${a.fetched_at || ""}`;
+        const bIssue = `${b.base_date}${String(b.base_time || "").padStart(4, "0")}${b.fetched_at || ""}`;
+        return aIssue.localeCompare(bIssue);
+      });
+
+    if (!cacheRows.length) return null;
+
+    const mergedHourly = new Map<string, any>();
+    cacheRows.forEach((row: any) => {
+      row.forecast_data.hourly.forEach((hourly: any) => {
+        const targetKey = getKmaHourlyKstKey(hourly);
+        if (targetKey) mergedHourly.set(targetKey, hourly);
+      });
+    });
+
+    const latest = cacheRows[cacheRows.length - 1];
+    return {
+      ...latest,
+      forecast_data: {
+        ...latest.forecast_data,
+        hourly: Array.from(mergedHourly.entries())
+          .sort(([a], [b]) => a.localeCompare(b))
+          .map(([, hourly]) => hourly),
+      },
+    };
   } catch (_) {
     return null;
   }
 }
 
-function getKmaHourlyKstDate(hourly: any): string | null {
+function getKmaHourlyKstKey(hourly: any): string | null {
   const raw = String(hourly?.datetime || "").trim().replace(" ", "T");
   if (!raw) return null;
 
   if (/(?:Z|[+-]\d{2}:?\d{2})$/i.test(raw)) {
     const parsed = new Date(raw);
-    return Number.isNaN(parsed.getTime()) ? null : getKstDateString(parsed);
+    if (Number.isNaN(parsed.getTime())) return null;
+    return new Date(parsed.getTime() + 9 * 3600000).toISOString().slice(0, 16);
   }
 
-  const dateMatch = raw.match(/^(\d{4}-\d{2}-\d{2})/);
-  return dateMatch ? dateMatch[1] : null;
+  const dateTimeMatch = raw.match(/^(\d{4}-\d{2}-\d{2}T\d{2}:\d{2})/);
+  return dateTimeMatch ? dateTimeMatch[1] : null;
+}
+
+function getKmaHourlyKstDate(hourly: any): string | null {
+  return getKmaHourlyKstKey(hourly)?.slice(0, 10) || null;
 }
 
 function hasCurrentKmaHourly(cache: any, todayKst: string): boolean {
@@ -495,20 +535,8 @@ export async function evaluateAndStorePoint(
     : [];
   const kmaIndexMap = new Map<string, any>();
   kmaHourlyList.forEach(h => {
-    if (h?.datetime) {
-      const raw = String(h.datetime).replace(" ", "T");
-      let key = raw.slice(0, 13);
-      if (raw.includes("Z") || raw.includes("+00:00")) {
-        const dt = new Date(raw);
-        if (!isNaN(dt.getTime())) {
-          const kst = new Date(dt.getTime() + 9 * 3600000);
-          key = kst.toISOString().slice(0, 13);
-        }
-      }
-      if (key && !kmaIndexMap.has(key)) {
-        kmaIndexMap.set(key, h);
-      }
-    }
+    const key = getKmaHourlyKstKey(h);
+    if (key) kmaIndexMap.set(key, h);
   });
 
   // Safety Status for Point (TODAY only)
@@ -604,7 +632,7 @@ export async function evaluateAndStorePoint(
     const todayPeriodStart = `${todayKst}T${String(todayTargetHour).padStart(2, "0")}:00:00+09:00`;
     const todayPeriodEnd = `${todayKst}T${String(todayTargetHour + 1).padStart(2, "0")}:00:00+09:00`;
 
-    const kmaItem = kmaIndexMap.get(todaySlotKey);
+    const kmaItem = kmaIndexMap.get(`${todaySlotKey}:00`);
 
     const todayMarineHourly = mIdx !== undefined ? {
       wave_height: waveHeights[mIdx],
@@ -676,7 +704,7 @@ export async function evaluateAndStorePoint(
       const pEnd = `${todayKst}T${String(Math.min(24, h + 3)).padStart(2, "0")}:00:00+09:00`;
 
       const mHourIdx = marineIndexMap.get(slotKey);
-      const kmaHourItem = kmaIndexMap.get(slotKey);
+      const kmaHourItem = kmaIndexMap.get(`${slotKey}:00`);
 
       const mHourly = mHourIdx !== undefined ? {
         wave_height: waveHeights[mHourIdx],
@@ -765,7 +793,7 @@ export async function evaluateAndStorePoint(
         const pEnd = `${shortDate}T${String(Math.min(24, h + 3)).padStart(2, "0")}:00:00+09:00`;
 
         const mHourIdx = marineIndexMap.get(slotKey);
-        const kmaHourItem = kmaIndexMap.get(slotKey);
+        const kmaHourItem = kmaIndexMap.get(`${slotKey}:00`);
 
         const mHourly = mHourIdx !== undefined ? {
           wave_height: waveHeights[mHourIdx],

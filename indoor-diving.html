@@ -283,9 +283,26 @@
           </section>
         </div>
 
-        <!-- 5. 하단 액션 버튼 (바로가기 3개 + 최하단 버디구하기 강조) -->
+        <!-- 5. 하단 액션 버튼 (버디구하기 카드 + 바로가기 3개) -->
         <footer class="indoor-modal-footer">
-          <!-- 1행: 길찾기 / 홈페이지 / 전화하기 -->
+          <!-- 1행: 함께할 버디 구하기 카드 -->
+          <div id="modalBuddyCtaBtn" class="point-buddy-stitch-card" aria-label="함께할 버디 구하기" role="button" tabindex="0" style="display:flex;align-items:center;justify-content:space-between;gap:12px;background:#f0f9ff;border:1px solid #bae6fd;border-radius:16px;padding:12px 14px;cursor:pointer;text-decoration:none;transition:transform .12s,background .12s;-webkit-tap-highlight-color:transparent;box-sizing:border-box;width:100%;">
+            <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:3px;">
+              <div style="display:flex;align-items:center;gap:6px;">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#0284c7" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex-shrink:0;">
+                  <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path>
+                  <circle cx="9" cy="7" r="4"></circle>
+                  <path d="M22 21v-2a4 4 0 0 0-3-3.87"></path>
+                  <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+                </svg>
+                <strong style="font-size:14.5px;font-weight:800;color:#0e2032;letter-spacing:-0.01em;display:flex;align-items:center;gap:4px;">함께할 버디 구하기 <span style="font-size:14px;color:#0284c7;font-weight:900;">›</span></strong>
+              </div>
+              <p style="margin:0;font-size:12px;font-weight:500;color:#475467;line-height:1.4;word-break:keep-all;">혼자 가기 심심할 땐 버디와 함께 즐겨보세요!</p>
+            </div>
+            <img src="./public/images/buddy-card-thumb.jpg" alt="버디 모집" style="width:48px;height:48px;border-radius:12px;object-fit:cover;flex-shrink:0;border:1px solid #e0f2fe;box-shadow:0 2px 6px rgba(2,132,199,.12);">
+          </div>
+
+          <!-- 2행: 길찾기 / 홈페이지 / 전화하기 -->
           <div class="indoor-quick-actions-row">
             <button type="button" id="modalNavBtn" class="indoor-action-btn">
               <span class="material-symbols-outlined">directions</span>
@@ -300,11 +317,6 @@
               <span>전화하기</span>
             </button>
           </div>
-
-          <!-- 2행: 가장 아래 메인 CTA 버디구하기 강조 -->
-          <button type="button" id="modalBuddyCtaBtn" class="indoor-buddy-cta-btn">
-            <span>🤝 함께할 버디구하기</span>
-          </button>
         </footer>
       </div>
     </div>

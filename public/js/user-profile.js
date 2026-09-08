@@ -84,7 +84,7 @@
   }
 
   function getProfileCacheKey(provider, providerUserId) {
-    return `${provider || "kakao"}:${String(providerUserId)}`;
+    return `${provider || "any"}:${String(providerUserId)}`;
   }
 
   function mergeWithCurrentSession(profile, providerUserId) {
@@ -218,7 +218,7 @@
   async function getUserProfile(userId, options = {}) {
     const normalizedUserId = cleanString(userId);
     if (!normalizedUserId) return null;
-    const provider = options.provider || "kakao";
+    const provider = cleanString(options.provider);
     const cacheKey = getProfileCacheKey(provider, normalizedUserId);
     if (options.forceRefresh) profileCache.delete(cacheKey);
     if (profileCache.has(cacheKey)) return profileCache.get(cacheKey);
@@ -230,12 +230,12 @@
         return mergeWithCurrentSession(null, normalizedUserId) ||
           normalizeUserProfile({ provider, providerUserId: normalizedUserId });
       }
-      const { data, error } = await sb
+      let query = sb
         .from("user_profiles")
         .select("provider, provider_user_id, custom_nickname, custom_avatar_url, avatar_type, aida_level, certification_status, banned, suspended_until, gender, bio, age_group, activity_region, activity_depth")
-        .eq("provider", provider)
-        .eq("provider_user_id", normalizedUserId)
-        .maybeSingle();
+        .eq("provider_user_id", normalizedUserId);
+      if (provider) query = query.eq("provider", provider);
+      const { data, error } = await query.limit(1).maybeSingle();
       if (error) throw error;
 
       const normalized = mergeWithCurrentSession(
@@ -264,7 +264,7 @@
     });
   }
 
-  function getCachedUserProfile(userId, provider = "kakao") {
+  function getCachedUserProfile(userId, provider) {
     const normalizedUserId = cleanString(userId);
     if (!normalizedUserId) return null;
     return profileCache.get(getProfileCacheKey(provider, normalizedUserId)) || null;

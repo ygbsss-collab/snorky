@@ -425,6 +425,9 @@ async function primaryCenterPhotoAdmin(centerId, imageId) {
     await window.SNORKYIndoor.loadIndoorCenters();
   }
 }
+async function bindCommunitySettings(){const save=el("saveCommunityConfig");if(!save)return;const enabled=el("communityEnabled"),url=el("communityOpenChatUrl"),banner=el("communityBannerText");let baseline=null,resetTimer=null;const current=()=>({enabled:enabled.checked,open_chat_url:url.value.trim(),banner_text:banner.value.trim()}),same=()=>baseline&&JSON.stringify(current())===JSON.stringify(baseline),setButton=text=>{save.textContent=text},refreshButton=()=>setButton(same()?"저장":"변경 저장");const sync=async()=>{try{const config=await loadCommunityConfig();enabled.checked=Boolean(config.enabled);url.value=config.open_chat_url||"";banner.value=config.banner_text||"함께 다이빙하고 함께 이야기해요";baseline=current();setButton("저장");return true}catch(error){message("communityConfigMessage",error,"운영 설정을 불러오지 못했습니다.");return false}};await sync();[enabled,url,banner].forEach(input=>{input.addEventListener("input",refreshButton);input.addEventListener("change",refreshButton)});window.addEventListener("snorky:admin-state",event=>{if(event.detail?.authorized===true)sync()});save.onclick=async()=>{try{await saveCommunityConfig();message("communityConfigMessage",null,"저장되었습니다.");baseline=current();setButton("저장 완료");clearTimeout(resetTimer);resetTimer=setTimeout(refreshButton,1800)}catch(error){message("communityConfigMessage",error,"저장하지 못했습니다.");setButton("저장 실패")}}}
+async function loadCommunityConfig(){const result=await sb().from("app_settings").select("value").eq("key","community_config").maybeSingle();if(result.error)throw result.error;return result.data?.value||{enabled:false,open_chat_url:"",banner_text:"함께 다이빙하고 함께 이야기해요"}}
+async function saveCommunityConfig(){const user=await requireAdmin(),enabled=el("communityEnabled").checked,url=el("communityOpenChatUrl").value.trim(),bannerText=el("communityBannerText").value.trim();if(enabled&&!url)throw new Error("활성화하려면 오픈채팅 URL을 입력해 주세요.");if(url&&!/^https:\/\/open\.kakao\.com\/o\//i.test(url))throw new Error("카카오 오픈채팅 URL 형식이 올바르지 않습니다.");const result=await sb().from("app_settings").upsert({key:"community_config",value:{enabled,open_chat_url:url,banner_text:bannerText||"함께 다이빙하고 함께 이야기해요"},updated_at:new Date().toISOString(),updated_by:user.id});if(result.error)throw result.error}
 
 async function loadCertificationRequestsAdmin() {
   await requireAdmin();
@@ -549,13 +552,14 @@ window.SNORKYAdmin = {
   loadUserReportsAdmin,
   moderateUserReportAdmin,
   loadUsersAdmin,
-  moderateUserAdmin
+  moderateUserAdmin,loadCommunityConfig,saveCommunityConfig
 };
-addAdminRegion=function(){return addRegion()};renameAdminRegion=function(id){return renameRegion(id)};deleteAdminRegion=function(id){return deleteRegion(id)};
-saveNewPoint=function(){return saveNew()};savePointDetailOverride=function(){return saveDetail()};persistPointCoordinate=function(regionName,point){return persistCoordinates(regionName,point)};
-saveCoordinateEdit=function(){return savePin()};
-deleteManagedPoint=function(point){return deletePoint(point)};refreshPointPhotos=function(point){return renderPhotos(point)};
+window.addAdminRegion=function(){return addRegion()};window.renameAdminRegion=function(id){return renameRegion(id)};window.deleteAdminRegion=function(){return deleteRegion()};
+window.saveNewPoint=function(){return saveNew()};window.savePointDetailOverride=function(){return saveDetail()};window.persistPointCoordinate=function(regionName,point){return persistCoordinates(regionName,point)};
+window.saveCoordinateEdit=function(){return savePin()};
+window.deleteManagedPoint=function(point){return deletePoint(point)};window.refreshPointPhotos=function(point){return renderPhotos(point)};
 bindSecretEntry();
+window.addEventListener("DOMContentLoaded",bindCommunitySettings,{once:true});
 window.addEventListener("load",bindSecretEntry,{once:true});
 function initializeAuth(){sb().auth.onAuthStateChange(event=>{if(event==="SIGNED_OUT"){authorized=false;if(typeof setAdminMode==="function")setAdminMode(false)}});restoreSession()}
 if(window.supabase?.createClient)initializeAuth();else window.addEventListener("snorky:supabase-ready",initializeAuth,{once:true});

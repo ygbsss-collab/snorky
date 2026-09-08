@@ -13,6 +13,28 @@
   <script src="./public/js/bottom-nav.js?v=20260904_v3"></script>
   <script src="./public/js/buddy-point-detail-overlay.js?v=20260905_v1"></script>
   <style>
+    /* 상단 우측 소형 공유하기 버튼 전용 스타일 override */
+    #btnShareBuddyPost {
+      width: auto !important;
+      height: auto !important;
+      max-width: none !important;
+      min-height: 0 !important;
+      flex: none !important;
+      background: #fee500 !important;
+      color: #191919 !important;
+      font-size: 12.5px !important;
+      font-weight: 700 !important;
+      padding: 5px 12px !important;
+      border-radius: 14px !important;
+      border: 0 !important;
+      display: inline-flex !important;
+      align-items: center !important;
+      justify-content: center !important;
+      gap: 4px !important;
+      cursor: pointer !important;
+      line-height: normal !important;
+      box-shadow: none !important;
+    }
     /* 상단 헤더, 배너, 메뉴 고정 및 최근 버디 모집 목록 영역 독립 세로 스크롤 복구 */
     html, body {
       height: 100%;
@@ -374,6 +396,22 @@
           </div>
         </section>
 
+        <!-- SNORKY Community 카카오톡 오픈채팅 배너 (Stitch Design) -->
+        <section id="snorkyCommunityBanner" class="snorky-community-banner" style="display:none;" aria-label="SNORKY Community">
+          <div class="snorky-community-banner-content">
+            <div class="snorky-community-banner-info">
+              <div class="snorky-community-badge"><span>SNORKY Community</span></div>
+              <p id="snorkyCommunityBannerText" class="snorky-community-banner-text">함께 다이빙하고 함께 이야기해요</p>
+            </div>
+            <button type="button" id="btnOpenCommunityModal" class="snorky-community-enter-btn">
+              <span>입장하기</span>
+              <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M9 5l7 7-7 7"></path>
+              </svg>
+            </button>
+          </div>
+        </section>
+
         <!-- 최근 등록된 버디 모집 목록 -->
         <section class="buddy-list-section">
           <header class="buddy-list-header">
@@ -391,6 +429,85 @@
       </div>
     </main>
 
+    <!-- SNORKY Community 카카오톡 입장 모달 (Stitch Design) -->
+    <div id="buddyCommunityModal" class="buddy-modal-overlay" style="display:none;" role="dialog" aria-modal="true" aria-labelledby="communityModalTitle">
+      <div class="buddy-community-sheet">
+        <div class="buddy-community-drag-handle"><div></div></div>
+        <div class="buddy-community-modal-head">
+          <div class="buddy-community-head-title">
+            <span class="buddy-community-head-badge">SNORKY 공식 오픈채팅방</span>
+          </div>
+          <button type="button" id="btnCloseCommunityModal" class="buddy-community-close-btn" aria-label="닫기">
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M6 18L18 6M6 6l12 12"></path>
+            </svg>
+          </button>
+        </div>
+
+        <div class="buddy-community-modal-body">
+          <div class="buddy-community-profile-icon">
+            <div class="buddy-community-avatar">
+              <img src="./public/images/buddy-card-thumb.jpg" alt="SNORKY App Icon" class="buddy-community-avatar-img" onerror="this.src='./public/images/avatar-default.png'">
+            </div>
+            <div class="buddy-community-kakao-badge">
+              <svg viewBox="0 0 24 24" width="12" height="12" fill="#191919" aria-hidden="true">
+                <path d="M12 3C6.48 3 2 6.58 2 11c0 2.82 1.83 5.3 4.6 6.64l-.94 3.49c-.08.31.25.57.53.41L10.3 19c.56.06 1.13.1 1.7.1 5.52 0 10-3.58 10-8s-4.48-8-10-8z"></path>
+              </svg>
+            </div>
+          </div>
+
+          <h3 id="communityModalTitle" class="buddy-community-title">SNORKY Community</h3>
+          <p id="snorkyCommunityModalText" class="buddy-community-subtext">함께 다이빙하고 함께 이야기해요</p>
+
+          <div class="buddy-community-notice-card">
+            <div class="buddy-community-notice-head">
+              <div class="buddy-community-notice-head-title">
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="#0284c7" stroke-width="2" aria-hidden="true">
+                  <circle cx="12" cy="12" r="10"></circle>
+                  <path d="M12 16v-4M12 8h.01"></path>
+                </svg>
+                <h4>오픈채팅방 입장 전 체크사항</h4>
+              </div>
+              <span class="buddy-community-notice-pill">필독</span>
+            </div>
+            <p class="buddy-community-notice-desc">오픈채팅방은 카카오톡 외부 커뮤니티 공간입니다. 아래 안전 수칙을 확인해 주세요.</p>
+            <ul class="buddy-community-notice-list">
+              <li>오픈채팅방은 카카오톡 외부 커뮤니티 공간입니다.</li>
+              <li>개인정보 및 민감한 정보 공유에 주의해 주세요.</li>
+              <li>금전거래, 장비 대여·판매, 개인 간 약속은 사용자 책임으로 진행됩니다.</li>
+              <li>불쾌한 언행이나 위험한 행동 권유는 카카오 신고 기능을 이용해 주세요.</li>
+              <li>실제 입수 여부는 현장 기상·해양 상황과 개인의 경험 수준을 기준으로 판단해 주세요.</li>
+            </ul>
+            <label class="buddy-community-agree-label">
+              <input type="checkbox" id="chkCommunityAgree" class="buddy-community-checkbox">
+              <span>위 주의사항을 모두 확인하였으며 동의합니다</span>
+            </label>
+          </div>
+        </div>
+
+        <div class="buddy-community-modal-actions">
+          <button type="button" id="btnKakaoEnter" class="btn-kakao-enter" disabled>
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="#191919" aria-hidden="true">
+              <path d="M12 3C6.48 3 2 6.58 2 11c0 2.82 1.83 5.3 4.6 6.64l-.94 3.49c-.08.31.25.57.53.41L10.3 19c.56.06 1.13.1 1.7.1 5.52 0 10-3.58 10-8s-4.48-8-10-8z"></path>
+            </svg>
+            <span>오픈채팅방 입장하기</span>
+          </button>
+          <div class="buddy-community-secondary-actions">
+            <button type="button" id="btnCopyCommunityLink" class="btn-community-copy">
+              <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                <path d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path>
+              </svg>
+              <span>링크 복사하기</span>
+            </button>
+            <span class="divider">|</span>
+            <button type="button" id="btnDismissCommunityModal" class="btn-community-dismiss">
+              나중에 참여하기
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <!-- 버디 모집 상세 모달 -->
     <div id="buddyDetailModal" class="buddy-modal-overlay" style="display:none" role="dialog" aria-modal="true" aria-labelledby="detailModalHeading">
       <div class="buddy-modal-card buddy-detail-modal-card">
@@ -407,18 +524,14 @@
               <span id="detailActivityBadge" class="buddy-badge-activity">활동</span>
               <span id="detailStatusBadge" class="buddy-post-status-text">모집중</span>
             </div>
-            <button type="button" id="btnShareBuddyPost" class="buddy-detail-btn" style="background:#fee500;color:#191919;font-size:12.5px;font-weight:700;padding:5px 10px;border-radius:14px;border:none;display:inline-flex;align-items:center;justify-content:center;gap:4px;cursor:pointer;">
-              <svg viewBox="0 0 24 24" width="16" height="16" fill="#191919" aria-hidden="true" style="flex-shrink:0;"><path d="M12 3c-4.97 0-9 3.185-9 7.115 0 2.557 1.707 4.8 4.27 6.054-.188.702-.682 2.545-.78 2.94-.122.49.18.483.377.352.155-.103 2.466-1.675 3.47-2.36.544.08 1.102.13 1.663.13 4.97 0 9-3.186 9-7.116S16.97 3 12 3z"/></svg>
+            <button type="button" id="btnShareBuddyPost">
+              <svg viewBox="0 0 24 24" width="14" height="14" fill="#191919" aria-hidden="true" style="flex-shrink:0;"><path d="M12 3c-4.97 0-9 3.185-9 7.115 0 2.557 1.707 4.8 4.27 6.054-.188.702-.682 2.545-.78 2.94-.122.49.18.483.377.352.155-.103 2.466-1.675 3.47-2.36.544.08 1.102.13 1.663.13 4.97 0 9-3.186 9-7.116S16.97 3 12 3z"/></svg>
               <span>공유하기</span>
             </button>
           </div>
 
           <div class="buddy-detail-place-header">
             <h3 id="detailPointName" class="buddy-detail-heading">포인트명</h3>
-            <button type="button" id="btnHeaderOpenChat" class="buddy-detail-btn buddy-chat-btn" style="display:none;font-size:12px;padding:4px 10px;border-radius:12px;background:#fef08a;color:#854d0e;border:1px solid #fde047;font-weight:700;cursor:pointer;align-items:center;justify-content:center;gap:4px;">
-              <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor" aria-hidden="true" style="flex-shrink:0;"><path d="M12 3c-4.97 0-9 3.185-9 7.115 0 2.557 1.707 4.8 4.27 6.054-.188.702-.682 2.545-.78 2.94-.122.49.18.483.377.352.155-.103 2.466-1.675 3.47-2.36.544.08 1.102.13 1.663.13 4.97 0 9-3.186 9-7.116S16.97 3 12 3z"/></svg>
-              <span>버디 대화방 참여</span>
-            </button>
             <a id="detailPlaceLinkBtn" href="#" class="buddy-place-detail-btn" style="display:none;">포인트 상세보기 ›</a>
           </div>
 
@@ -451,9 +564,23 @@
               <span class="buddy-detail-label"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="6"/><path d="M15.477 12.89 17 22l-5-3-5 3 1.523-9.11"/></svg>참석자 레벨</span>
               <strong id="detailParticipantLevel" class="buddy-detail-val">-</strong>
             </div>
-            <div class="buddy-detail-item buddy-detail-host-item">
+            <div class="buddy-detail-item buddy-detail-host-item" style="display:none;">
               <span class="buddy-detail-label"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>주최자</span>
               <div id="detailHostInfo" class="buddy-detail-val buddy-detail-host-row">-</div>
+            </div>
+          </div>
+
+          <!-- 함께하는 버디 (주최자 + 승인된 참가자) 섹션 -->
+          <div id="detailParticipantsSection" class="buddy-detail-participants-section" style="margin-top:12px;margin-bottom:12px;">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+              <span class="buddy-detail-label" style="font-size:13.5px;font-weight:600;color:#334155;display:inline-flex;align-items:center;gap:4px;margin:0;">
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+                함께하는 버디
+              </span>
+              <span id="detailParticipantsCount" style="font-size:12.5px;font-weight:700;color:#0284c7;">1명 참여중</span>
+            </div>
+            <div id="detailParticipantsList" class="buddy-detail-participants-list" style="display:flex;flex-direction:column;gap:8px;">
+              <!-- 주최자 및 승인된 참가자 카드 동적 렌더링 -->
             </div>
           </div>
 
@@ -632,7 +759,6 @@
   </div>
 
   <script src="./public/js/snorky-test-mode.js?v=20260905_v1"></script>
-  <script src="./public/js/supabase-client.js?v=20260820_stitch_v76"></script>
   <script src="./public/js/auth-session.js?v=20260905_moderation_v1"></script>
   <script src="./public/js/user-profile.js?v=20260907_profile_pipeline_v1"></script>
   <script src="./public/js/buddy-regions.js?v=20260903_v1"></script>
@@ -644,6 +770,68 @@
   <script>
     (function () {
       "use strict";
+
+      const buddyPageParams = new URLSearchParams(window.location.search);
+      const scopedPointId = String(buddyPageParams.get("point_id") || "").trim();
+      const scopedCenterId = scopedPointId ? "" : String(buddyPageParams.get("center_id") || "").trim();
+      const hasScopedTarget = Boolean(scopedPointId || scopedCenterId);
+
+      async function resolveScopedSeaPointIds(sb) {
+        if (!sb || !scopedPointId) return scopedPointId ? [scopedPointId] : [];
+
+        let point = null;
+        const byId = await sb.from("points").select("id, legacy_id").eq("id", scopedPointId).limit(1);
+        if (!byId.error && byId.data?.[0]) point = byId.data[0];
+
+        if (!point) {
+          const byLegacyId = await sb.from("points").select("id, legacy_id").eq("legacy_id", scopedPointId).limit(1);
+          if (!byLegacyId.error && byLegacyId.data?.[0]) point = byLegacyId.data[0];
+        }
+
+        if (!point) return [scopedPointId];
+        return Array.from(new Set([
+          String(point.id),
+          point.legacy_id == null ? "" : String(point.legacy_id).trim()
+        ].filter(Boolean)));
+      }
+
+      function renderScopedEmptyState() {
+        if (!hasScopedTarget) return false;
+        const message = scopedPointId
+          ? "현재 이 포인트의 버디 공고가 없습니다."
+          : "현재 이 센터의 버디 공고가 없습니다.";
+        const createUrl = scopedPointId
+          ? `./buddy-create.html?point_id=${encodeURIComponent(scopedPointId)}`
+          : `./buddy-create.html?center_id=${encodeURIComponent(scopedCenterId)}`;
+        postListEl.innerHTML = `
+          <div class="buddy-scoped-empty-card" style="position:relative;width:100%;box-sizing:border-box;border-radius:18px;background:linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);border:1px solid #e2e8f0;padding:28px 20px 24px;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;box-shadow:0 2px 8px -1px rgba(0,0,0,0.05), 0 1px 4px -1px rgba(0,0,0,0.03);min-height:240px;overflow:hidden;margin:4px 0 16px;">
+            <div style="position:absolute;top:-40px;right:-40px;width:130px;height:130px;border-radius:50%;background:rgba(219,234,254,0.35);filter:blur(24px);pointer-events:none;"></div>
+            <div style="position:absolute;bottom:-40px;left:-40px;width:130px;height:130px;border-radius:50%;background:rgba(207,250,254,0.35);filter:blur(24px);pointer-events:none;"></div>
+            <div style="position:relative;margin-bottom:14px;">
+              <div style="width:60px;height:60px;border-radius:18px;background:linear-gradient(135deg, #1d70f5 0%, #06b6d4 100%);display:flex;align-items:center;justify-content:center;box-shadow:0 8px 20px -4px rgba(29,112,245,0.28);color:#ffffff;">
+                <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <path d="M12 6V4m0 2a4 4 0 00-4 4v1a4 4 0 008 0V10a4 4 0 00-4-4zm-7 8c0 2.5 3 4 7 4s7-1.5 7-4m-14 0a3 3 0 00-3 3v1a2 2 0 002 2h16a2 2 0 002-2v-1a3 3 0 00-3-3m-14 0h14"></path>
+                </svg>
+              </div>
+              <span style="position:absolute;top:-3px;right:-3px;width:12px;height:12px;background:#67e8f9;border-radius:50%;border:2px solid #ffffff;box-shadow:0 1px 3px rgba(0,0,0,0.1);"></span>
+              <span style="position:absolute;bottom:0px;left:-4px;width:9px;height:9px;background:#93c5fd;border-radius:50%;border:2px solid #ffffff;box-shadow:0 1px 2px rgba(0,0,0,0.1);"></span>
+            </div>
+            <h4 style="margin:0;font-size:15.5px;font-weight:800;color:#1e293b;letter-spacing:-0.02em;line-height:1.35;">
+              ${message}
+            </h4>
+            <p style="margin:6px 0 0;font-size:12.5px;line-height:1.45;color:#64748b;letter-spacing:-0.01em;font-weight:500;word-break:keep-all;">
+              첫 번째 버디를 모집하고 함께 안전하고<br>즐거운 다이빙 일정을 만들어보세요!
+            </p>
+            <a href="${createUrl}" style="margin-top:18px;display:inline-flex;align-items:center;justify-content:center;gap:6px;width:100%;max-width:240px;height:44px;border-radius:12px;background:linear-gradient(135deg, #1d70f5 0%, #135be3 100%);color:#ffffff;font-size:13.5px;font-weight:700;letter-spacing:-0.01em;text-decoration:none;box-shadow:0 4px 14px -2px rgba(19,91,227,0.35);transition:transform .12s,opacity .15s;-webkit-tap-highlight-color:transparent;">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M12 4.5v15m7.5-7.5h-15"></path>
+              </svg>
+              <span>함께할 버디 공고 작성하기</span>
+            </a>
+          </div>
+        `;
+        return true;
+      }
 
       // 0-1. 활동 구분(스노클링/프리다이빙 vs 실내다이빙)에 맞게 한 줄 계층형 지역 옵션 동적 재구성
       function updateRegionOptionsForCurrentActivity(selectedRegion = "") {
@@ -1157,22 +1345,25 @@
 
       function buildBuddyShareData(post) {
         const shareUrl = new URL(`./buddy.html?post_id=${encodeURIComponent(post.id)}`, window.location.href).href;
-        const lines = [];
-        if (post.point_name) lines.push(String(post.point_name).trim());
+        const lines = ["SNORKY 버디 모집"];
+        if (post.activity_type) lines.push(`활동: ${String(post.activity_type).trim()}`);
+        if (post.point_name) lines.push(`포인트: ${String(post.point_name).trim()}`);
         const displayRegion = window.SNORKYBuddyRegions?.formatPostRegion
           ? window.SNORKYBuddyRegions.formatPostRegion(post)
           : String(post.region || "").trim();
-        if (displayRegion) lines.push(displayRegion);
+        if (displayRegion) lines.push(`지역: ${displayRegion}`);
         const dateTime = [post.event_date, post.entry_time].filter(Boolean).map(String).join(" ").trim();
-        if (dateTime) lines.push(dateTime);
-        lines.push(`${Math.max(1, Number(post.current_count) || 1)}/${Math.max(1, Number(post.capacity) || 2)}`);
+        if (dateTime) lines.push(`일시: ${dateTime}`);
+        lines.push(`모집인원: ${Math.max(1, Number(post.current_count) || 1)}/${Math.max(1, Number(post.capacity) || 2)}명`);
+        if (post.difficulty) lines.push(`난이도: ${String(post.difficulty).trim()}`);
         const participantLevel = String(post.host_aida_level || post.participant_level || "").trim();
-        if (participantLevel && participantLevel !== "없음" && participantLevel !== "미설정") lines.push(participantLevel);
-        if (post.has_instructor === true) lines.push("강사 있음");
+        if (participantLevel && participantLevel !== "없음" && participantLevel !== "미설정") lines.push(`레벨: ${participantLevel}`);
+        if (post.host_nickname || post.nickname) lines.push(`주최자: ${String(post.host_nickname || post.nickname).trim()}`);
+        if (post.has_instructor === true) lines.push("강사: 있음");
         return {
           title: "SNORKY 버디 모집",
           description: lines.join("\n"),
-          text: ["SNORKY 버디 모집", ...lines, shareUrl].join("\n"),
+          text: [...lines, shareUrl].join("\n"),
           url: shareUrl,
           imageUrl: post.representative_image_url || post.image_url || post.thumbnail_url || DEFAULT_BUDDY_SHARE_IMAGE
         };
@@ -1182,7 +1373,7 @@
         const share = buildBuddyShareData(post);
         if (navigator.share) {
           try {
-            await navigator.share({ title: share.title, text: share.description, url: share.url });
+            await navigator.share({ title: share.title, text: share.text });
             return;
           } catch (error) {
             if (error?.name === "AbortError") return;
@@ -1360,8 +1551,53 @@
         btnSubmitApplication.textContent = "신청 처리 중...";
 
         try {
+          let latestPost = null;
           try {
-            await sb.from("buddy_applications").delete().eq("buddy_post_id", pendingApplyPost.id).eq("applicant_user_id", curUser).in("status", ["CANCELED", "REJECTED"]);
+            latestPost = await fetchLatestBuddyPost(pendingApplyPost.id);
+          } catch (error) {
+            showToast("공고 상태를 확인하지 못했습니다.");
+            btnSubmitApplication.disabled = false;
+            btnSubmitApplication.textContent = "참가 신청하기";
+            return;
+          }
+          if (!latestPost) {
+            showToast("삭제된 공고입니다.");
+            closeApplyFormModal();
+            closeDetailModal();
+            btnSubmitApplication.disabled = false;
+            btnSubmitApplication.textContent = "참가 신청하기";
+            return;
+          }
+          if (latestPost.status === "CANCELED") {
+            showToast("취소된 공고입니다.");
+            closeApplyFormModal();
+            closeDetailModal();
+            btnSubmitApplication.disabled = false;
+            btnSubmitApplication.textContent = "참가 신청하기";
+            return;
+          }
+          const isLatestFull = Number(latestPost.capacity) > 0 && Number(latestPost.current_count || 1) >= Number(latestPost.capacity);
+          if (latestPost.status === "CLOSED" || isLatestFull) {
+            showToast("모집이 마감되었습니다.");
+            closeApplyFormModal();
+            closeDetailModal();
+            btnSubmitApplication.disabled = false;
+            btnSubmitApplication.textContent = "참가 신청하기";
+            return;
+          }
+          if (myApplications.get(Number(latestPost.id)) === "REJECTED") {
+            showToast("거절된 공고에는 다시 신청할 수 없습니다.");
+            closeApplyFormModal();
+            closeDetailModal();
+            btnSubmitApplication.disabled = false;
+            btnSubmitApplication.textContent = "참가 신청하기";
+            return;
+          }
+          pendingApplyPost = latestPost;
+          postsMap.set(Number(latestPost.id), latestPost);
+
+          try {
+            await sb.from("buddy_applications").delete().eq("buddy_post_id", pendingApplyPost.id).eq("applicant_user_id", curUser).in("status", ["CANCELED"]);
           } catch (_) {}
 
           const post = pendingApplyPost;
@@ -1429,6 +1665,19 @@
       });
 
       // ── 상세보기 모달 오픈 및 제어 (상위 스코프) ──
+      async function fetchLatestBuddyPost(postId) {
+        let sb = null;
+        try { sb = window.getSnorkySupabase ? window.getSnorkySupabase() : window.snorkySupabase; } catch (_) {}
+        if (!sb) throw new Error("Supabase client unavailable");
+        const { data, error } = await sb
+          .from("buddy_posts")
+          .select("id, user_id, activity_type, region, point_id, point_name, is_snorky_point, event_date, entry_time, has_instructor, host_gender, host_aida_level, preferred_gender, capacity, current_count, difficulty, description, application_notification_enabled, status, contact_method, created_at, updated_at")
+          .eq("id", Number(postId))
+          .maybeSingle();
+        if (error) throw error;
+        return data || null;
+      }
+
       async function openPostDetailModal(postId) {
         postId = Number(postId);
         if (!postId || !detailModal) return;
@@ -1439,25 +1688,26 @@
         const currentSession = window.SNORKYAuthSession?.get?.();
         const currentUserId = currentSession?.user?.id ? String(currentSession.user.id) : null;
 
-        let post = postsMap.get(postId);
-        if (!post && sb) {
+        let post = null;
+        if (sb) {
           try {
-            const { data, error } = await sb
-              .from("buddy_posts")
-              .select("id, user_id, activity_type, region, point_id, point_name, is_snorky_point, event_date, entry_time, has_instructor, host_gender, preferred_gender, capacity, current_count, difficulty, description, application_notification_enabled, status, contact_method, created_at, updated_at")
-              .eq("id", postId)
-              .maybeSingle();
-            if (!error && data) {
-              post = data;
+            post = await fetchLatestBuddyPost(postId);
+            if (post) {
               postsMap.set(postId, post);
+            } else {
+              showToast("삭제된 공고입니다.");
+              closeDetailModal();
+              return;
             }
           } catch (err) {
-            console.error("[openPostDetailModal] Fetch fallback error:", err);
+            console.error("[openPostDetailModal] Latest post fetch error:", err);
+            post = postsMap.get(postId);
           }
         }
 
         if (!post) {
-          showToast("해당 버디 공고를 찾을 수 없습니다.");
+          showToast("삭제된 공고입니다.");
+          closeDetailModal();
           return;
         }
 
@@ -1488,6 +1738,8 @@
               .select("status")
               .eq("buddy_post_id", postId)
               .eq("applicant_user_id", currentUserId)
+              .order("created_at", { ascending: false })
+              .limit(1)
               .maybeSingle();
             if (appData && appData.status) {
               myApplications.set(postId, appData.status);
@@ -1582,11 +1834,137 @@
             `;
           }
         }
+
+        // 함께하는 버디 (주최자 + 승인된 참가자) 목록 렌더링
+        const participantsListEl = document.getElementById("detailParticipantsList");
+        const participantsCountEl = document.getElementById("detailParticipantsCount");
+        if (participantsListEl) {
+          participantsListEl.innerHTML = '<div style="font-size:12.5px;color:#94a3b8;padding:8px 0;">참가자 정보를 불러오는 중...</div>';
+          (async () => {
+            try {
+              let approvedApps = [];
+              if (sb) {
+                const { data: appsData } = await sb
+                  .from("buddy_applications")
+                  .select("id, applicant_user_id, status, applicant_gender, applicant_aida_level, applicant_age_group, applicant_nickname, applicant_avatar_url, created_at")
+                  .eq("buddy_post_id", postId)
+                  .eq("status", "APPROVED")
+                  .order("created_at", { ascending: true });
+                approvedApps = appsData || [];
+              }
+
+              const applicantIds = approvedApps.map(a => a.applicant_user_id).filter(Boolean);
+              if (applicantIds.length > 0) {
+                try {
+                  await Promise.all(applicantIds.map(id => window.SNORKYUserProfile?.getUserProfile?.(id)));
+                } catch (_) {}
+              }
+
+              const totalCount = 1 + approvedApps.length;
+              if (participantsCountEl) {
+                const maxCap = Math.max(totalCount, Number(post.capacity) || 2);
+                participantsCountEl.textContent = `${totalCount}/${maxCap}명 참여중`;
+              }
+
+              // 1) 주최자 카드
+              const hostAvatarTrigger = window.SNORKYBuddyProfileCard?.renderTrigger({
+                userId: post.user_id,
+                profile: author,
+                className: "buddy-detail-participant-avatar",
+                resolved: true
+              }) || "";
+              const hostMetaParts = [
+                author.gender && author.gender !== "비공개" ? author.gender : null,
+                author.ageGroup || null,
+                author.aidaLevel && author.aidaLevel !== "없음" ? (author.isVerified ? `${author.aidaLevel} ✓` : author.aidaLevel) : null
+              ].filter(Boolean);
+              const hostMetaText = hostMetaParts.length > 0 ? hostMetaParts.join(" · ") : "프로필 미설정";
+
+              let html = `
+                <div class="buddy-detail-participant-card" style="display:flex;align-items:center;justify-content:space-between;padding:10px 12px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:12px;">
+                  <div style="display:flex;align-items:center;gap:10px;min-width:0;">
+                    ${hostAvatarTrigger}
+                    <div style="min-width:0;">
+                      <div style="display:flex;align-items:center;gap:6px;">
+                        <span style="font-weight:700;font-size:14px;color:#0f172a;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${escapeHtml(author.displayName)}</span>
+                        <span style="background:#e0f2fe;color:#0369a1;font-size:11px;font-weight:700;padding:2px 7px;border-radius:6px;flex-shrink:0;">주최자</span>
+                      </div>
+                      <div style="font-size:12px;color:#64748b;margin-top:2px;">${escapeHtml(hostMetaText)}</div>
+                    </div>
+                  </div>
+                </div>
+              `;
+
+              // 2) 승인된 참가자 카드들
+              approvedApps.forEach(app => {
+                const uid = String(app.applicant_user_id || "");
+                const prof = window.SNORKYUserProfile?.getCachedUserProfile?.(uid) || null;
+                const isMe = currentUserId && uid === currentUserId;
+                const mySessionUser = isMe ? currentSession?.user : null;
+                const effectiveProf = prof || (isMe ? window.SNORKYUserProfile?.normalizeUserProfile?.(currentSession) : null);
+
+                const dispName = window.SNORKYUserProfile?.getDisplayName?.(effectiveProf, app.applicant_nickname) || "버디";
+                const avatarSrc = window.SNORKYUserProfile?.getAvatarUrl?.(effectiveProf, mySessionUser) || app.applicant_avatar_url || "";
+                const rawAida = effectiveProf?.aidaLevel || app.applicant_aida_level || "없음";
+                const cleanAida = (rawAida && rawAida !== "없음" && rawAida !== "미설정") ? String(rawAida).replace(/\s*✓$/, "").trim() : "";
+                const isAppVerified = checkIsVerified(effectiveProf) || (isMe && checkIsVerified(mySessionUser)) || checkIsVerified(app);
+                const genderVal = effectiveProf?.gender || app.applicant_gender || "비공개";
+                const ageVal = effectiveProf?.ageGroup || app.applicant_age_group || "";
+
+                const pMetaParts = [
+                  genderVal && genderVal !== "비공개" ? genderVal : null,
+                  ageVal || null,
+                  cleanAida ? (isAppVerified ? `${cleanAida} ✓` : cleanAida) : null
+                ].filter(Boolean);
+                const pMetaText = pMetaParts.length > 0 ? pMetaParts.join(" · ") : "프로필 미설정";
+
+                const pCardInfo = {
+                  displayName: dispName,
+                  avatarUrl: avatarSrc,
+                  gender: genderVal,
+                  ageGroup: ageVal,
+                  aidaLevel: cleanAida || "없음",
+                  isVerified: Boolean(isAppVerified && cleanAida),
+                  bio: effectiveProf?.bio || ""
+                };
+
+                const pAvatarTrigger = window.SNORKYBuddyProfileCard?.renderTrigger({
+                  userId: uid,
+                  profile: pCardInfo,
+                  className: "buddy-detail-participant-avatar",
+                  resolved: true
+                }) || "";
+
+                html += `
+                  <div class="buddy-detail-participant-card" style="display:flex;align-items:center;justify-content:space-between;padding:10px 12px;background:#ffffff;border:1px solid #e2e8f0;border-radius:12px;">
+                    <div style="display:flex;align-items:center;gap:10px;min-width:0;">
+                      ${pAvatarTrigger}
+                      <div style="min-width:0;">
+                        <div style="display:flex;align-items:center;gap:6px;">
+                          <span style="font-weight:700;font-size:14px;color:#0f172a;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${escapeHtml(dispName)}</span>
+                          <span style="background:${isMe ? '#fef3c7;color:#92400e;' : '#f0fdf4;color:#15803d;'}font-size:11px;font-weight:700;padding:2px 7px;border-radius:6px;flex-shrink:0;">${isMe ? '나 (참가자)' : '참가자'}</span>
+                        </div>
+                        <div style="font-size:12px;color:#64748b;margin-top:2px;">${escapeHtml(pMetaText)}</div>
+                      </div>
+                    </div>
+                  </div>
+                `;
+              });
+
+              participantsListEl.innerHTML = html;
+            } catch (pErr) {
+              console.warn("[BuddyDetail] Failed to render participants:", pErr);
+              if (participantsListEl) participantsListEl.innerHTML = '<div style="font-size:12px;color:#94a3b8;">참가자 정보를 불러오지 못했습니다.</div>';
+            }
+          })();
+        }
+
         if (detailDescription) {
           detailDescription.textContent = post.description ? post.description : "작성된 모집 내용이 없습니다.";
         }
 
         const myAppStatus = myApplications.get(postId);
+        const isFull = Number(post.capacity) > 0 && Number(post.current_count) >= Number(post.capacity);
 
         const btnHeaderOpenChat = document.getElementById("btnHeaderOpenChat");
         const isOwnPost = currentUserId && String(post.user_id || "") === String(currentUserId);
@@ -1632,7 +2010,15 @@
           btnDetailApply.disabled = false;
           btnDetailApply.className = "buddy-detail-btn primary";
 
-          if (isOwnPost && window.SNORKYTestMode?.TEST_MODE_ALLOW_DUPLICATE_USERS !== true) {
+          if (post.status === "CANCELED") {
+            btnDetailApply.textContent = "공고 취소";
+            btnDetailApply.disabled = true;
+            btnDetailApply.onclick = null;
+          } else if ((post.status === "CLOSED" || isFull) && myAppStatus !== "APPROVED") {
+            btnDetailApply.textContent = "신청 마감";
+            btnDetailApply.disabled = true;
+            btnDetailApply.onclick = null;
+          } else if (isOwnPost && window.SNORKYTestMode?.TEST_MODE_ALLOW_DUPLICATE_USERS !== true) {
             btnDetailApply.textContent = "내가 작성한 공고";
             btnDetailApply.disabled = true;
             btnDetailApply.onclick = null;
@@ -1665,11 +2051,11 @@
               }
             };
           } else if (myAppStatus === "PENDING") {
-            btnDetailApply.textContent = "신청 대기중";
+            btnDetailApply.textContent = "신청 진행중";
             btnDetailApply.disabled = true;
             btnDetailApply.onclick = null;
           } else if (myAppStatus === "REJECTED") {
-            btnDetailApply.textContent = "신청 거절됨";
+            btnDetailApply.textContent = "신청 거절";
             btnDetailApply.disabled = true;
             btnDetailApply.onclick = null;
           } else if (isExpired) {
@@ -1714,15 +2100,20 @@
 
         const filters = window.SNORKYBuddySearch.getFilters();
         const hasCustomFilter = !!(filters.region || filters.subRegion || filters.activityType || filters.difficulty || filters.dateRange || filters.specificDate || filters.preferredGender || filters.hostGender || filters.requiredLevel || (filters.status && filters.status !== "RECRUITING"));
+        const scopedSeaPointIds = await resolveScopedSeaPointIds(sb);
 
         let query = sb ? sb.from("buddy_posts").select("id, user_id, activity_type, region, point_id, point_name, is_snorky_point, event_date, entry_time, has_instructor, host_gender, host_aida_level, preferred_gender, capacity, current_count, difficulty, description, application_notification_enabled, status, contact_method, created_at, updated_at") : null;
 
         if (query) {
-          if (filters.activityType) {
+          if (scopedPointId) {
+            query = query.in("activity_type", ["스노쿨링", "프리다이빙"]).in("point_id", scopedSeaPointIds);
+          } else if (scopedCenterId) {
+            query = query.eq("activity_type", "실내다이빙").eq("point_id", scopedCenterId);
+          } else if (filters.activityType) {
             query = query.eq("activity_type", filters.activityType);
           }
 
-          if (filters.region) {
+          if (!hasScopedTarget && filters.region) {
             if (filters.activityType === "실내다이빙") {
               const centers = (window.SNORKYIndoorCenters && Array.isArray(window.SNORKYIndoorCenters))
                 ? window.SNORKYIndoorCenters
@@ -1768,22 +2159,26 @@
               }
             }
           }
-          if (filters.difficulty) {
+          if (!hasScopedTarget && filters.difficulty) {
             query = query.eq("difficulty", filters.difficulty);
           }
-          if (filters.status) {
-            query = query.eq("status", filters.status);
+          if (!hasScopedTarget && filters.status) {
+            query = filters.status === "RECRUITING"
+              ? query.in("status", ["RECRUITING", "CLOSED"])
+              : query.eq("status", filters.status);
+          } else if (!hasScopedTarget) {
+            query = query.in("status", ["RECRUITING", "CLOSED"]);
           }
-          if (filters.preferredGender) {
+          if (!hasScopedTarget && filters.preferredGender) {
             query = query.eq("preferred_gender", filters.preferredGender);
           }
-          if (filters.hostGender) {
+          if (!hasScopedTarget && filters.hostGender) {
             query = query.eq("host_gender", filters.hostGender);
           }
-          if (filters.instructor === "true") {
+          if (!hasScopedTarget && filters.instructor === "true") {
             query = query.eq("has_instructor", true);
           }
-          if (filters.requiredLevel) {
+          if (!hasScopedTarget && filters.requiredLevel) {
             const reqLvl = filters.requiredLevel;
             if (reqLvl === "없음") {
               query = query.or("host_aida_level.eq.없음,host_aida_level.is.null,host_aida_level.eq.");
@@ -1793,9 +2188,9 @@
               query = query.eq("host_aida_level", reqLvl);
             }
           }
-          if (filters.specificDate) {
+          if (!hasScopedTarget && filters.specificDate) {
             query = query.eq("event_date", filters.specificDate);
-          } else if (filters.dateRange) {
+          } else if (!hasScopedTarget && filters.dateRange) {
             const todayStr = getKstDateStr();
             const now = new Date();
             const dayOfWeek = now.getDay();
@@ -1838,12 +2233,12 @@
             posts = posts.filter(p => window.SNORKYBuddyCard ? window.SNORKYBuddyCard.isPostWithinRetention(p, 30) : true);
 
             // 모집중 상태 검색 시 만료(신청 불가) 공고 제외
-            if (filters.status === "RECRUITING") {
+            if (!hasScopedTarget && filters.status === "RECRUITING") {
               posts = posts.filter(p => !(window.SNORKYBuddyCard && window.SNORKYBuddyCard.isPostExpired(p)));
             }
           }
 
-          if (filters.requiredLevel && posts.length > 0) {
+          if (!hasScopedTarget && filters.requiredLevel && posts.length > 0) {
             const reqLvl = filters.requiredLevel;
             const certModule = window.SNORKYCertification;
             posts = posts.filter(p => {
@@ -1856,6 +2251,7 @@
           }
 
           if (posts.length === 0) {
+            if (renderScopedEmptyState()) return;
             postListEl.innerHTML = `
               <div class="buddy-empty-card">
                 <strong>${hasCustomFilter ? "조건에 맞는 버디 모집글이 없습니다." : "등록된 버디 모집글이 없습니다."}</strong>
@@ -1880,6 +2276,7 @@
           }
 
           if (posts.length === 0) {
+            if (renderScopedEmptyState()) return;
             postListEl.innerHTML = `
               <div class="buddy-empty-card">
                 <strong>표시할 수 있는 버디 모집글이 없습니다.</strong>
@@ -1901,7 +2298,8 @@
               const { data: apps } = await sb
                 .from("buddy_applications")
                 .select("buddy_post_id, status")
-                .eq("applicant_user_id", currentUserId);
+                .eq("applicant_user_id", currentUserId)
+                .order("created_at", { ascending: true });
               (apps || []).forEach(a => {
                 myApplications.set(Number(a.buddy_post_id), a.status);
               });
@@ -2180,11 +2578,25 @@
         }, 800);
       }
 
-      window.addEventListener("pageshow", () => {
-        initBuddyApp();
+      window.addEventListener("pageshow", async () => {
+        await initBuddyApp();
+        if (detailModal?.style.display !== "flex" || !activeDetailPostId) return;
+        try {
+          const latestPost = await fetchLatestBuddyPost(activeDetailPostId);
+          if (!latestPost) {
+            showToast("삭제된 공고입니다.");
+            closeDetailModal();
+            return;
+          }
+          postsMap.set(Number(latestPost.id), latestPost);
+        } catch (error) {
+          console.error("[pageshow] Detail post revalidation error:", error);
+        }
       });
     })();
   </script>
   <script async src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" onload="window.dispatchEvent(new Event('snorky:supabase-ready'))"></script>
+  <script src="./public/js/supabase-client.js?v=20260820_stitch_v76"></script>
+  <script src="./public/js/buddy-community.js"></script>
 </body>
 </html>

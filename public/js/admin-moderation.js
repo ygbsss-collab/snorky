@@ -47,8 +47,6 @@
   function openModal(id) {
     const node = el(id);
     if (!node) return;
-    const host = el(id === "userManagerModal" ? "adminUsersHost" : id === "certificationManagerModal" ? "adminCertificationHost" : "adminReportsHost");
-    if (host && node.parentElement !== host) { host.replaceChildren(node); node.classList.add("admin-embedded", "admin-console-module"); }
     node.classList.add("open"); node.hidden = false;
   }
 

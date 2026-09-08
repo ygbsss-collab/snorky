@@ -3,6 +3,7 @@
 
   let activeOverlay = null;
   let activeFrame = null;
+  let activePointId = "";
   let returnFocus = null;
   let previousBodyOverflow = "";
 
@@ -12,6 +13,7 @@
     activeOverlay.remove();
     activeOverlay = null;
     activeFrame = null;
+    activePointId = "";
     document.body.style.overflow = previousBodyOverflow;
     returnFocus?.focus?.();
     returnFocus = null;
@@ -20,6 +22,20 @@
   function handleMessage(event) {
     if (!activeFrame || event.source !== activeFrame.contentWindow || event.origin !== window.location.origin) return;
     if (event.data?.type === "snorky:buddy-point-detail-ready") {
+      const frameDocument = activeFrame.contentDocument;
+      const quickNav = frameDocument?.getElementById("pointModalQuickNav");
+      if (quickNav && !frameDocument.getElementById("btnFindPointBuddy")) {
+        const buddyButton = frameDocument.createElement("button");
+        buddyButton.id = "btnFindPointBuddy";
+        buddyButton.className = "quick-nav-btn";
+        buddyButton.type = "button";
+        buddyButton.textContent = "함께할 버디 구하기";
+        buddyButton.addEventListener("click", () => {
+          window.location.href = `./buddy.html?point_id=${encodeURIComponent(activePointId)}`;
+        });
+        quickNav.appendChild(buddyButton);
+        quickNav.style.gridTemplateColumns = "repeat(2, minmax(0, 1fr))";
+      }
       activeOverlay?.classList.add("is-ready");
       activeOverlay?.setAttribute("aria-hidden", "false");
       return;
@@ -53,6 +69,7 @@
     overlay.appendChild(frame);
     activeOverlay = overlay;
     activeFrame = frame;
+    activePointId = pointId;
     window.addEventListener("message", handleMessage);
     document.body.appendChild(overlay);
     return true;

@@ -56,8 +56,9 @@
       <main class="point-video-content">
         <div class="point-video-player" id="pointVideoPlayer"></div>
         <h2 class="point-video-title" id="pointVideoTitle"></h2>
-        <p class="point-video-help">재생할 수 없는 영상이거나 연령 확인이 필요한 경우 YouTube에서 확인해 주세요.</p>
+        <p class="point-video-help">이 영상은 YouTube에 공개된 외부 콘텐츠입니다.<br>영상의 저작권과 권리는 해당 영상의 원저작자 및 채널에 있으며,<br>SNORKY는 해당 영상을 소유하거나 재배포하지 않습니다.<br><br>재생이 제한되거나 연령 확인이 필요한 경우<br>YouTube에서 직접 확인해 주세요.</p>
         <a class="point-video-youtube-link" id="pointVideoYoutubeLink" target="_blank" rel="noopener noreferrer">YouTube에서 보기</a>
+        <small class="point-video-youtube-hint">버튼을 누르면 YouTube로 이동합니다.</small>
       </main>`;
     document.body.appendChild(screen);
     screen.querySelector(".point-video-back")?.addEventListener("click", () => close(true));

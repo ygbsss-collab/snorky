@@ -147,7 +147,7 @@
     if (text.includes("좋음") || text.includes("최적") || text.includes("추천")) return { pillClass: "pill-good", text: "좋음" };
     if (text.includes("보통") || text.includes("적정")) return { pillClass: "pill-normal", text: "보통" };
     if (text.includes("주의") || text.includes("차가움") || text.includes("짧음") || text.includes("흐림")) return { pillClass: "pill-caution", text: text.length > 4 ? "주의" : text };
-    if (text.includes("나쁨") || text.includes("금지") || text.includes("위험")) return { pillClass: "pill-bad", text: text.includes("금지") ? "입수금지" : "나쁨" };
+    if (text.includes("나쁨") || text.includes("금지") || text.includes("위험")) return { pillClass: "pill-bad", text: text.includes("금지") ? "입수 비추천" : "나쁨" };
     return { pillClass: "pill-neutral", text: text || "보통" };
   }
 
@@ -989,18 +989,18 @@
 
       if (isSafetyBlock) {
         scoreText = "--";
-        statusText = "입수금지";
+        statusText = "입수 비추천";
         gradeClass = "grade-block";
       } else if (isSafetyUnknown) {
         scoreText = "--";
-        statusText = "확인필요";
+        statusText = "안전정보 확인 필요";
         gradeClass = "grade-unknown";
       } else {
         const rawScore = v12?.conditionScore != null ? v12.conditionScore : null;
         const scoreNum = Number(rawScore);
         const isAvailable = Number.isFinite(scoreNum);
         scoreText = isAvailable ? Math.round(scoreNum) : "--";
-        statusText = window.getSnorkyConditionStatus?.(row) || (scoreText >= 80 ? "좋음" : scoreText >= 65 ? "보통" : scoreText >= 50 ? "주의" : "나쁨");
+        statusText = row?.condition_status || window.getSnorkyConditionStatus?.(row) || (scoreText >= 80 ? "좋음" : scoreText >= 65 ? "보통" : scoreText >= 50 ? "주의" : "주의 필요");
         
         if (statusText === "좋음") gradeClass = "grade-good";
         else if (statusText === "보통") gradeClass = "grade-normal";
@@ -1157,20 +1157,20 @@
     let captionText = "시간대별 바다 컨디션을 확인하세요.";
 
     if (isSafetyBlock) {
-      statusText = "입수 금지";
+      statusText = "입수 비추천";
       chipText = "위험";
       chipClass = "chip-block";
       captionText = window.SNORKYEvaluationResults?.formatSafetyBlockSummary?.(liveSafety?.warnings || liveWarning, v12?.safetyReasons)
-        || "입수 금지 · 기타 안전 위험";
+        || "입수 비추천 · 기타 안전 위험";
     } else if (isSafetyUnknown) {
-      statusText = "확인 필요";
+      statusText = "안전정보 확인 필요";
       chipText = "주의";
       chipClass = "chip-caution";
       captionText = "기상/해양 특보 상태를 사전에 확인하세요.";
     } else {
       const raw = v12?.conditionScore != null ? v12.conditionScore : null;
       currentScore = raw != null ? Math.round(raw) : null;
-      statusText = window.getSnorkyConditionStatus?.(row) || (currentScore >= 80 ? "좋음" : currentScore >= 65 ? "보통" : currentScore >= 50 ? "주의" : "나쁨");
+      statusText = row?.condition_status || window.getSnorkyConditionStatus?.(row) || (currentScore >= 80 ? "좋음" : currentScore >= 65 ? "보통" : currentScore >= 50 ? "주의" : "주의 필요");
 
       if (statusText === "좋음") {
         chipText = currentScore >= 85 ? "최적" : "추천";

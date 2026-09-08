@@ -505,10 +505,7 @@
     if (buddyCtaBtn) {
       buddyCtaBtn.addEventListener("click", () => {
         if (!activeCenter) return;
-        showToast(`🤿 '${activeCenter.name}' 버디 모집 준비 중입니다.`);
-        setTimeout(() => {
-          window.location.href = "./buddy.html";
-        }, 1200);
+        window.location.href = `./buddy.html?center_id=${encodeURIComponent(String(activeCenter.id))}`;
       });
     }
 

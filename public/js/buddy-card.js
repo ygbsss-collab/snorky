@@ -123,7 +123,7 @@
     return false;
   }
 
-  function render({ post, author, formattedDate, attributes, statusText, statusClass, pendingCount = 0 }) {
+  function render({ post, author, formattedDate, attributes, statusText, statusClass, pendingCount = 0, showDelete = false, deleteAppId = null }) {
     const displayState = getPostDisplayState(post);
     const statusInfo = displayState.statusInfo;
     const finalStatusText = statusText !== undefined ? statusText : statusInfo.text;
@@ -168,6 +168,11 @@
       ? `<span class="buddy-post-pending-badge">신청대기 ${normalizedPendingCount}</span>`
       : "";
 
+    const deleteAttr = deleteAppId ? `data-app-id="${escapeHtml(deleteAppId)}"` : `data-post-id="${escapeHtml(post?.id)}"`;
+    const deleteBtn = showDelete
+      ? `<button type="button" class="buddy-card-trash-btn" data-action="delete" ${deleteAttr} aria-label="삭제"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="#ef4444" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex-shrink:0;"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg></button>`
+      : "";
+
     return `
       <article class="buddy-post-card" ${attributeMarkup}>
         <img class="buddy-post-thumb" src="${getThumbUrl(post)}" alt="${escapeHtml(post?.activity_type)}">
@@ -177,7 +182,10 @@
               <span class="buddy-badge-activity ${getBadgeClass(post?.activity_type)}">${escapeHtml(post?.activity_type)}</span>
               <span class="buddy-post-location">${escapeHtml(displayRegion)}</span>
             </div>
-            <span class="buddy-post-status-text ${finalStatusClass}">${escapeHtml(finalStatusText)}</span>
+            <div class="buddy-post-status-wrap" style="display:flex;align-items:center;gap:6px;">
+              <span class="buddy-post-status-text ${finalStatusClass}">${escapeHtml(finalStatusText)}</span>
+              ${deleteBtn}
+            </div>
           </div>
           <div class="buddy-post-heading-row">
             <h4 class="buddy-post-heading">${escapeHtml(post?.point_name)}</h4>

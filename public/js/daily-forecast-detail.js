@@ -985,16 +985,11 @@
      날짜 그룹화 및 Day 카드 렌더
   ────────────────────────────────────────────────────────── */
   function render() {
-    const kstNow   = new Date(Date.now() + 9 * 3600000);
-    const todayStr = kstNow.toISOString().slice(0, 10);
+    const getKstDateByOffset = window.SNORKYEvaluationResults?.getKstDateByOffset;
+    if (typeof getKstDateByOffset !== "function") return;
 
-    // KST 오늘 기준 +1~+6 고정 날짜 배열
-    const baseDate = new Date(`${todayStr}T00:00:00Z`);
-    const allDates = Array.from({ length: 6 }, (_, index) => {
-      const next = new Date(baseDate);
-      next.setUTCDate(next.getUTCDate() + index + 1);
-      return next.toISOString().slice(0, 10);
-    });
+    // Reader와 동일한 KST 오늘 기준 +1~+6 날짜 key를 사용한다.
+    const allDates = Array.from({ length: 6 }, (_, index) => getKstDateByOffset(index + 1));
     const shortDates = new Set(allDates.slice(0, 3));
     const midDates = new Set(allDates.slice(3, 6));
 

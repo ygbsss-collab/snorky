@@ -438,12 +438,13 @@ function finalScore(entryScore: number, visScore: number, comfScore: number): nu
 }
 
 function conditionStatusFromScore(score: number | null, safety: "PASS" | "BLOCK" | "UNKNOWN"): string {
-  if (safety === "BLOCK") return "입수 금지";
-  if (safety === "UNKNOWN" || score === null || !Number.isFinite(score)) return "확인 필요";
+  if (safety === "BLOCK") return "입수 비추천";
+  if (safety === "UNKNOWN") return "안전정보 확인 필요";
+  if (score === null || !Number.isFinite(score)) return "확인 필요";
   if (score >= 80) return "좋음";
   if (score >= 65) return "보통";
   if (score >= 50) return "주의";
-  return "나쁨";
+  return "주의 필요";
 }
 
 // ─────────────────────────────────────────────────────────────

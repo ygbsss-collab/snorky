@@ -44,6 +44,8 @@
   const todayStr = getKstToday();
   const urlParams = new URLSearchParams(window.location.search);
   const editPostId = urlParams.get("editId");
+  const requestedPointId = editPostId ? "" : String(urlParams.get("point_id") || "").trim();
+  const requestedCenterId = editPostId || requestedPointId ? "" : String(urlParams.get("center_id") || "").trim();
 
   // DOM 요소
   const eventDateInput = document.getElementById("eventDateInput");
@@ -446,7 +448,7 @@
       snorkyPointSelect.innerHTML = '<option value="">스노키 포인트를 선택해 주세요</option>';
       filtered.forEach((p) => {
         const opt = document.createElement("option");
-        opt.value = p.legacy_id || p.id;
+        opt.value = p.id;
         opt.setAttribute("data-point-name", p.name);
         opt.textContent = p.name;
         snorkyPointSelect.appendChild(opt);
@@ -555,9 +557,11 @@
     } else {
       // 스노클링 / 프리다이빙
       if (isSnorkyPointMode) {
-        const selectedPointOpt = snorkyPointSelect?.options[snorkyPointSelect?.selectedIndex];
-        pointId = snorkyPointSelect?.value || null;
-        pointName = selectedPointOpt?.getAttribute("data-point-name") || "";
+        const selectedPointValue = snorkyPointSelect?.value || "";
+        const selectedPoint = allPoints.find((point) => String(point.id) === String(selectedPointValue))
+          || allPoints.find((point) => point.legacy_id != null && String(point.legacy_id) === String(selectedPointValue));
+        pointId = selectedPoint?.id != null ? String(selectedPoint.id) : null;
+        pointName = selectedPoint?.name || "";
 
         if (!pointId || !pointName) {
           showToast("스노키 포인트를 선택해 주시거나 [직접 입력]을 이용해 주세요.");
@@ -967,7 +971,7 @@
             snorkyPointSelect.innerHTML = '<option value="">스노키 포인트를 선택해 주세요</option>';
             filtered.forEach((p) => {
               const opt = document.createElement("option");
-              opt.value = p.legacy_id || p.id;
+              opt.value = p.id;
               opt.setAttribute("data-point-name", p.name);
               opt.textContent = p.name;
               snorkyPointSelect.appendChild(opt);
@@ -1265,12 +1269,59 @@
   // 초기화 및 리스너 등록
   async function init() {
     await loadRegionsAndPoints();
+    if (requestedCenterId && window.SNORKYIndoor?.loadIndoorCenters) {
+      await window.SNORKYIndoor.loadIndoorCenters(getSbClient());
+    }
     populateIndoorCenters();
     updatePlaceSelectionUI();
 
     if (editPostId) {
       await loadEditPostData(editPostId);
     } else {
+      if (requestedPointId) {
+        const requestedPoint = allPoints.find((point) => String(point.id) === requestedPointId)
+          || allPoints.find((point) => point.legacy_id != null && String(point.legacy_id) === requestedPointId);
+        if (requestedPoint) {
+          setChipGroupValue("activityTypeGroup", "activityTypeInput", "스노쿨링");
+          setPointMode(true);
+
+          const regionOption = Array.from(regionSelect?.options || []).find(
+            (option) => String(option.getAttribute("data-region-id") || "") === String(requestedPoint.region_id)
+          );
+          if (regionOption && regionSelect) regionSelect.value = regionOption.value;
+
+          if (snorkyPointSelect) {
+            const regionPoints = allPoints.filter(
+              (point) => String(point.region_id) === String(requestedPoint.region_id)
+            );
+            snorkyPointSelect.innerHTML = '<option value="">스노키 포인트를 선택해 주세요</option>';
+            regionPoints.forEach((point) => {
+              const option = document.createElement("option");
+              option.value = point.id;
+              option.setAttribute("data-point-name", point.name);
+              option.textContent = point.name;
+              snorkyPointSelect.appendChild(option);
+            });
+            snorkyPointSelect.value = String(requestedPoint.id);
+          }
+        }
+      } else if (requestedCenterId) {
+        const requestedCenter = getIndoorCenters().find(
+          (center) => String(center.id) === requestedCenterId
+        );
+        if (requestedCenter) {
+          setChipGroupValue("activityTypeGroup", "activityTypeInput", "실내다이빙");
+          setPointMode(true);
+          populateIndoorCenters();
+          if (indoorCenterSelect) indoorCenterSelect.value = requestedCenterId;
+
+          const centerRegionOption = Array.from(regionSelect?.options || []).find(
+            (option) => String(option.getAttribute("data-center-id") || "") === requestedCenterId
+          );
+          if (centerRegionOption && regionSelect) regionSelect.value = centerRegionOption.value;
+        }
+      }
+
       // 신규 등록: 최신 공통 user_profiles 값을 기본값으로 설정
       const currentProfile = await getCurrentUserProfile();
       const userLvl = currentProfile?.aidaLevel || currentProfile?.aida_level || null;

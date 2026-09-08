@@ -238,7 +238,7 @@
 
     if (!labels.length) labels.push("기타 안전 위험");
     labels.sort((a, b) => safetyDisplayPriority(a) - safetyDisplayPriority(b));
-    return `입수 금지 · ${labels[0]}${labels.length > 1 ? ` 외 ${labels.length - 1}건` : ""}`;
+    return `입수 비추천 · ${labels[0]}${labels.length > 1 ? ` 외 ${labels.length - 1}건` : ""}`;
   }
 
   /**
@@ -565,6 +565,7 @@
 
   window.SNORKYEvaluationResults = Object.freeze({
     getKstDateString,
+    getKstDateByOffset,
     triggerOnDemandRefresh,
     loadTodayResults,
     loadTodayHourly,
