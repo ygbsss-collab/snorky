@@ -10,6 +10,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Pretendard:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="./public/css/buddy.css?v=20260905_v1">
   <link rel="stylesheet" href="./public/css/bottom-nav.css?v=20260903_v1">
+  <script src="https://t1.kakaocdn.net/kakao_js_sdk/2.8.2/kakao.min.js" crossorigin="anonymous"></script>
   <script src="./public/js/bottom-nav.js?v=20260903_v1"></script>
   <script src="./public/js/buddy-point-detail-overlay.js?v=20260905_v1"></script>
   <style>
@@ -953,11 +954,43 @@
       row.querySelector("strong").textContent = "강사 있음";
     }
 
+    var KAKAO_JAVASCRIPT_KEY = "c29f1a71a53af406429520da0df21772";
+
+    function initKakaoSDK() {
+      if (window.Kakao && !window.Kakao.isInitialized()) {
+        try {
+          window.Kakao.init(KAKAO_JAVASCRIPT_KEY);
+        } catch (err) {
+          console.warn("[Kakao SDK Init Error]", err);
+        }
+      }
+    }
+
     async function shareMyBuddyPost(post) {
       if (!post) return;
       var url = new URL("./buddy.html?post_id=" + encodeURIComponent(post.id), window.location.href).href;
       var lines = [post.point_name, post.region, [post.event_date, post.entry_time].filter(Boolean).join(" "), (post.current_count || 1) + "/" + (post.capacity || 2), post.host_aida_level || post.participant_level, post.has_instructor === true ? "강사 있음" : ""].filter(Boolean);
       var text = ["SNORKY 버디 모집"].concat(lines, url).join("\n");
+      initKakaoSDK();
+      if (window.Kakao?.Share?.sendDefault) {
+        try {
+          window.Kakao.Share.sendDefault({
+            objectType: "feed",
+            content: {
+              title: "SNORKY 버디 모집",
+              description: lines.join("\n"),
+              link: { mobileWebUrl: url, webUrl: url }
+            },
+            buttons: [{
+              title: "버디 공고 보기",
+              link: { mobileWebUrl: url, webUrl: url }
+            }]
+          });
+          return;
+        } catch (e) {
+          console.warn("[Kakao Share Error]", e);
+        }
+      }
       if (navigator.share) { try { await navigator.share({ title: "SNORKY 버디 모집", text: text, url: url }); return; } catch (e) { if (e && e.name === "AbortError") return; } }
       if (navigator.clipboard?.writeText) { try { await navigator.clipboard.writeText(text); showToast("버디 공고 링크를 복사했습니다."); return; } catch (_) {} }
       prompt("아래 버디 공고 정보와 링크를 복사해 주세요.", text);
@@ -1639,15 +1672,21 @@
     async function executeAppDelete(app, post) {
       if (!confirm("신청 내역을 삭제하시겠습니까?")) return;
       var sb = getSb();
-      var res = await sb.from("buddy_applications").delete().eq("id", app.id);
-      if (!res.error) {
+      var res = await sb.from("buddy_applications")
+        .delete()
+        .eq("id", app.id)
+        .eq("applicant_user_id", currentUserId)
+        .select("id");
+      var deletedCount = Array.isArray(res.data) ? res.data.length : 0;
+      if (!res.error && deletedCount === 1) {
         if (post && post.id) await syncPostParticipantCount(post.id);
         dispatchBuddyChanged(post && post.id);
-        myAppsData = myAppsData.filter(function (item) { return Number(item.app.id) !== Number(app.id); });
         showToast("신청 내역이 삭제되었습니다.");
         appModal.style.display = "none";
+        await loadMyApps();
         renderMyApps();
       } else {
+        console.error("[my-buddy] Application delete did not remove exactly one row:", res.error || { deletedCount: deletedCount, appId: app.id });
         showToast("삭제 처리 중 오류가 발생했습니다.");
       }
     }

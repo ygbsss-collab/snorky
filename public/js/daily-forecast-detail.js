@@ -179,7 +179,7 @@
     if (t.includes("좋음") || t.includes("최적") || t.includes("추천")) return { pillClass: "pill-good", text: "좋음" };
     if (t.includes("보통") || t.includes("적정") || t.includes("낮음")) return { pillClass: "pill-normal", text: "보통" };
     if (t.includes("주의") || t.includes("차가움") || t.includes("짧음") || t.includes("흐림")) return { pillClass: "pill-caution", text: t.length > 4 ? "주의" : t };
-    if (t.includes("나쁨") || t.includes("금지") || t.includes("위험") || t.includes("비추천")) return { pillClass: "pill-bad", text: t.includes("금지") ? "입수금지" : "비추천" };
+    if (t.includes("나쁨") || t.includes("금지") || t.includes("위험") || t.includes("비추천")) return { pillClass: "pill-bad", text: t.includes("금지") ? "입수 비추천" : "비추천" };
     return { pillClass: "pill-neutral", text: t.length > 6 ? t.slice(0, 6) + "…" : t };
   }
 
@@ -195,7 +195,7 @@
     if (isMid) {
       const hasBlock = rows.some(r => val(r, ["safety_status"]) === "BLOCK" || val(r, ["condition_status"]) === "입수 금지" || val(r, ["condition_status"]) === "입수금지");
       if (hasBlock) {
-        return { cls: "pill-bad", label: "입수금지" };
+        return { cls: "pill-bad", label: "입수 비추천" };
       }
       if (rows.some(r => val(r, ["safety_status"]) === "UNKNOWN")) {
         return { cls: "pill-neutral", label: "확인필요" };
@@ -212,7 +212,7 @@
     const targetRows = daySlots.length ? daySlots : rows;
     const allBlock = targetRows.every(r => val(r, ["safety_status"]) === "BLOCK" || val(r, ["condition_status"]) === "입수 금지" || val(r, ["condition_status"]) === "입수금지");
     if (allBlock) {
-      return { cls: "pill-bad", label: "입수금지" };
+      return { cls: "pill-bad", label: "입수 비추천" };
     }
     if (targetRows.some(r => val(r, ["safety_status"]) === "UNKNOWN")) {
       return { cls: "pill-neutral", label: "확인필요" };
@@ -247,7 +247,7 @@
     const safety = val(r, ["safety_status"]);
     const status = val(r, ["condition_status", "status"]);
     if (safety === "BLOCK" || status === "입수 금지" || status === "입수금지") {
-      return { cls: "pill-bad", label: "입수금지" };
+      return { cls: "pill-bad", label: "입수 비추천" };
     }
     if (safety === "UNKNOWN") return { cls: "pill-neutral", label: "확인필요" };
 
@@ -441,7 +441,10 @@
       url.searchParams.set("min", "60");
 
       const res = await fetch(url.toString());
-      if (!res.ok) return null;
+      if (!res.ok) {
+        console.warn("[KHOA Tide API] HTTP error:", res.status);
+        return null;
+      }
       const data = await res.json();
       const items = data?.body?.items?.item || [];
       if (!Array.isArray(items) || items.length < 3) return null;
@@ -467,7 +470,8 @@
       }
 
       return events.length ? events : null;
-    } catch (_) {
+    } catch (err) {
+      console.warn("[KHOA Tide API] Fetch error:", err);
       return null;
     }
   }
@@ -507,7 +511,6 @@
     const lng = Number(point.lng || point.longitude);
     // 나만의 스팟은 저장 좌표가 없으면 공식 관측소를 임의로 대입하지 않는다.
     if (point.isCustomSpot === true && (!Number.isFinite(lat) || !Number.isFinite(lng))) {
-      _tideCache[dateStr] = null;
       return null;
     }
     const station = getNearestTideStation(lat, lng);
@@ -521,7 +524,6 @@
     }
 
     // 조회 실패 또는 데이터 부재 시 null (추정 금지)
-    _tideCache[dateStr] = null;
     return null;
   }
 
@@ -665,8 +667,8 @@
     if (safety === "BLOCK" || serverStatus === "입수 금지" || serverStatus === "입수금지") {
       return {
         score: null,
-        statusText: "입수금지",
-        chipText: "입수금지",
+        statusText: "입수 비추천",
+        chipText: "입수 비추천",
         chipClass: "chip-bad",
         captionText: "안전 기준을 초과하여 입수가 권장되지 않는 시간대입니다."
       };

@@ -491,7 +491,10 @@
     <div class="profile-modal-card" style="max-height:80vh;display:flex;flex-direction:column;">
       <header class="profile-modal-head" style="margin-bottom:12px;padding-bottom:10px;">
         <h2 id="notiModalTitle">알림</h2>
-        <button id="closeMypageNotiBtn" class="profile-modal-close" type="button" aria-label="닫기">×</button>
+        <div style="display:flex;align-items:center;gap:8px;">
+          <button id="btnDeleteAllMypageNoti" type="button" style="border:0;background:transparent;color:#ef4444;font-size:12px;font-weight:800;cursor:pointer;padding:6px 4px;">전체 삭제</button>
+          <button id="closeMypageNotiBtn" class="profile-modal-close" type="button" aria-label="닫기">×</button>
+        </div>
       </header>
       <div id="mypageNotiList" style="overflow-y:auto;display:flex;flex-direction:column;gap:8px;padding-right:2px;">
         <div style="padding:24px 0;text-align:center;color:#64748b;font-size:13px;">불러오는 중...</div>
@@ -1364,6 +1367,7 @@
       const notiBadge = document.getElementById("mypageNotiBadge");
       const notiModal = document.getElementById("mypageNotiModal");
       const closeNotiBtn = document.getElementById("closeMypageNotiBtn");
+      const deleteAllNotiBtn = document.getElementById("btnDeleteAllMypageNoti");
       const notiBackdrop = document.getElementById("mypageNotiBackdrop");
       const notiListEl = document.getElementById("mypageNotiList");
 
@@ -1457,11 +1461,28 @@
                   <p style="margin:0 0 6px;font-size:12.5px;line-height:1.45;color:${n.is_read ? '#475467' : '#1e293b'};word-break:keep-all;">${n.content}</p>
                   <div style="display:flex;align-items:center;justify-content:space-between;font-size:11px;color:#94a3b8;">
                     <span>${formatNotiTime(n.created_at)}</span>
-                    <span style="color:${isDeleted ? '#94a3b8' : (n.is_read ? '#64748b' : '#0284c7')};font-weight:600;">${isDeleted ? '(삭제된 공고)' : '내역 보기 ›'}</span>
+                    <span style="display:flex;align-items:center;gap:8px;">
+                      <span style="color:${isDeleted ? '#94a3b8' : (n.is_read ? '#64748b' : '#0284c7')};font-weight:600;">${isDeleted ? '(삭제된 공고)' : '내역 보기 ›'}</span>
+                      <button type="button" class="mypage-noti-delete" data-noti-id="${n.id}" style="border:0;background:transparent;color:#94a3b8;font-size:11px;font-weight:700;cursor:pointer;padding:2px 0;">삭제</button>
+                    </span>
                   </div>
                 </div>
               `;
               }).join("");
+
+              notiListEl.querySelectorAll(".mypage-noti-delete").forEach(deleteBtn => {
+                deleteBtn.addEventListener("click", async event => {
+                  event.stopPropagation();
+                  const notiId = Number(deleteBtn.getAttribute("data-noti-id"));
+                  if (!sb || !notiId || !currentSession?.user?.id) return;
+                  const { error: deleteError } = await sb
+                    .from("user_notifications")
+                    .delete()
+                    .eq("id", notiId)
+                    .eq("user_id", currentSession.user.id);
+                  if (!deleteError) await loadMypageNotifications();
+                });
+              });
 
               notiListEl.querySelectorAll(".mypage-noti-item").forEach(item => {
                 item.addEventListener("click", async () => {
@@ -1500,6 +1521,19 @@
           }
         }
       }
+
+      deleteAllNotiBtn?.addEventListener("click", async event => {
+        event.stopPropagation();
+        if (!currentSession?.user?.id || !confirm("모든 알림을 삭제하시겠습니까?")) return;
+        let deleteSb = null;
+        try { deleteSb = window.getSnorkySupabase ? window.getSnorkySupabase() : window.snorkySupabase; } catch (_) {}
+        if (!deleteSb) return;
+        const { error: deleteError } = await deleteSb
+          .from("user_notifications")
+          .delete()
+          .eq("user_id", currentSession.user.id);
+        if (!deleteError) await loadMypageNotifications();
+      });
 
       function openNotiModal() {
         if (!notiModal) return;

@@ -618,6 +618,7 @@ function applySnorkyMapInitialViewport(includeUser=false){
       targetPoints.forEach(p=>bounds.extend(new kakao.maps.LatLng(Number(p.lat),Number(p.lng))));
       snorkyMap.setBounds(bounds,115,40,225,40);
     }
+    snorkyMap.setLevel(14);
     return;
   }
 
