@@ -141,4 +141,19 @@
     margin-left: 16px;
     margin-right: 16px;
   }
+
+  .point-video-youtube-link {
+    display: flex;
+    width: calc(100% - 32px);
+    box-sizing: border-box;
+  }
+
+  .point-video-youtube-hint {
+    display: block;
+    margin: 6px 16px 0;
+    color: #64748b;
+    font-size: 12px;
+    line-height: 1.4;
+    white-space: normal;
+  }
 }

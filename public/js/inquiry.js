@@ -13,6 +13,7 @@
   overlay.setAttribute("role", "dialog");
   overlay.setAttribute("aria-modal", "true");
   overlay.setAttribute("aria-labelledby", "inquiryTitle");
+  overlay.setAttribute("data-snorky-access-allowed", "");
   overlay.innerHTML = `
     <div class="home-inquiry-card"><header class="home-inquiry-head"><div><small>SNORKY</small><h2 id="inquiryTitle">문의하기</h2></div><button class="home-inquiry-close" type="button" data-close-inquiry aria-label="닫기">×</button></header><form class="inquiry-form" novalidate>
       <div class="inquiry-field"><label for="inquiryType">문의 유형 <span aria-hidden="true">*</span></label><select id="inquiryType" name="inquiry_type" required><option value="">문의 유형을 선택해 주세요.</option><option value="point_correction">포인트 정보 수정</option><option value="point_report">포인트 제보</option><option value="other">기타</option></select></div>

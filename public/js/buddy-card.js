@@ -129,12 +129,11 @@
     const finalStatusText = statusText !== undefined ? statusText : statusInfo.text;
     const finalStatusClass = statusClass !== undefined ? statusClass : statusInfo.className;
     const displayName = author?.displayName || "다이버";
-    const isVerified = Boolean(author?.isVerified || checkIsVerified(author));
     const authorAidaLevel = author?.aidaLevel || author?.aida_level || "";
-    let rawAida = authorAidaLevel && authorAidaLevel !== "없음" && authorAidaLevel !== "미설정" ? String(authorAidaLevel).replace(/\s*✓$/, "").trim() : "";
-    if (rawAida.includes("이상") || rawAida === "전체" || rawAida === "무관" || rawAida === "무관 (전체)") {
-      rawAida = "";
-    }
+    const levelState = global.SNORKYCertification?.resolveDisplayLevel?.(author, authorAidaLevel)
+      || { level: authorAidaLevel || "없음", isVerified: Boolean(author?.isVerified || checkIsVerified(author)) };
+    const rawAida = levelState.level;
+    const isVerified = levelState.isVerified;
     const gender = author?.gender || "비공개";
     const hostProfile = {
       displayName,
@@ -144,6 +143,7 @@
       activityRegion: author?.activityRegion || "",
       activityDepth: author?.activityDepth || "",
       aidaLevel: rawAida,
+      certifiedSnorkyLevel: isVerified ? rawAida : "",
       isVerified,
       bio: author?.bio || ""
     };
@@ -160,9 +160,9 @@
       ? global.SNORKYBuddyRegions.formatPostRegion(post)
       : (post?.region || "");
 
-    const hostMetaText = global.SNORKYBuddyProfileCard?.formatProfileMetaText
-      ? global.SNORKYBuddyProfileCard.formatProfileMetaText(hostProfile, { includeNickname: true })
-      : `${displayName} · ${gender}${rawAida ? ` · ${isVerified ? `${rawAida} ✓` : rawAida}` : ""}`;
+    const hostMetaHtml = global.SNORKYBuddyProfileCard?.formatProfileMetaHtml
+      ? global.SNORKYBuddyProfileCard.formatProfileMetaHtml(hostProfile, { includeNickname: true })
+      : `${escapeHtml(displayName)} · ${escapeHtml(gender)} · ${escapeHtml(rawAida || "없음")}${isVerified ? (global.SNORKYCertification?.renderCertificationMark?.() || "") : ""}`;
     const normalizedPendingCount = Math.max(0, Number(pendingCount) || 0);
     const pendingBadge = normalizedPendingCount > 0
       ? `<span class="buddy-post-pending-badge">신청대기 ${normalizedPendingCount}</span>`
@@ -204,7 +204,7 @@
           <div class="buddy-post-bottom-row">
             <div class="buddy-host-wrap">
               ${avatarTrigger}
-              <span class="buddy-host-meta-text">${escapeHtml(hostMetaText)}</span>
+              <span class="buddy-host-meta-text">${hostMetaHtml}</span>
             </div>
             <button type="button" class="buddy-btn-apply" data-action="view-detail" data-post-id="${escapeHtml(post?.id)}">상세보기</button>
           </div>

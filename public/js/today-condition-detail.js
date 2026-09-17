@@ -17,6 +17,7 @@
   let kmaData = null;
   let historyActive = false;
   let analysisTransition = null;
+  let analysisDelayTimer = null;
 
   // ─────────────────────────────────────────────────────────────
   // Helper Utilities
@@ -561,6 +562,10 @@
     kmaData = data?.kmaCache || null;
 
     if (!Array.isArray(todayRows) || !todayRows.length) return false;
+    const weatherCard = modalEl?.querySelector(".tc-weather-card");
+    const heroCard = modalEl?.querySelector(".tc-hero-card");
+    if (weatherCard) weatherCard.hidden = false;
+    if (heroCard) heroCard.hidden = false;
 
     // Pick the closer of the latest past slot and the nearest future slot.
     const now = new Date();
@@ -598,6 +603,10 @@
   }
 
   function renderLoadingState() {
+    const weatherCard = modalEl?.querySelector(".tc-weather-card");
+    const heroCard = modalEl?.querySelector(".tc-hero-card");
+    if (weatherCard) weatherCard.hidden = true;
+    if (heroCard) heroCard.hidden = true;
     const scroller = document.getElementById("tcHourlyList");
     if (scroller) {
       scroller.innerHTML = `<div style="padding:14px;font-size:12.5px;color:#64748b;font-weight:600;text-align:center;width:100%;">시간별 예보 데이터를 불러오는 중입니다...</div>`;
@@ -609,6 +618,10 @@
   }
 
   function renderErrorState(message) {
+    const weatherCard = modalEl?.querySelector(".tc-weather-card");
+    const heroCard = modalEl?.querySelector(".tc-hero-card");
+    if (weatherCard) weatherCard.hidden = true;
+    if (heroCard) heroCard.hidden = true;
     const scroller = document.getElementById("tcHourlyList");
     if (scroller) {
       scroller.innerHTML = `
@@ -618,14 +631,7 @@
         </div>
       `;
       document.getElementById("tcRetryBtn")?.addEventListener("click", () => {
-        if (activePoint && typeof load === "function") {
-          renderLoadingState();
-          load(activePoint).then(() => {
-            syncData(window.SNORKY_LAST_LOADED_DATA);
-          }).catch(e => {
-            renderErrorState("예보 데이터를 불러오는 중 오류가 발생했습니다.");
-          });
-        }
+        if (activePoint) open(activePoint, { forceRefresh: true });
       });
     }
     const grid = document.getElementById("tcMetricsGrid");
@@ -758,6 +764,9 @@
     activePoint = point || (typeof spot !== "undefined" ? spot : null);
     if (!activePoint) return;
     requestedTargetTime = (typeof options === "string" ? options : options?.targetTime) || null;
+    todayTopRow = null;
+    todayRows = [];
+    todayDayData = null;
     selectedHour = null;
     currentHour = null;
 
@@ -776,6 +785,13 @@
       modalEl.querySelector(".today-condition-sheet")
     ) || null;
     analysisTransition = entryAnalysis;
+    window.clearTimeout(analysisDelayTimer);
+    analysisDelayTimer = window.setTimeout(() => {
+      const status = modalEl?.querySelector(".snorky-analysis-overlay .snorky-analysis-status");
+      if (analysisTransition === entryAnalysis && status) {
+        status.textContent = "처음 확인하는 포인트라 데이터를 준비하고 있어요";
+      }
+    }, 6_000);
 
     // History state for smooth back navigation
     if (!historyActive) {
@@ -790,24 +806,23 @@
 
     try {
       const reader = window.SNORKYEvaluationResults;
-      if (!reader?.loadTodayHourly) {
+      if (!reader?.prepareTodayForPoint) {
         throw new Error("Result 조회 어댑터가 없습니다.");
       }
 
-      const [todayMap, hourlyResultRows] = await Promise.all([
-        activePoint?.isCustomSpot === true
-          ? Promise.resolve(new Map([[currentPointId, reader.getDryRunToday?.(currentPointId) || null]]))
-          : (reader.loadTodayResults ? reader.loadTodayResults(true).catch(() => new Map()) : Promise.resolve(new Map())),
-        reader.loadTodayHourly(currentPointId)
-      ]);
+      const prepared = await reader.prepareTodayForPoint(currentPointId, {
+        forceRefresh: Boolean(options?.forceRefresh),
+      });
+      const hourlyResultRows = prepared.hourly;
 
       if (!hourlyResultRows || !hourlyResultRows.length) {
+        window.clearTimeout(analysisDelayTimer);
         entryAnalysis?.fail();
         renderErrorState("시간별 예보 데이터가 아직 준비되지 않았습니다.");
         return;
       }
 
-      const rawToday = todayMap && typeof todayMap.get === "function" ? todayMap.get(currentPointId) : null;
+      const rawToday = prepared.today;
       todayTopRow = rawToday ? mapResultRowToScrubberRow(rawToday) : null;
 
       const mappedRows = hourlyResultRows.map(mapResultRowToScrubberRow);
@@ -815,12 +830,17 @@
         { spot: activePoint, days: [{ date: hourlyResultRows[0].target_date, rows: mappedRows }] },
         mappedRows
       );
+      window.clearTimeout(analysisDelayTimer);
       if (rendered) entryAnalysis?.complete();
-      else entryAnalysis?.fail();
+      else {
+        entryAnalysis?.fail();
+        renderErrorState("오늘 컨디션 데이터를 준비하지 못했습니다.");
+      }
     } catch (err) {
       console.warn("[SNORKY Today Detail] loadTodayHourly error:", err);
+      window.clearTimeout(analysisDelayTimer);
       entryAnalysis?.fail();
-      renderErrorState("시간별 예보 데이터를 불러오지 못했습니다.");
+      renderErrorState("오늘 컨디션 데이터를 불러오지 못했습니다.");
     }
   }
 
@@ -853,6 +873,8 @@
 
     analysisTransition?.cancel();
     analysisTransition = null;
+    window.clearTimeout(analysisDelayTimer);
+    analysisDelayTimer = null;
     closeBottomSheet();
     modalEl.classList.remove("open");
 

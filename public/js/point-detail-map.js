@@ -15,6 +15,7 @@
   let activePoint = null;
   let activeMode = "default"; // 'default' | 'wind_dir' | 'wind_spd' | 'swell' | 'current' | 'depth'
   let historyActive = false;
+  let detailMapAnalysisController = null;
 
   // Kakao Map Instance & Overlays
   let kakaoMapInstance = null;
@@ -1094,8 +1095,8 @@
     if (!waveCanvas || !waveCtx) return;
 
     waveAnimationRunning = true;
-    resizeWaveCanvas();
     waveCanvas.style.display = "block";
+    resizeWaveCanvas();
     updateWaveParameters();
     updateSwellParameters();
     updateWindParameters();
@@ -1596,7 +1597,6 @@
       .point-detail-map-screen[hidden] {
         display: none !important;
       }
-
       /* Header */
       .pdm-header {
         position: relative;
@@ -2720,6 +2720,14 @@
 
     screen.hidden = false;
     document.body.style.overflow = "hidden";
+    detailMapAnalysisController = window.SNORKYConditionAnalysis?.start(screen, {
+      steps: [
+        "수심 정보 확인 중",
+        "조류파랑 분석 중",
+        "해양 상세지도 준비 완료",
+      ],
+      captions: ["", "", ""],
+    }) || null;
 
     // Initialize initial timeline UI
     renderTimelineUI();
@@ -2753,6 +2761,7 @@
     // Default to Kakao Satellite Mode on entry
     setTimeout(() => {
       setMapMode("default");
+      if (kakaoMapInstance) detailMapAnalysisController?.complete();
     }, 50);
 
     return true;
@@ -2761,6 +2770,8 @@
   function close(triggerHistoryBack = true) {
     if (!screenEl || screenEl.hidden) return;
 
+    detailMapAnalysisController?.cancel();
+    detailMapAnalysisController = null;
     stopMarineAnimation();
     layerStates.wave = false;
     layerStates.wind = false;

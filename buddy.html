@@ -8,7 +8,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Pretendard:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="./public/css/buddy.css?v=20260905_v1">
+  <link rel="stylesheet" href="./public/css/buddy.css?v=20260911_certification_display_v1">
   <link rel="stylesheet" href="./public/css/bottom-nav.css?v=20260904_v3">
   <script src="./public/js/bottom-nav.js?v=20260904_v3"></script>
   <script src="./public/js/buddy-point-detail-overlay.js?v=20260905_v1"></script>
@@ -168,6 +168,10 @@
       touch-action: pan-y;
       box-sizing: border-box;
     }
+    #buddyDetailModal .buddy-detail-body { display:flex; flex-direction:column; }
+    #buddyDetailModal .buddy-detail-info-grid { order:1; }
+    #buddyDetailModal .buddy-detail-desc-section { order:2; }
+    #buddyDetailModal .buddy-detail-participants-section { order:3; }
     .buddy-detail-footer,
     .buddy-modal-foot {
       flex-shrink: 0;
@@ -524,10 +528,13 @@
               <span id="detailActivityBadge" class="buddy-badge-activity">활동</span>
               <span id="detailStatusBadge" class="buddy-post-status-text">모집중</span>
             </div>
-            <button type="button" id="btnShareBuddyPost">
-              <svg viewBox="0 0 24 24" width="14" height="14" fill="#191919" aria-hidden="true" style="flex-shrink:0;"><path d="M12 3c-4.97 0-9 3.185-9 7.115 0 2.557 1.707 4.8 4.27 6.054-.188.702-.682 2.545-.78 2.94-.122.49.18.483.377.352.155-.103 2.466-1.675 3.47-2.36.544.08 1.102.13 1.663.13 4.97 0 9-3.186 9-7.116S16.97 3 12 3z"/></svg>
-              <span>공유하기</span>
-            </button>
+            <div style="display:flex;align-items:center;gap:8px;">
+              <button type="button" id="btnReportBuddyPost" style="display:none;padding:0;border:0;background:transparent;color:#64748b;font:inherit;font-size:12px;font-weight:700;cursor:pointer;">게시글 신고</button>
+              <button type="button" id="btnShareBuddyPost">
+                <svg viewBox="0 0 24 24" width="14" height="14" fill="#191919" aria-hidden="true" style="flex-shrink:0;"><path d="M12 3c-4.97 0-9 3.185-9 7.115 0 2.557 1.707 4.8 4.27 6.054-.188.702-.682 2.545-.78 2.94-.122.49.18.483.377.352.155-.103 2.466-1.675 3.47-2.36.544.08 1.102.13 1.663.13 4.97 0 9-3.186 9-7.116S16.97 3 12 3z"/></svg>
+                <span>공유하기</span>
+              </button>
+            </div>
           </div>
 
           <div class="buddy-detail-place-header">
@@ -552,7 +559,7 @@
               <span class="buddy-detail-label"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 20V10"/><path d="M12 20V4"/><path d="M6 20v-6"/></svg>난이도</span>
               <strong id="detailDifficulty" class="buddy-detail-val">-</strong>
             </div>
-            <div class="buddy-detail-item">
+            <div class="buddy-detail-item" data-has-instructor-row style="display:none;">
               <span class="buddy-detail-label">강사 유무</span>
               <strong id="detailHasInstructor" class="buddy-detail-val"></strong>
             </div>
@@ -759,14 +766,14 @@
   </div>
 
   <script src="./public/js/snorky-test-mode.js?v=20260905_v1"></script>
-  <script src="./public/js/auth-session.js?v=20260905_moderation_v1"></script>
-  <script src="./public/js/user-profile.js?v=20260907_profile_pipeline_v1"></script>
+  <script src="./public/js/auth-session.js?v=20260916_access_v3"></script>
+  <script src="./public/js/user-profile.js?v=20260911_certification_display_v1"></script>
   <script src="./public/js/buddy-regions.js?v=20260903_v1"></script>
   <script src="./public/js/indoor-diving.js?v=20260904_v2"></script>
-  <script src="./public/js/buddy-certification.js?v=20260905_v1"></script>
+  <script src="./public/js/buddy-certification.js?v=20260911_certification_display_v3"></script>
   <script src="./public/js/snorky-friends.js?v=20260905_testmode_v1"></script>
-  <script src="./public/js/buddy-profile-card.js?v=20260905_testmode_v1"></script>
-  <script src="./public/js/buddy-card.js?v=20260905_v1"></script>
+  <script src="./public/js/buddy-profile-card.js?v=20260911_certification_display_v1"></script>
+  <script src="./public/js/buddy-card.js?v=20260911_certification_display_v1"></script>
   <script>
     (function () {
       "use strict";
@@ -1307,12 +1314,11 @@
         const displayName = window.SNORKYUserProfile.getDisplayName(prof, post.host_name);
         const avatarUrl = window.SNORKYUserProfile.getAvatarUrl(prof, isMe ? currentSession?.user : null);
 
-        const profileAida = prof?.aidaLevel || (isMe ? (currentSession?.user?.aidaLevel || currentSession?.user?.aida_level) : null) || "없음";
-        let cleanAida = (profileAida && profileAida !== "없음" && profileAida !== "미설정") ? String(profileAida).replace(/\s*✓$/, "").trim() : "없음";
-        if (cleanAida.includes("이상") || cleanAida === "전체" || cleanAida === "무관" || cleanAida === "무관 (전체)") {
-          cleanAida = "없음";
-        }
-        const isVerified = checkIsVerified(prof) || (isMe && checkIsVerified(currentSession?.user));
+        const profileForLevel = isMe ? { ...(currentSession?.user || {}), ...(prof || {}) } : (prof || {});
+        const levelState = window.SNORKYCertification?.resolveDisplayLevel?.(profileForLevel, post.host_aida_level)
+          || { level: prof?.aidaLevel || post.host_aida_level || "없음", isVerified: window.SNORKYCertification?.checkIsVerified?.(profileForLevel) || false };
+        const cleanAida = levelState.level;
+        const isVerified = levelState.isVerified;
         const gender = prof?.gender || (isMe ? currentSession?.user?.gender : null) || post.host_gender || "비공개";
         const ageGroup = prof?.ageGroup || (isMe ? currentSession?.user?.ageGroup : null) || "";
         const activityRegion = prof?.activityRegion || (isMe ? currentSession?.user?.activityRegion : null) || "";
@@ -1339,6 +1345,7 @@
       const detailDescription = document.getElementById("detailDescription");
       const detailUserActions = document.getElementById("detailUserActions");
       const btnDetailApply = document.getElementById("btnDetailApply");
+      const btnReportBuddyPost = document.getElementById("btnReportBuddyPost");
       const btnShareBuddyPost = document.getElementById("btnShareBuddyPost");
 
       const DEFAULT_BUDDY_SHARE_IMAGE = "https://ygbsss-collab.github.io/snorky/public/images/snorky-symbol.png";
@@ -1471,7 +1478,8 @@
 
         const rawUserAida = prof?.aidaLevel || session?.user?.aidaLevel || "없음";
         const cleanUserAida = (rawUserAida && rawUserAida !== "없음") ? String(rawUserAida).replace(/\s*✓$/, "").trim() : "없음";
-        const isMeVerified = checkIsVerified(prof) || checkIsVerified(session?.user);
+        const isMeVerified = window.SNORKYCertification?.checkIsVerified?.(prof) || false
+          || window.SNORKYCertification?.checkIsVerified?.(session?.user) || false;
         window.SNORKYBuddyProfileCard?.setTriggerProfile(applicantProfileTrigger, curUser, {
           displayName: effectiveNick || "닉네임 없음",
           avatarUrl: effectiveAvatar,
@@ -1805,7 +1813,11 @@
         if (detailCapacity) detailCapacity.textContent = `${post.current_count || 1} / ${post.capacity || 2}명`;
         if (detailDifficulty) detailDifficulty.textContent = post.difficulty || "무관";
         const detailHasInstructor = document.getElementById("detailHasInstructor");
-        if (detailHasInstructor) detailHasInstructor.textContent = post.has_instructor === true ? "강사 있음" : "";
+        if (detailHasInstructor) {
+          detailHasInstructor.textContent = post.has_instructor === true ? "강사 있음" : "";
+          const instructorRow = detailHasInstructor.closest(".buddy-detail-item");
+          if (instructorRow) instructorRow.style.display = post.has_instructor === true ? "" : "none";
+        }
         if (detailPreferredGender) detailPreferredGender.textContent = post.preferred_gender || "성별 무관";
         if (detailParticipantLevel) {
           const reqLvl = post.host_aida_level || post.participant_level || "전체";
@@ -1825,42 +1837,42 @@
               className: "buddy-detail-host-avatar",
               resolved: true
             }) || "";
-            const metaText = window.SNORKYBuddyProfileCard?.formatProfileMetaText
-              ? window.SNORKYBuddyProfileCard.formatProfileMetaText(author, { includeNickname: true })
-              : `${escapeHtml(author.displayName)} · ${escapeHtml(author.gender || "비공개")}`;
+            const metaHtml = window.SNORKYBuddyProfileCard?.formatProfileMetaHtml
+              ? window.SNORKYBuddyProfileCard.formatProfileMetaHtml(author, { includeNickname: true })
+              : `${escapeHtml(author.displayName)} · ${escapeHtml(author.gender || "비공개")} · ${escapeHtml(author.aidaLevel || "없음")}`;
             detailHostInfo.innerHTML = `
               ${avatarTrigger}
-              <span class="buddy-detail-host-meta">${escapeHtml(metaText)}</span>
+              <span class="buddy-detail-host-meta">${metaHtml}</span>
             `;
           }
         }
 
-        // 함께하는 버디 (주최자 + 승인된 참가자) 목록 렌더링
+        // 함께하는 버디 (주최자 + 신청중/참가 확정 신청자) 목록 렌더링
         const participantsListEl = document.getElementById("detailParticipantsList");
         const participantsCountEl = document.getElementById("detailParticipantsCount");
         if (participantsListEl) {
           participantsListEl.innerHTML = '<div style="font-size:12.5px;color:#94a3b8;padding:8px 0;">참가자 정보를 불러오는 중...</div>';
           (async () => {
             try {
-              let approvedApps = [];
+              let applications = [];
               if (sb) {
                 const { data: appsData } = await sb
                   .from("buddy_applications")
-                  .select("id, applicant_user_id, status, applicant_gender, applicant_aida_level, applicant_age_group, applicant_nickname, applicant_avatar_url, created_at")
+                  .select("id, applicant_user_id, status, introduction, applicant_gender, applicant_aida_level, created_at")
                   .eq("buddy_post_id", postId)
-                  .eq("status", "APPROVED")
                   .order("created_at", { ascending: true });
-                approvedApps = appsData || [];
+                applications = (appsData || []).filter(app => ["APPROVED", "PENDING"].includes(String(app.status || "").toUpperCase()));
               }
 
-              const applicantIds = approvedApps.map(a => a.applicant_user_id).filter(Boolean);
+              const confirmedApps = applications.filter(app => String(app.status || "").toUpperCase() === "APPROVED");
+              const applicantIds = applications.map(a => a.applicant_user_id).filter(Boolean);
               if (applicantIds.length > 0) {
                 try {
                   await Promise.all(applicantIds.map(id => window.SNORKYUserProfile?.getUserProfile?.(id)));
                 } catch (_) {}
               }
 
-              const totalCount = 1 + approvedApps.length;
+              const totalCount = 1 + confirmedApps.length;
               if (participantsCountEl) {
                 const maxCap = Math.max(totalCount, Number(post.capacity) || 2);
                 participantsCountEl.textContent = `${totalCount}/${maxCap}명 참여중`;
@@ -1873,12 +1885,7 @@
                 className: "buddy-detail-participant-avatar",
                 resolved: true
               }) || "";
-              const hostMetaParts = [
-                author.gender && author.gender !== "비공개" ? author.gender : null,
-                author.ageGroup || null,
-                author.aidaLevel && author.aidaLevel !== "없음" ? (author.isVerified ? `${author.aidaLevel} ✓` : author.aidaLevel) : null
-              ].filter(Boolean);
-              const hostMetaText = hostMetaParts.length > 0 ? hostMetaParts.join(" · ") : "프로필 미설정";
+              const hostMetaHtml = window.SNORKYBuddyProfileCard?.formatProfileMetaHtml?.(author) || escapeHtml(author.aidaLevel || "없음");
 
               let html = `
                 <div class="buddy-detail-participant-card" style="display:flex;align-items:center;justify-content:space-between;padding:10px 12px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:12px;">
@@ -1889,14 +1896,14 @@
                         <span style="font-weight:700;font-size:14px;color:#0f172a;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${escapeHtml(author.displayName)}</span>
                         <span style="background:#e0f2fe;color:#0369a1;font-size:11px;font-weight:700;padding:2px 7px;border-radius:6px;flex-shrink:0;">주최자</span>
                       </div>
-                      <div style="font-size:12px;color:#64748b;margin-top:2px;">${escapeHtml(hostMetaText)}</div>
+                      <div style="font-size:12px;color:#64748b;margin-top:2px;">${hostMetaHtml}</div>
                     </div>
                   </div>
                 </div>
               `;
 
-              // 2) 승인된 참가자 카드들
-              approvedApps.forEach(app => {
+              // 2) 신청중/참가 확정 신청자 카드들
+              applications.forEach(app => {
                 const uid = String(app.applicant_user_id || "");
                 const prof = window.SNORKYUserProfile?.getCachedUserProfile?.(uid) || null;
                 const isMe = currentUserId && uid === currentUserId;
@@ -1905,26 +1912,22 @@
 
                 const dispName = window.SNORKYUserProfile?.getDisplayName?.(effectiveProf, app.applicant_nickname) || "버디";
                 const avatarSrc = window.SNORKYUserProfile?.getAvatarUrl?.(effectiveProf, mySessionUser) || app.applicant_avatar_url || "";
-                const rawAida = effectiveProf?.aidaLevel || app.applicant_aida_level || "없음";
-                const cleanAida = (rawAida && rawAida !== "없음" && rawAida !== "미설정") ? String(rawAida).replace(/\s*✓$/, "").trim() : "";
-                const isAppVerified = checkIsVerified(effectiveProf) || (isMe && checkIsVerified(mySessionUser)) || checkIsVerified(app);
+                const profileForLevel = isMe ? { ...(mySessionUser || {}), ...(effectiveProf || {}) } : (effectiveProf || {});
+                const levelState = window.SNORKYCertification?.resolveDisplayLevel?.(profileForLevel, app.applicant_aida_level)
+                  || { level: effectiveProf?.aidaLevel || app.applicant_aida_level || "없음", isVerified: window.SNORKYCertification?.checkIsVerified?.(profileForLevel) || false };
+                const cleanAida = levelState.level;
+                const isAppVerified = levelState.isVerified;
                 const genderVal = effectiveProf?.gender || app.applicant_gender || "비공개";
                 const ageVal = effectiveProf?.ageGroup || app.applicant_age_group || "";
-
-                const pMetaParts = [
-                  genderVal && genderVal !== "비공개" ? genderVal : null,
-                  ageVal || null,
-                  cleanAida ? (isAppVerified ? `${cleanAida} ✓` : cleanAida) : null
-                ].filter(Boolean);
-                const pMetaText = pMetaParts.length > 0 ? pMetaParts.join(" · ") : "프로필 미설정";
 
                 const pCardInfo = {
                   displayName: dispName,
                   avatarUrl: avatarSrc,
                   gender: genderVal,
                   ageGroup: ageVal,
-                  aidaLevel: cleanAida || "없음",
-                  isVerified: Boolean(isAppVerified && cleanAida),
+                  aidaLevel: cleanAida,
+                  certifiedSnorkyLevel: isAppVerified ? cleanAida : "",
+                  isVerified: isAppVerified,
                   bio: effectiveProf?.bio || ""
                 };
 
@@ -1934,6 +1937,12 @@
                   className: "buddy-detail-participant-avatar",
                   resolved: true
                 }) || "";
+                const pMetaHtml = window.SNORKYBuddyProfileCard?.formatProfileMetaHtml?.(pCardInfo) || escapeHtml(cleanAida);
+                const applicationStatus = String(app.status || "").toUpperCase();
+                const statusLabel = applicationStatus === "APPROVED" ? "참가 확정" : "신청중";
+                const statusStyle = applicationStatus === "APPROVED"
+                  ? "background:#f0fdf4;color:#15803d;"
+                  : "background:#fff7ed;color:#c2410c;";
 
                 html += `
                   <div class="buddy-detail-participant-card" style="display:flex;align-items:center;justify-content:space-between;padding:10px 12px;background:#ffffff;border:1px solid #e2e8f0;border-radius:12px;">
@@ -1942,9 +1951,9 @@
                       <div style="min-width:0;">
                         <div style="display:flex;align-items:center;gap:6px;">
                           <span style="font-weight:700;font-size:14px;color:#0f172a;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${escapeHtml(dispName)}</span>
-                          <span style="background:${isMe ? '#fef3c7;color:#92400e;' : '#f0fdf4;color:#15803d;'}font-size:11px;font-weight:700;padding:2px 7px;border-radius:6px;flex-shrink:0;">${isMe ? '나 (참가자)' : '참가자'}</span>
+                          <span style="${statusStyle}font-size:11px;font-weight:700;padding:2px 7px;border-radius:6px;flex-shrink:0;">${isMe ? `나 · ${statusLabel}` : statusLabel}</span>
                         </div>
-                        <div style="font-size:12px;color:#64748b;margin-top:2px;">${escapeHtml(pMetaText)}</div>
+                        <div style="font-size:12px;color:#64748b;margin-top:2px;">${pMetaHtml}</div>
                       </div>
                     </div>
                   </div>
@@ -1969,6 +1978,17 @@
         const btnHeaderOpenChat = document.getElementById("btnHeaderOpenChat");
         const isOwnPost = currentUserId && String(post.user_id || "") === String(currentUserId);
         const canJoinChat = isOwnPost || myAppStatus === "APPROVED";
+
+        if (btnReportBuddyPost) {
+          const canReportPost = !isOwnPost && !!post.user_id;
+          btnReportBuddyPost.style.display = canReportPost ? "inline-flex" : "none";
+          btnReportBuddyPost.onclick = canReportPost
+            ? () => window.SNORKYBuddyProfileCard?.openPostReportModal?.({
+              userId: String(post.user_id),
+              displayName: author?.displayName || post.host_name || "다이버"
+            }, post.id)
+            : null;
+        }
 
         if (btnHeaderOpenChat) {
           if (canJoinChat) {
@@ -2072,8 +2092,11 @@
               const session = window.SNORKYAuthSession?.get?.();
               const curUser = session?.user?.id ? String(session.user.id) : null;
               if (!curUser) {
-                if (confirm("로그인이 필요한 서비스입니다. 로그인 페이지로 이동하시겠습니까?")) {
-                  location.href = "./login.html?redirect=buddy.html";
+                const redirectTarget = post?.id ? `buddy.html?post_id=${post.id}` : "buddy.html";
+                if (window.SNORKYAuthSession?.showLoginPrompt) {
+                  window.SNORKYAuthSession.showLoginPrompt("버디 참가 신청은 로그인 후 이용할 수 있어요.", redirectTarget);
+                } else {
+                  location.href = `./login.html?redirect=${encodeURIComponent(redirectTarget)}`;
                 }
                 return;
               }

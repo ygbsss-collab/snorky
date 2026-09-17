@@ -22,7 +22,7 @@
   const COMPLETE_HOLD_MS = STEP_MS;
   const activeByHost = new WeakMap();
 
-  function createOverlay() {
+  function createOverlay(steps, captions) {
     const overlay = document.createElement("section");
     overlay.className = "snorky-analysis-overlay is-visible";
     overlay.setAttribute("aria-label", "SNORKY 컨디션 분석");
@@ -58,11 +58,11 @@
           </div>
         </div>
         <p class="snorky-analysis-kicker">SNORKY MARINE INTELLIGENCE</p>
-        <p class="snorky-analysis-status" role="status" aria-live="polite">${STEPS[0]}</p>
+        <p class="snorky-analysis-status" role="status" aria-live="polite">${steps[0]}</p>
         <div class="snorky-analysis-progress" aria-hidden="true">
-          ${STEPS.map((_, index) => `<span class="${index === 0 ? "is-current" : ""}"></span>`).join("")}
+          ${steps.map((_, index) => `<span class="${index === 0 ? "is-current" : ""}"></span>`).join("")}
         </div>
-        <p class="snorky-analysis-caption">${CAPTIONS[0]}</p>
+        <p class="snorky-analysis-caption">${captions[0] || ""}</p>
       </div>
       <aside class="snorky-analysis-ad-slot" data-snorky-analysis-ad-slot hidden aria-hidden="true"></aside>
     `;
@@ -81,13 +81,17 @@
     if (header) header.classList.remove("snorky-header-hidden-by-analysis");
   }
 
-  function start(host) {
+  function start(host, options = {}) {
     if (!host) return null;
     activeByHost.get(host)?.cancel();
 
+    const steps = Array.isArray(options.steps) && options.steps.length >= 2 ? options.steps.map(String) : STEPS;
+    const captions = Array.isArray(options.captions) ? options.captions.map(String) : CAPTIONS;
+    const completeAtMs = steps === STEPS ? COMPLETE_AT_MS : STEP_MS * (steps.length - 1);
+
     hideChrome(host);
 
-    const overlay = createOverlay();
+    const overlay = createOverlay(steps, captions);
     const status = overlay.querySelector(".snorky-analysis-status");
     const caption = overlay.querySelector(".snorky-analysis-caption");
     const progress = [...overlay.querySelectorAll(".snorky-analysis-progress span")];
@@ -107,14 +111,14 @@
 
     function setStep(index) {
       if (stopped || !status) return;
-      status.textContent = STEPS[index];
-      if (caption) caption.textContent = CAPTIONS[index];
+      status.textContent = steps[index];
+      if (caption) caption.textContent = captions[index] || "";
       overlay.dataset.step = String(index + 1);
       progress.forEach((dot, dotIndex) => {
         dot.classList.toggle("is-complete", dotIndex < index);
         dot.classList.toggle("is-current", dotIndex === index);
       });
-      if (index === STEPS.length - 1) overlay.classList.add("is-complete");
+      if (index === steps.length - 1) overlay.classList.add("is-complete");
     }
 
     function remove() {
@@ -142,7 +146,7 @@
     function showCompletion() {
       if (stopped || completionStarted) return;
       completionStarted = true;
-      setStep(3);
+      setStep(steps.length - 1);
       schedule(() => overlay.classList.add("is-leaving"), COMPLETE_HOLD_MS - 140);
       schedule(() => {
         stopped = true;
@@ -152,15 +156,16 @@
 
     function complete() {
       if (stopped || completionStarted) return;
-      const remaining = Math.max(0, COMPLETE_AT_MS - (performance.now() - startedAt));
+      const remaining = Math.max(0, completeAtMs - (performance.now() - startedAt));
       schedule(showCompletion, remaining);
     }
 
     const controller = Object.freeze({ complete, fail, cancel });
     activeByHost.set(host, controller);
     host.appendChild(overlay);
-    schedule(() => setStep(1), STEP_MS);
-    schedule(() => setStep(2), STEP_MS * 2);
+    for (let index = 1; index < steps.length - 1; index += 1) {
+      schedule(() => setStep(index), STEP_MS * index);
+    }
     return controller;
   }
 

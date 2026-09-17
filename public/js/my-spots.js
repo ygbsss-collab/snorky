@@ -43,6 +43,7 @@
   let finalCoordinates = null;
   let activeEvaluationAnalysis = null;
   const evaluationInFlight = new Map();
+  const evaluationErrors = new Map();
 
   function startEvaluationAnalysis() {
     activeEvaluationAnalysis?.cancel();
@@ -194,6 +195,7 @@
     }
 
     listEl.innerHTML = spots.map(spot => {
+      const evaluationError = evaluationErrors.get(Number(spot.id));
       return `<article class="custom-spot-card" data-spot-id="${spot.id}">
         <div class="custom-spot-card-head">
           <div><h2>${escapeHtml(spot.name)}</h2><p class="custom-spot-region">${escapeHtml(spot.region || "지역 확인 필요")}</p></div>
@@ -204,6 +206,7 @@
           <button class="custom-sixday-btn" type="button" data-sixday-spot="${spot.id}">컨디션 예보</button>
           <button class="custom-map-btn" type="button" data-map-spot="${spot.id}">해양 상세지도</button>
         </div>
+        ${evaluationError ? `<p style="margin:10px 0 0;color:#dc2626;font-size:12.5px;font-weight:600;">${escapeHtml(evaluationError.message)} <button type="button" data-retry-spot="${spot.id}" style="margin-left:6px;padding:4px 9px;border:1px solid #cbd5e1;border-radius:7px;background:#fff;color:#0f172a;font:inherit;font-weight:700;cursor:pointer;">다시 시도</button></p>` : ""}
       </article>`;
     }).join("");
 
@@ -212,6 +215,10 @@
     listEl.querySelectorAll("[data-today-spot]").forEach(button => button.addEventListener("click", () => openCondition(Number(button.dataset.todaySpot), "today")));
     listEl.querySelectorAll("[data-sixday-spot]").forEach(button => button.addEventListener("click", () => openCondition(Number(button.dataset.sixdaySpot), "sixday")));
     listEl.querySelectorAll("[data-map-spot]").forEach(button => button.addEventListener("click", () => openDetailMap(Number(button.dataset.mapSpot))));
+    listEl.querySelectorAll("[data-retry-spot]").forEach(button => button.addEventListener("click", () => {
+      const spotId = Number(button.dataset.retrySpot);
+      openCondition(spotId, evaluationErrors.get(spotId)?.mode || "today");
+    }));
   }
 
   function loadKakao() {
@@ -570,11 +577,16 @@
     try {
       const safetyReady = mode === "today" ? window.SNORKYMarineSafety?.ready : null;
       const entry = await requestEvaluationWithAnalysis(spot, safetyReady);
+      evaluationErrors.delete(Number(spot.id));
       renderList();
       const point = customPointForUi(spot, entry);
       await openEvaluationResult(point, mode);
     } catch (error) {
-      window.alert(CONDITION_FETCH_ERROR);
+      evaluationErrors.set(Number(spot.id), {
+        mode,
+        message: error?.message || CONDITION_FETCH_ERROR,
+      });
+      renderList();
     }
   }
 

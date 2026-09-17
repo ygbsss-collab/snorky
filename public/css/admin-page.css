@@ -1,5 +1,54 @@
-:root{font-family:Inter,Pretendard,"Noto Sans KR",Arial,sans-serif;color:#142b38;background:#f4f7f9;--ink:#142b38;--muted:#718591;--line:#dde7eb;--soft:#f7f9fa;--navy:#102c3a;--brand:#0783a7;--mint:#0f9874;--danger:#d84b4b;--shadow:0 8px 24px rgba(28,60,73,.07)}
-*{box-sizing:border-box}body{margin:0;min-width:320px;min-height:100vh;background:#f4f7f9}button,input,select,textarea{font:inherit}button{cursor:pointer}[hidden]{display:none!important}
+:root {
+  font-family: Pretendard, -apple-system, BlinkMacSystemFont, system-ui, Roboto, "Helvetica Neue", "Segoe UI", "Apple SD Gothic Neo", "Noto Sans KR", "Malgun Gothic", sans-serif;
+  color: #0b1c30;
+  background: #f8f9ff;
+  --ink: #0b1c30;
+  --muted: #565e74;
+  --line: #dce9ff;
+  --soft: #eff4ff;
+  --navy: #102c3a;
+  --brand: #00685f;
+  --mint: #008378;
+  --danger: #ba1a1a;
+  --shadow: 0 8px 24px rgba(11, 28, 48, 0.06);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  min-width: 320px;
+  min-height: 100vh;
+  background: #f8f9ff;
+  color: #0b1c30;
+  font-family: Pretendard, -apple-system, BlinkMacSystemFont, system-ui, Roboto, sans-serif;
+  word-break: keep-all;
+  overflow-wrap: break-word;
+}
+button, input, select, textarea {
+  font-family: inherit;
+}
+button { cursor: pointer; }
+[hidden] { display: none !important; }
+
+/* Material Symbols Font ligature & rendering protection */
+.material-symbols-outlined {
+  font-family: 'Material Symbols Outlined' !important;
+  font-weight: normal !important;
+  font-style: normal !important;
+  font-size: 20px;
+  line-height: 1;
+  letter-spacing: normal;
+  text-transform: none;
+  display: inline-block;
+  white-space: nowrap;
+  word-wrap: normal;
+  direction: ltr;
+  -webkit-font-feature-settings: 'liga';
+  -webkit-font-smoothing: antialiased;
+  vertical-align: middle;
+}
 .admin-shell{min-height:100vh}.admin-topbar{height:72px;padding:0 max(24px,calc((100vw - 1440px)/2));display:flex;align-items:center;justify-content:space-between;gap:24px;background:#fff;border-bottom:1px solid var(--line)}.admin-brand,.admin-profile,.admin-topbar-actions{display:flex;align-items:center}.admin-brand{gap:11px}.admin-brand-mark{display:grid;place-items:center;width:38px;height:38px;border-radius:11px;background:var(--navy);color:#fff;font-weight:900}.admin-brand div,.admin-profile div{display:grid;gap:2px}.admin-brand strong{font-size:16px;letter-spacing:.08em}.admin-brand div span,.admin-profile div span{font-size:11px;color:var(--muted)}.admin-topbar-actions{gap:18px}.admin-env-badge{display:flex;align-items:center;gap:7px;padding:7px 10px;border:1px solid #bfe5d8;border-radius:999px;background:#effaf6;color:#087b5d;font-size:10px;font-weight:900;letter-spacing:.08em}.admin-env-badge i{width:7px;height:7px;border-radius:50%;background:#13a77c;box-shadow:0 0 0 3px #d2f2e7}.admin-profile{gap:9px}.admin-profile strong{font-size:12px}.admin-avatar{display:grid;place-items:center;width:34px;height:34px;border-radius:50%;background:#e5f2f6;color:#087695;font-size:12px;font-weight:900}.admin-logout{min-height:34px;padding:0 12px;border:1px solid var(--line);border-radius:9px;background:#fff;color:#536c78;font-size:11px;font-weight:800}
 .admin-console-nav{height:58px;padding:0 max(24px,calc((100vw - 1440px)/2));display:flex;align-items:end;gap:28px;background:#fff;border-bottom:1px solid var(--line)}.admin-console-nav button{height:58px;padding:0 2px;display:flex;align-items:center;gap:8px;border:0;border-bottom:3px solid transparent;background:transparent;color:#69808c;font-size:13px;font-weight:800}.admin-console-nav button span{font-size:15px}.admin-console-nav button:hover,.admin-console-nav button.is-active{color:var(--navy);border-bottom-color:var(--brand)}
 .admin-auth-state{position:fixed;right:18px;bottom:18px;z-index:30}.admin-page-status{display:inline-flex;padding:8px 11px;border:1px solid #cde6df;border-radius:999px;background:rgba(239,250,246,.94);box-shadow:var(--shadow);color:#087b5d;font-size:10px;font-weight:800}
@@ -17,3 +66,100 @@
 @media(max-width:680px){body{padding-bottom:68px}.admin-topbar{height:60px;padding:0 16px}.admin-brand div span,.admin-profile,.admin-env-badge{display:none}.admin-topbar-actions{gap:8px}.admin-console-nav{display:none}.admin-workspace{padding:22px 14px 30px}.admin-section-head{align-items:flex-start;flex-direction:column;margin-bottom:18px}.admin-section-head h1{font-size:22px}.admin-data-note{display:none}.admin-kpi-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}.admin-kpi{min-height:112px;padding:14px;gap:9px}.admin-kpi-icon{flex-basis:30px;height:30px}.admin-kpi strong{font-size:23px}.admin-dashboard-grid{gap:9px;margin-top:9px}.admin-card{padding:16px}.admin-management-table-wrap{display:none}.admin-mobile-list{display:grid;gap:9px}.point-manager-tools{display:grid;grid-template-columns:1fr auto}.point-manager-tools select{grid-column:1/-1}.admin-management-toolbar{justify-content:stretch}.admin-management-toolbar select{width:100%}.admin-console-module>.admin-dialog-card{gap:10px}.admin-management-detail{padding:15px}.admin-management-detail-grid{grid-template-columns:1fr}.admin-management-detail-grid .wide{grid-column:auto}.admin-management-actions,.admin-management-control-grid{position:sticky;bottom:68px;z-index:5;padding:10px;margin:14px -15px -15px;background:#fff;border-top:1px solid var(--line)}.admin-management-actions button,.admin-management-control-grid button{flex:1}.admin-bottom-nav{position:fixed;left:0;right:0;bottom:0;z-index:20;height:64px;padding:5px 8px max(5px,env(safe-area-inset-bottom));display:grid;grid-template-columns:repeat(5,1fr);background:rgba(255,255,255,.97);border-top:1px solid var(--line);box-shadow:0 -8px 20px rgba(20,52,65,.08)}.admin-bottom-nav button{display:grid;place-items:center;gap:1px;border:0;background:transparent;color:#82949d;font-size:9px;font-weight:800}.admin-bottom-nav button span{font-size:16px}.admin-bottom-nav button.is-active{color:var(--brand)}.admin-auth-state{display:none}}
 @media(max-width:390px){.admin-kpi-grid{grid-template-columns:1fr}.admin-kpi{min-height:auto}.admin-brand strong{font-size:14px}.admin-logout{padding:0 9px}}
 @media(max-width:680px){.admin-management-detail>[data-apply-user-action],.admin-management-sanction>[data-apply-report-action]{position:sticky;bottom:68px;z-index:6;width:100%;margin-top:10px;box-shadow:0 -8px 18px rgba(20,52,65,.08)}}
+
+.admin-console-module{display:grid;grid-template-columns:minmax(0,1.32fr) minmax(320px,.68fr);gap:14px}.admin-console-module>.point-manager-tools,.admin-console-module>.admin-management-toolbar,.admin-console-module>.admin-management-message{grid-column:1/-1}
+@media(max-width:900px){.admin-console-module{grid-template-columns:1fr}.admin-console-module>.admin-management-detail{grid-column:1}}
+
+/* Stitch Dashboard Enterprise Enhancements */
+.admin-dialog{position:fixed;inset:0;z-index:70;display:none;place-items:center;padding:24px;background:rgba(15,23,42,.65);backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px)}
+.admin-dialog.open{display:grid}
+.admin-dialog-card{width:min(1040px,96vw);max-height:92vh;overflow:auto;padding:24px;border-radius:16px;background:#ffffff;border:1px solid #e2e8f0;box-shadow:0 20px 25px -5px rgba(15,23,42,.12),0 8px 10px -6px rgba(15,23,42,.08)}
+.admin-dialog-head h2{margin:0;font-family:'Hanken Grotesk',sans-serif;font-size:20px;font-weight:700;color:#0b1c30}
+.admin-dialog-close{width:36px;height:36px;display:flex;align-items:center;justify-content:center;border-radius:8px;border:1px solid #e2e8f0;background:#fff;color:#64748b;font-size:20px;transition:all .15s}
+.admin-dialog-close:hover{background:#f1f5f9;color:#0b1c30}
+
+.admin-management-table-wrap{border:1px solid #e2e8f0;border-radius:12px;overflow:hidden;background:#ffffff}
+.admin-management-table th{background:#f8fafc;color:#64748b;font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:600;padding:10px 14px;border-bottom:1px solid #e2e8f0;text-transform:uppercase}
+.admin-management-table td{padding:12px 14px;border-bottom:1px solid #f1f5f9;color:#0b1c30;font-size:13px}
+.admin-management-table tbody tr:hover{background:#f8fafc}
+
+.admin-management-primary{background:#00685f;border:1px solid #00685f;color:#ffffff;border-radius:8px;font-weight:600;transition:all .15s}
+.admin-management-primary:hover{background:#008378;border-color:#008378}
+.admin-management-secondary{background:#ffffff;border:1px solid #cbd5e1;color:#0b1c30;border-radius:8px;font-weight:500;transition:all .15s}
+.admin-management-secondary:hover{background:#f1f5f9}
+.admin-management-danger{background:#fef2f2;border:1px solid #fca5a5;color:#dc2626;border-radius:8px;font-weight:600;transition:all .15s}
+.admin-management-danger:hover{background:#fee2e2}
+
+.admin-management-status{font-family:'JetBrains Mono',monospace;font-size:11px;padding:3px 8px;border-radius:9999px;font-weight:600}
+.admin-management-status.is-active,.admin-management-status.is-approved,.admin-management-status.is-actioned{background:#ccfbf1;color:#0f766e;border:1px solid rgba(13,148,136,.2)}
+.admin-management-status.is-pending,.admin-management-status.is-reviewed{background:#fef3c7;color:#92400e;border:1px solid #fde68a}
+.admin-management-status.is-rejected,.admin-management-status.is-dismissed,.admin-management-status.is-suspended,.admin-management-status.is-permanent_ban{background:#fee2e2;color:#991b1b;border:1px solid #fecaca}
+
+.badge-planned{display:inline-flex;align-items:center;padding:2px 8px;border-radius:9999px;background:#f1f5f9;color:#64748b;border:1px solid #e2e8f0;font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:600;letter-spacing:.02em}
+
+/* ==========================================================================
+   글자 가독성 및 폰트 렌더링 최적화 (Legibility & Anti-aliasing Enhancements)
+   ========================================================================== */
+html, body {
+  font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, Roboto, "Helvetica Neue", "Segoe UI", "Apple SD Gothic Neo", "Noto Sans KR", "Malgun Gothic", sans-serif !important;
+  text-rendering: optimizeLegibility !important;
+  -webkit-font-smoothing: antialiased !important;
+  -moz-osx-font-smoothing: grayscale !important;
+  letter-spacing: -0.015em !important;
+}
+
+/* 머티리얼 아이콘 텍스트 깨짐 완벽 방지 */
+.material-symbols-outlined {
+  font-family: 'Material Symbols Outlined' !important;
+  font-weight: normal !important;
+  font-style: normal !important;
+  font-size: 20px;
+  line-height: 1;
+  display: inline-block;
+  white-space: nowrap;
+  word-wrap: normal;
+  direction: ltr;
+  -webkit-font-feature-settings: 'liga';
+  -webkit-font-smoothing: antialiased;
+  vertical-align: middle;
+}
+
+/* 모노스페이스 숫자 및 좌표 가독성 */
+.font-mono {
+  font-family: 'JetBrains Mono', SFMono-Regular, Menlo, Monaco, Consolas, monospace !important;
+  font-feature-settings: "tnum" 1;
+  letter-spacing: -0.01em;
+}
+
+/* 테이블 폰트 크기 및 명도 대비 상향 */
+.admin-management-table th {
+  font-size: 12px !important;
+  color: #334155 !important;
+  font-weight: 600 !important;
+  letter-spacing: 0.02em !important;
+}
+.admin-management-table td {
+  font-size: 13px !important;
+  color: #0f172a !important;
+  line-height: 1.5 !important;
+}
+
+/* 입력 필드 및 텍스트에리어 가독성 상향 */
+input, select, textarea {
+  font-family: 'Pretendard', sans-serif !important;
+  font-size: 13px !important;
+  color: #0f172a !important;
+  line-height: 1.45 !important;
+}
+input::placeholder, textarea::placeholder {
+  color: #94a3b8 !important;
+}
+
+/* 보조 텍스트 명도 대비 보정 (너무 흐릿하게 보이지 않도록 개선) */
+.text-secondary {
+  color: #475569 !important;
+}
+.text-secondary\/40, .text-secondary\/60, .text-secondary\/70 {
+  color: #64748b !important;
+}
+

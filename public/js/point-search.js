@@ -11,6 +11,8 @@ results.hidden=true;results.innerHTML="";
 if(!document.getElementById("snorkyHomeSearchStyle")){const style=document.createElement("style");style.id="snorkyHomeSearchStyle";style.textContent=".home-search-tabs{display:flex;gap:6px;margin-top:7px}.home-search-tab{flex:1;min-height:34px;border:1px solid #dce3e9;border-radius:9px;background:#fff;color:#355865;font-size:13px;font-weight:800;cursor:pointer}.home-search-tab[aria-expanded=\"true\"]{background:#176b8b;color:#fff}.home-filter-row[data-search-ui-ready=\"true\"]{display:block;overflow:visible;margin-top:4px;padding-bottom:0}.home-filter-row[data-search-ui-ready=\"true\"] .home-filter-chip{display:none;position:relative;box-sizing:border-box;width:100%;height:auto;min-height:0;align-items:stretch;flex-direction:column;margin-top:4px;padding:6px 8px;border-radius:10px}.home-filter-row[data-search-ui-ready=\"true\"] .home-filter-chip.is-open{display:flex}.home-filter-row[data-search-ui-ready=\"true\"] .home-filter-chip>span{display:block;margin:0 24px 5px 0;font-size:11px}.home-filter-row[data-search-ui-ready=\"true\"] .home-filter-chip select{display:none}.home-search-panel-close{position:absolute;top:4px;right:4px;width:24px;height:24px;border:0;background:transparent;color:#6d7f8a;font-size:21px;line-height:1;cursor:pointer}.home-search-options{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:4px;width:100%}.home-search-option{min-height:30px;padding:2px 4px;border:1px solid #e1e9ed;border-radius:8px;background:#f7fafb;color:#334e5b;font-size:12px;font-weight:700;cursor:pointer}.home-search-option.is-selected{border-color:#176fe5;background:#176fe5;color:#fff}.home-search-results{position:relative!important;top:auto!important;right:auto!important;left:auto!important;z-index:20;max-height:230px;margin-top:6px;box-shadow:0 5px 14px rgba(14,66,85,.09)}.home-search-results .point-search-result-head{padding:6px 8px}.home-search-results .point-search-item{min-height:36px;padding:6px 9px}.home-search-results .point-search-name{font-size:12px}.home-search-results-close{display:grid;width:24px;height:24px;place-items:center;margin-left:5px;padding:0;border:0;background:transparent;color:#6d7f8a;font-size:20px;line-height:1;cursor:pointer}.home-search-results .point-search-result-head span{margin-left:auto}@media(max-width:700px){.home-search-tabs{margin-top:6px}.home-search-options{gap:3px}.home-search-results{max-height:220px}}";document.head.appendChild(style)}
 if(!document.getElementById("snorkyHomeSearchOverflowStyle")){const style=document.createElement("style");style.id="snorkyHomeSearchOverflowStyle";style.textContent=".home-discovery,.home-search-anchor,.home-search-anchor .point-search-shell,.home-search-anchor .point-search-box,.home-search-tabs,.home-filter-row[data-search-ui-ready=\"true\"],.home-filter-row[data-search-ui-ready=\"true\"] .home-filter-chip,.home-search-options,.home-search-option,.home-search-submit,.home-search-anchor .point-search-results,.home-search-anchor .point-search-item{box-sizing:border-box;max-width:100%;min-width:0}.home-discovery,.home-search-anchor,.home-search-anchor .point-search-shell,.home-search-tabs,.home-filter-row[data-search-ui-ready=\"true\"],.home-filter-row[data-search-ui-ready=\"true\"] .home-filter-chip,.home-search-options,.home-search-submit,.home-search-anchor .point-search-results{width:100%}.home-search-options{grid-template-columns:repeat(3,minmax(0,1fr));overflow:hidden}.home-search-option,.home-search-anchor .point-search-item{overflow:hidden;overflow-wrap:anywhere;word-break:break-word;white-space:normal}";document.head.appendChild(style)}
 if(!document.getElementById("snorkyHomeSearchSummaryStyle")){const style=document.createElement("style");style.id="snorkyHomeSearchSummaryStyle";style.textContent=".home-search-summary,.home-search-summary-chip,.home-search-results,.home-search-results .point-search-item{box-sizing:border-box;max-width:100%;min-width:0}.home-search-summary{display:flex;width:100%;flex-wrap:wrap;gap:4px;margin:6px 0 0;overflow:hidden}.home-search-summary-chip{display:inline-flex;min-height:25px;align-items:center;gap:4px;padding:3px 7px;border:1px solid #d7e3e8;border-radius:999px;background:#f5f9fb;color:#355865;font-size:11px;font-weight:800;line-height:1.2;overflow:hidden;overflow-wrap:anywhere;word-break:break-word;white-space:normal;cursor:pointer}.home-search-summary-chip b{flex:0 0 auto;font-size:13px;line-height:1}.home-search-results{width:100%;overflow-x:hidden}.home-search-results .point-search-item{width:100%;overflow:hidden}";document.head.appendChild(style)}
+if(!document.getElementById("snorkyHomeSearchGridStyle")){const style=document.createElement("style");style.id="snorkyHomeSearchGridStyle";style.textContent=".home-filter-row[data-search-ui-ready=\"true\"]{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:4px;width:100%;margin-top:6px;padding-bottom:0;overflow:hidden}.home-filter-row[data-search-ui-ready=\"true\"] .home-filter-chip{display:flex;width:auto;min-width:0;height:32px;min-height:32px;margin:0;padding:0 4px;align-items:center;justify-content:center;flex-direction:row;border-radius:8px}.home-filter-row[data-search-ui-ready=\"true\"] .home-filter-chip.is-open{display:flex}.home-filter-row[data-search-ui-ready=\"true\"] .home-filter-chip>span{display:flex;margin:0;font-size:11.5px}.home-filter-row[data-search-ui-ready=\"true\"] .home-filter-chip select{display:none}.home-filter-row[data-search-ui-ready=\"true\"] .home-search-submit{grid-column:4;width:100%;height:32px;min-height:32px;margin:0;padding:0 6px}";document.head.appendChild(style)}
+if(!document.getElementById("snorkyHomeSearchPanelStyle")){const style=document.createElement("style");style.id="snorkyHomeSearchPanelStyle";style.textContent=".home-filter-row[data-search-ui-ready=\"true\"]{position:relative}.home-filter-row[data-search-ui-ready=\"true\"] .home-filter-chip.is-open{position:static;display:flex}.home-filter-row[data-search-ui-ready=\"true\"] .home-filter-chip.is-open .home-search-options{position:absolute;top:calc(100% + 4px);left:0;right:0;width:100%;margin:0;padding:8px;border:1px solid #dce3e9;border-radius:10px;background:#fff;box-shadow:0 6px 16px rgba(14,66,85,.1);z-index:25}.home-filter-row[data-search-ui-ready=\"true\"] .home-filter-chip:not(.is-open) .home-search-options{display:none}";document.head.appendChild(style)}
 const escapeHtml=value=>String(value??"").replace(/[&<>\"]/g,char=>({"&":"&amp;","<":"&lt;",">":"&gt;",'\"':"&quot;"})[char]);
 function allPoints(){if(Array.isArray(window.SNORKY_ACTIVE_POINTS)&&window.SNORKY_ACTIVE_POINTS.length)return window.SNORKY_ACTIVE_POINTS;if(typeof window.getAllActivePoints==="function")return window.getAllActivePoints();return[]}
 function isRegionKey(value){return /^(?:sb-)?region-/i.test(String(value??"").trim())}
@@ -58,5 +60,118 @@ function render(filters=collectFilters(),activate=false){if(!activate&&!input.va
 function captureReturnState(){return{view:"pointSearch",query:input.value,filters:collectFilters().map(filter=>filter.values),filterAll:filterSelects.map(isExplicitAllSelected),resultsScrollTop:results.scrollTop,pageScrollY:window.scrollY}}
 function restoreReturnState(saved){input.value=String(saved?.query||"");populateFilterOptions();filterSelects.forEach((select,index)=>{const values=new Set(saved?.filters?.[index]||[]),explicitAll=Boolean(saved?.filterAll?.[index]);select.dataset.searchAllSelected=String(explicitAll);individualOptions(select).forEach(option=>{option.selected=explicitAll||values.has(option.value)})});renderPanelOptions();render(collectFilters(),true);requestAnimationFrame(()=>{results.scrollTop=Number(saved?.resultsScrollTop)||0;input.focus()})}
 function openDetail(button){const pointId=button.dataset.searchPointId;if(typeof window.openPointOnMap==="function")window.openPointOnMap(pointId,"search");else{const returnState=captureReturnState();if(!window.SNORKYPointDetail?.openBySupabaseId(pointId,"pointSearch",returnState))console.warn("[SNORKY Point Search] 상세 진입 실패",{pointId})}}
+
+let activeHomeFilterIndex=null;
+
+function updateHomeFilterButtonStates(){
+  document.querySelectorAll(".home-filter-chip[data-search-panel]").forEach((label,index)=>{
+    const select=filterSelects[index];
+    const hasValue=Boolean(select&&(isExplicitAllSelected(select)||selectedValues(select).length));
+    label.classList.toggle("has-value",hasValue);
+  });
+}
+
+setupFilterUi=function(){
+  const row=document.querySelector(".home-filter-row");
+  if(!row||row.dataset.searchUiReady)return;
+  row.dataset.searchUiReady="true";
+  const names=["지역","지형","편의시설"];
+  const labels=[...row.querySelectorAll(".home-filter-chip")];
+  document.querySelector(".home-search-tabs")?.remove();
+  labels.forEach((label,index)=>{
+    label.dataset.searchPanel=String(index);
+    label.classList.remove("active","is-open","has-value");
+    label.setAttribute("role","button");
+    label.setAttribute("tabindex","0");
+    label.setAttribute("aria-expanded","false");
+    const title=label.querySelector("span");
+    if(title)title.textContent=names[index];
+    const select=label.querySelector("select");
+    if(select){select.multiple=true;select.hidden=true}
+    label.querySelectorAll(".home-search-options,.home-search-panel-close").forEach(node=>node.remove());
+    const toggle=event=>{
+      if(event.type==="keydown"&&!['Enter',' '].includes(event.key))return;
+      event.preventDefault();
+      activeHomeFilterIndex=activeHomeFilterIndex===index?null:index;
+      labels.forEach((item,itemIndex)=>item.setAttribute("aria-expanded",String(itemIndex===activeHomeFilterIndex)));
+      renderPanelOptions();
+    };
+    label.addEventListener("click",toggle);
+    label.addEventListener("keydown",toggle);
+  });
+  const panel=document.createElement("div");
+  panel.id="homeSearchOptionsPanel";
+  panel.className="home-search-options-panel";
+  panel.hidden=true;
+  panel.innerHTML='<div class="home-search-options-panel-head"><strong id="homeSearchOptionsTitle"></strong><button type="button" class="home-search-panel-close" aria-label="필터 패널 닫기">×</button></div><div class="home-search-options"></div>';
+  row.insertAdjacentElement("afterend",panel);
+  panel.querySelector(".home-search-panel-close")?.addEventListener("click",()=>{
+    activeHomeFilterIndex=null;
+    labels.forEach(item=>item.setAttribute("aria-expanded","false"));
+    renderPanelOptions();
+  });
+  const summary=document.createElement("div");
+  summary.id="homeSearchSummary";
+  summary.className="home-search-summary";
+  summary.setAttribute("aria-label","현재 선택조건");
+  const quickActions=document.getElementById("homeQuickActionsCard");
+  quickActions?.parentElement?.insertBefore(summary,quickActions);
+  panel.insertAdjacentElement("afterend",results);
+  results.classList.add("home-search-results");
+  results.hidden=true;
+  results.innerHTML="";
+  const regionSelect=document.getElementById("homeRegionFilter");
+  if(regionSelect)regionSelect.onchange=null;
+};
+
+renderPanelOptions=function(){
+  setupFilterUi();
+  updateHomeFilterButtonStates();
+  const panel=document.getElementById("homeSearchOptionsPanel");
+  const host=panel?.querySelector(".home-search-options");
+  const title=panel?.querySelector("#homeSearchOptionsTitle");
+  const names=["지역","지형","편의시설"];
+  if(!panel||!host)return;
+  if(activeHomeFilterIndex===null){
+    panel.hidden=true;
+    host.innerHTML="";
+    renderFilterSummary();
+    updateHomeFilterButtonStates();
+    return;
+  }
+  panel.hidden=false;
+  if(title)title.textContent=`${names[activeHomeFilterIndex]} 선택`;
+  const select=filterSelects[activeHomeFilterIndex];
+  if(!select)return;
+  const options=activeHomeFilterIndex===2
+    ?facilityOptions.map(([value,label])=>({value,label}))
+    :individualOptions(select).map(option=>{
+      const value=option.value,label=option.textContent.trim();
+      return{value,label:activeHomeFilterIndex===1?(terrainLabels[String(value).toLowerCase()]||label):label};
+    });
+  const selected=selectedValues(select),isAllSelected=isExplicitAllSelected(select);
+  host.innerHTML=[{value:"",label:"전체"},...options].map(option=>{
+    const isSelected=option.value?selected.includes(String(option.value)):isAllSelected;
+    return`<button type="button" class="home-search-option${isSelected?" is-selected":""}" data-search-option="${escapeHtml(option.value)}" aria-pressed="${isSelected?"true":"false"}">${escapeHtml(option.label)}</button>`;
+  }).join("");
+  host.onclick=event=>{
+    const button=event.target.closest("[data-search-option]");
+    if(!button)return;
+    const value=button.dataset.searchOption;
+    if(!value){
+      const nextSelected=!isExplicitAllSelected(select);
+      select.dataset.searchAllSelected=String(nextSelected);
+      individualOptions(select).forEach(option=>{option.selected=nextSelected});
+    }else{
+      select.dataset.searchAllSelected="false";
+      const option=individualOptions(select).find(item=>String(item.value)===value);
+      if(option)option.selected=!option.selected;
+    }
+    renderPanelOptions();
+    if(!results.hidden)render(collectFilters(),true);
+  };
+  renderFilterSummary();
+  updateHomeFilterButtonStates();
+};
 setupFilterUi();searchButton?.addEventListener("click",()=>render(collectFilters(),true));input.addEventListener("input",()=>{if(!results.hidden)render(collectFilters(),true)});filterSelects.forEach(select=>select.addEventListener("change",()=>{renderPanelOptions();if(!results.hidden)render(collectFilters(),true)}));results.addEventListener("click",event=>{if(event.target.closest("[data-close-search-results]")){results.hidden=true;return}const button=event.target.closest("[data-search-point-id]");if(button)openDetail(button)});populateFilterOptions();document.addEventListener("snorky:points-ready",populateFilterOptions);window.SNORKYPointSearch={render,captureReturnState,restoreReturnState,populateFilterOptions};
 })();

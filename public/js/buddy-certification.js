@@ -1,25 +1,68 @@
 (function (global) {
   "use strict";
 
-  // 1. 4개 협회
-  const CERTIFICATION_AGENCIES = Object.freeze(["AIDA", "PADI", "Molchanovs", "SSI"]);
+  // 1. 3개 공인 협회 (AIDA, PADI, Molchanovs)
+  const CERTIFICATION_AGENCIES = Object.freeze(["AIDA", "PADI", "Molchanovs"]);
 
-  // 2. 실제 자격 목록 (18개)
+  // 2. 각 기관별 프리다이빙 공식 자격명 및 SNORKY 레벨 매핑
+  const OFFICIAL_FREEDIVING_CERTIFICATIONS = Object.freeze({
+    AIDA: [
+      { officialName: "AIDA 1", snorkyLevel: "AIDA 1", levelNumber: 1 },
+      { officialName: "AIDA 2", snorkyLevel: "AIDA 2", levelNumber: 2 },
+      { officialName: "AIDA 3", snorkyLevel: "AIDA 3", levelNumber: 3 },
+      { officialName: "AIDA 4", snorkyLevel: "AIDA 4", levelNumber: 4 },
+      { officialName: "AIDA Instructor", snorkyLevel: "AIDA Instructor", levelNumber: 5 }
+    ],
+    PADI: [
+      { officialName: "Basic Freediver", snorkyLevel: "PADI 1", levelNumber: 1 },
+      { officialName: "Freediver", snorkyLevel: "PADI 2", levelNumber: 2 },
+      { officialName: "Advanced Freediver", snorkyLevel: "PADI 3", levelNumber: 3 },
+      { officialName: "Master Freediver", snorkyLevel: "PADI 4", levelNumber: 4 },
+      { officialName: "Freediver Instructor", snorkyLevel: "PADI Instructor", levelNumber: 5 }
+    ],
+    Molchanovs: [
+      { officialName: "Wave 1 / Lap 1", snorkyLevel: "Molchanovs 1", levelNumber: 1 },
+      { officialName: "Wave 2 / Lap 2", snorkyLevel: "Molchanovs 2", levelNumber: 2 },
+      { officialName: "Wave 3 / Lap 3", snorkyLevel: "Molchanovs 3", levelNumber: 3 },
+      { officialName: "Wave 4 / Lap 4", snorkyLevel: "Molchanovs 4", levelNumber: 4 },
+      { officialName: "Wave Instructor", snorkyLevel: "Molchanovs Instructor", levelNumber: 5 }
+    ]
+  });
+
+  // 3. 기존 SNORKY 레벨 목록 (하위 호환)
   const CERTIFICATION_ITEMS = Object.freeze({
     AIDA: ["AIDA 1", "AIDA 2", "AIDA 3", "AIDA 4", "AIDA Instructor"],
-    PADI: ["PADI 1", "PADI 2", "PADI 3", "PADI Instructor"],
-    Molchanovs: ["Molchanovs 1", "Molchanovs 2", "Molchanovs 3", "Molchanovs 4", "Molchanovs Instructor"],
-    SSI: ["SSI 1", "SSI 2", "SSI 3", "SSI Instructor"]
+    PADI: ["PADI 1", "PADI 2", "PADI 3", "PADI 4", "PADI Instructor"],
+    Molchanovs: ["Molchanovs 1", "Molchanovs 2", "Molchanovs 3", "Molchanovs 4", "Molchanovs Instructor"]
   });
 
   const ALL_CERTIFICATIONS = Object.freeze([
     ...CERTIFICATION_ITEMS.AIDA,
     ...CERTIFICATION_ITEMS.PADI,
-    ...CERTIFICATION_ITEMS.Molchanovs,
-    ...CERTIFICATION_ITEMS.SSI
+    ...CERTIFICATION_ITEMS.Molchanovs
   ]);
 
-  // 3. 버디 모집/공고찾기/공고알림 공통 레벨 조건
+  // 공식 자격명 -> 기존 SNORKY 레벨 매핑
+  function mapOfficialToSnorkyLevel(agency, officialName) {
+    if (!agency || !officialName) return "";
+    const list = OFFICIAL_FREEDIVING_CERTIFICATIONS[agency];
+    if (!list) return String(officialName).trim();
+    const cleanOfficial = String(officialName).trim();
+    const found = list.find((item) => item.officialName === cleanOfficial || item.snorkyLevel === cleanOfficial);
+    return found ? found.snorkyLevel : cleanOfficial;
+  }
+
+  // 기존 SNORKY 레벨 -> 공식 자격명 역매핑
+  function mapSnorkyLevelToOfficial(agency, snorkyLevel) {
+    if (!agency || !snorkyLevel) return "";
+    const list = OFFICIAL_FREEDIVING_CERTIFICATIONS[agency];
+    if (!list) return String(snorkyLevel).trim();
+    const cleanSnorky = String(snorkyLevel).replace(/\s*✓$/, "").trim();
+    const found = list.find((item) => item.snorkyLevel === cleanSnorky || item.officialName === cleanSnorky);
+    return found ? found.officialName : cleanSnorky;
+  }
+
+  // 4. 버디 모집/공고찾기/공고알림 공통 레벨 조건
   const COMMON_LEVEL_CONDITIONS = Object.freeze([
     "전체",
     "레벨 1 이상",
@@ -29,7 +72,7 @@
     "Instructor"
   ]);
 
-  // 4. 자격 레벨 숫자 파싱 (0: 없음/미설정, 1~4: 레벨 1~4, 5: Instructor)
+  // 5. 자격 레벨 숫자 파싱 (0: 없음/미설정, 1~4: 레벨 1~4, 5: Instructor)
   function parseCertificationLevel(certOrLevel) {
     if (!certOrLevel || typeof certOrLevel !== "string") return 0;
     const clean = certOrLevel.replace(/\s*✓$/, "").trim();
@@ -37,10 +80,10 @@
       return 0;
     }
     if (/instructor/i.test(clean)) return 5;
-    if (/4/.test(clean)) return 4;
-    if (/3/.test(clean)) return 3;
-    if (/2/.test(clean)) return 2;
-    if (/1/.test(clean)) return 1;
+    if (/(?:master|wave\s*4|lap\s*4|4)/i.test(clean)) return 4;
+    if (/(?:advanced|wave\s*3|lap\s*3|3)/i.test(clean)) return 3;
+    if (/(?:freediver|wave\s*2|lap\s*2|2)/i.test(clean) && !/basic/i.test(clean)) return 2;
+    if (/(?:basic|wave\s*1|lap\s*1|1)/i.test(clean)) return 1;
     return 0;
   }
 
@@ -135,24 +178,83 @@
 
   function checkIsVerified(target) {
     if (!target) return false;
-    if (Array.isArray(target.certifications)) {
-      return target.certifications.some((c) => isApprovedStatus(c?.status));
+    if (Array.isArray(target.certifications)
+      && target.certifications.some((c) => isApprovedStatus(c?.status))) {
+      return true;
     }
     const status = target.certificationStatus || target.qualificationStatus || target.verificationStatus || target.certification_status || target.qualification_status;
-    if (isApprovedStatus(status)) return true;
+    if (status) return isApprovedStatus(status);
     if (target.certificationVerified === true || target.aidaVerified === true || target.isVerified === true || target.isCertified === true) {
       return true;
     }
     return false;
   }
 
-  // 8. 표시용 자격 레벨 문자열 반환 (APPROVED만 ✓ 표시, 미인증/PENDING/REJECTED은 인증마크 금지)
+  function getCertificationApplicationState(target) {
+    if (!target) return "NONE";
+    if (checkIsVerified(target)) return "APPROVED";
+    const status = String(target.certificationStatus || target.qualificationStatus || target.verificationStatus || target.certification_status || target.qualification_status || "").trim().toLowerCase();
+    return ["pending", "reviewing", "in_review", "검토중", "검토대기중"].includes(status) ? "PENDING" : "NONE";
+  }
+
+  function cleanDisplayLevel(value) {
+    const raw = String(value || "").replace(/\s*✓$/u, "").trim();
+    if (!raw || ["없음", "미설정", "레벨 없음", "무관", "전체", "무관 (전체)"].includes(raw) || raw.includes("이상")) return "";
+    return raw;
+  }
+
+  function inferAgencyFromLevel(value) {
+    const match = String(value || "").trim().match(/^(AIDA|PADI|Molchanovs)\b/i);
+    if (!match) return "";
+    return CERTIFICATION_AGENCIES.find((agency) => agency.toLowerCase() === match[1].toLowerCase()) || "";
+  }
+
+  function resolveDisplayLevel(target, fallbackActivityLevel = "") {
+    const profile = target || {};
+    const approvedCertification = Array.isArray(profile.certifications)
+      ? profile.certifications.find((item) => isApprovedStatus(item?.status))
+      : null;
+    const explicitStatus = profile.certificationStatus || profile.qualificationStatus || profile.verificationStatus || profile.certification_status || profile.qualification_status;
+    const hasExplicitCertificationState = Boolean(explicitStatus) || Array.isArray(profile.certifications);
+    const approved = hasExplicitCertificationState
+      ? checkIsVerified(profile)
+      : (checkIsVerified(profile) || profile.isVerified === true || profile.isVerified === "true");
+    const agency = profile.certificationOrganization || profile.certification_organization || approvedCertification?.organization || approvedCertification?.agency || "";
+    const certifiedRaw = approvedCertification?.snorkyLevel
+      || approvedCertification?.snorky_level
+      || approvedCertification?.level
+      || profile.certifiedSnorkyLevel
+      || profile.certified_snorky_level
+      || profile.certificationLevel
+      || profile.certification_level
+      || profile.aidaLevel
+      || profile.aida_level;
+    const resolvedAgency = agency || inferAgencyFromLevel(certifiedRaw);
+    const certifiedLevel = cleanDisplayLevel(mapOfficialToSnorkyLevel(resolvedAgency, certifiedRaw));
+    const activityLevel = cleanDisplayLevel(
+      profile.activityLevel
+      || profile.activity_level
+      || profile.aidaLevel
+      || profile.aida_level
+      || fallbackActivityLevel
+    );
+
+    if (approved) return { level: certifiedLevel || "없음", isVerified: Boolean(certifiedLevel) };
+    return { level: activityLevel || "없음", isVerified: false };
+  }
+
+  function renderCertificationMark(level = "") {
+    const label = String(level || "").trim();
+    return `<span class="snorky-certification-mark" aria-label="인증완료">${label ? `${label} ` : ""}✓</span>`;
+  }
+
+  // 8. 표시용 자격 레벨 문자열 반환 (인증마크는 renderCertificationMark로 별도 렌더링)
   function formatDisplayCertification(certOrLevel, isVerified) {
     const raw = String(certOrLevel || "").replace(/\s*✓$/, "").trim();
     if (!raw || raw === "없음" || raw === "미설정" || raw === "레벨 없음") {
       return "레벨 없음";
     }
-    return isVerified ? `${raw} ✓` : raw;
+    return raw;
   }
 
   // 9. 공고 상세용 참석자 레벨 조건 표시
@@ -193,20 +295,42 @@
     return html;
   }
 
+  // 12. 기관별 공식 프리다이빙 자격명 셀렉트박스 옵션 HTML 생성
+  function renderOfficialLevelSelectOptions(agency, currentOfficialValue = "") {
+    if (!agency || !OFFICIAL_FREEDIVING_CERTIFICATIONS[agency]) {
+      return '<option value="">인증기관을 먼저 선택해 주세요</option>';
+    }
+    const list = OFFICIAL_FREEDIVING_CERTIFICATIONS[agency];
+    const clean = String(currentOfficialValue || "").trim();
+    let html = '<option value="">자격레벨 선택</option>';
+    for (const item of list) {
+      const isSel = clean === item.officialName || clean === item.snorkyLevel ? " selected" : "";
+      html += `<option value="${item.officialName}"${isSel}>${item.officialName}</option>`;
+    }
+    return html;
+  }
+
   const SNORKYCertification = Object.freeze({
     AGENCIES: CERTIFICATION_AGENCIES,
     ITEMS: CERTIFICATION_ITEMS,
     ALL_CERTIFICATIONS,
+    OFFICIAL_FREEDIVING_CERTIFICATIONS,
     COMMON_LEVEL_CONDITIONS,
+    mapOfficialToSnorkyLevel,
+    mapSnorkyLevelToOfficial,
     parseCertificationLevel,
     matchCommonLevel,
     matchPostLevelRequirement,
     isApprovedStatus,
     checkIsVerified,
+    getCertificationApplicationState,
+    resolveDisplayLevel,
+    renderCertificationMark,
     formatDisplayCertification,
     formatParticipantLevelRequirement,
     renderCertificationSelectOptions,
-    renderCommonLevelSelectOptions
+    renderCommonLevelSelectOptions,
+    renderOfficialLevelSelectOptions
   });
 
   if (typeof module !== "undefined" && module.exports) {
@@ -214,5 +338,3 @@
   }
   global.SNORKYCertification = SNORKYCertification;
 })(typeof window !== "undefined" ? window : globalThis);
-
-

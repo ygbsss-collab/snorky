@@ -123,6 +123,13 @@
     .mybuddy-info-label svg{width:15px;height:15px;stroke:#64748b;flex-shrink:0}
     .mybuddy-info-val{font-size:15.5px;font-weight:600;color:#0f172a;line-height:1.35;word-break:keep-all;letter-spacing:-.01em}
     .mybuddy-desc-section{display:flex;flex-direction:column;gap:6px;margin-top:12px;margin-bottom:12px}
+    #hostDetailModal .mybuddy-modal-body,
+    #applicantDetailModal .mybuddy-modal-body{display:flex;flex-direction:column}
+    #hostDetailModal .mybuddy-desc-section,
+    #applicantDetailModal .mybuddy-desc-section{order:2}
+    #hostDetailModal .mybuddy-confirmed-section,
+    #applicantDetailModal .mybuddy-confirmed-section{order:3}
+    #hostDetailModal .mybuddy-applicants-section{order:4}
     .mybuddy-desc-section .mybuddy-info-label{font-size:13.5px;font-weight:500;color:#64748b;display:inline-flex;align-items:center;gap:5px}
     .mybuddy-desc-box{background:#f8fafc;border:1px solid #e2e8f0;border-radius:12px;padding:12px 14px;font-size:15px;color:#334155;line-height:1.55;min-height:44px;height:auto;max-height:none;overflow-y:auto;white-space:pre-wrap;word-break:keep-all;box-sizing:border-box}
 
@@ -467,7 +474,7 @@
   <script src="./public/js/snorky-test-mode.js?v=20260905_v1"></script>
   <script src="./public/js/supabase-client.js?v=20260820_stitch_v76"></script>
   <script async src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" onload="window.dispatchEvent(new Event('snorky:supabase-ready'))"></script>
-  <script src="./public/js/auth-session.js?v=20260905_moderation_v1"></script>
+  <script src="./public/js/auth-session.js?v=20260916_access_v3"></script>
   <script src="./public/js/user-profile.js?v=20260907_profile_pipeline_v1"></script>
   <script src="./public/js/buddy-certification.js?v=20260905_v1"></script>
   <script src="./public/js/snorky-friends.js?v=20260905_testmode_v1"></script>
@@ -932,6 +939,10 @@
       var difficulty = modal && modal.querySelector('[id$="detailDifficulty"]');
       if (!difficulty || !difficulty.parentElement) return;
       var row = modal.querySelector('[data-has-instructor-row]');
+      if (value !== true) {
+        if (row) row.remove();
+        return;
+      }
       if (!row) {
         row = document.createElement("div");
         row.className = "mybuddy-info-item";
@@ -939,7 +950,7 @@
         row.innerHTML = '<span class="mybuddy-info-label">강사 유무</span><strong class="mybuddy-info-val"></strong>';
         difficulty.parentElement.parentElement.appendChild(row);
       }
-      row.querySelector("strong").textContent = value ? "강사 있음" : "";
+      row.querySelector("strong").textContent = "강사 있음";
     }
 
     async function shareMyBuddyPost(post) {
@@ -1157,7 +1168,7 @@
         return;
       }
       try {
-        var res = await sb.from("buddy_applications").select("id, applicant_user_id, status, introduction, applicant_gender, applicant_aida_level, applicant_age_group, applicant_nickname, applicant_avatar_url, created_at").eq("buddy_post_id", postId).order("created_at", { ascending: true });
+        var res = await sb.from("buddy_applications").select("id, applicant_user_id, status, introduction, applicant_gender, applicant_aida_level, created_at").eq("buddy_post_id", postId).order("created_at", { ascending: true });
         var apps = res.data || [];
         var pendingApps = apps.filter(function (app) { return app.status === "PENDING"; });
         var approvedApps = apps.filter(function (app) { return app.status === "APPROVED"; });
@@ -1272,7 +1283,7 @@
             var avatarSrc = getDisplayAvatar(uid);
             var aidaRaw = applicantProfile?.aidaLevel || app.applicant_aida_level || getDisplayAidaLevel(uid);
             var cleanAida = (aidaRaw && aidaRaw !== "없음") ? String(aidaRaw).replace(/\s*✓$/, "").trim() : "레벨 없음";
-            var isAppVerified = checkIsVerified(app) || checkIsVerified(applicantProfile);
+            var isAppVerified = Boolean(window.SNORKYCertification?.checkIsVerified?.(app) || window.SNORKYCertification?.checkIsVerified?.(applicantProfile));
             var aidaDisp = cleanAida !== "레벨 없음" ? (isAppVerified ? (cleanAida + " ✓") : cleanAida) : "레벨 없음";
             var genderValue = applicantProfile?.gender || app.applicant_gender || "비공개";
             var gender = genderValue !== "비공개" ? genderValue : null;
@@ -1778,7 +1789,7 @@
             if (sbClient) {
               var appsDataRes = await sbClient
                 .from("buddy_applications")
-                .select("id, applicant_user_id, status, applicant_gender, applicant_aida_level, applicant_age_group, applicant_nickname, applicant_avatar_url, created_at")
+                .select("id, applicant_user_id, status, applicant_gender, applicant_aida_level, created_at")
                 .eq("buddy_post_id", post.id)
                 .eq("status", "APPROVED")
                 .order("created_at", { ascending: true });
@@ -1830,7 +1841,7 @@
               var avatarSrc = getDisplayAvatar(uid);
               var aidaRaw = prof?.aidaLevel || appItem.applicant_aida_level || getDisplayAidaLevel(uid);
               var cleanAida = (aidaRaw && aidaRaw !== "없음") ? String(aidaRaw).replace(/\s*✓$/, "").trim() : "";
-              var isAppVerified = checkIsVerified(appItem) || checkIsVerified(prof);
+              var isAppVerified = Boolean(window.SNORKYCertification?.checkIsVerified?.(appItem) || window.SNORKYCertification?.checkIsVerified?.(prof));
               var genderVal = prof?.gender || appItem.applicant_gender || "비공개";
               var ageVal = prof?.ageGroup || appItem.applicant_age_group || "";
 

@@ -85,7 +85,12 @@
     const sessionAida = isCurrentUser ? cleanProfileAidaLevel(sessionUser?.aidaLevel || sessionUser?.aida_level) : "";
     const storedAida = cleanProfileAidaLevel(stored?.aidaLevel);
     const cleanAida = storedAida || sessionAida || fallbackAida || "";
-    const isVerified = checkIsVerified(stored) || (isCurrentUser && checkIsVerified(sessionUser)) || checkIsVerified(fallback);
+    const levelState = resolveDisplayLevel({
+      ...fallback,
+      ...(isCurrentUser ? sessionUser : {}),
+      ...(stored || {}),
+      aidaLevel: cleanAida,
+    }, cleanAida);
 
     return {
       displayName: global.SNORKYUserProfile?.getDisplayName?.(effectiveSource, fallback.displayName) || "다이버",
@@ -94,8 +99,9 @@
       ageGroup: stored?.ageGroup || (isCurrentUser ? sessionUser?.ageGroup : "") || fallback.ageGroup || "",
       activityRegion: stored?.activityRegion || (isCurrentUser ? sessionUser?.activityRegion : "") || fallback.activityRegion || "",
       activityDepth: stored?.activityDepth || (isCurrentUser ? sessionUser?.activityDepth : "") || fallback.activityDepth || "",
-      aidaLevel: cleanAida,
-      isVerified: Boolean(isVerified && cleanAida),
+      aidaLevel: levelState.level,
+      certifiedSnorkyLevel: levelState.isVerified ? levelState.level : "",
+      isVerified: levelState.isVerified,
       bio: stored?.bio || (isCurrentUser ? sessionUser?.bio : "") || fallback.bio || ""
     };
   }
@@ -103,8 +109,9 @@
   function setTriggerProfile(trigger, userId, profile, resolved) {
     if (!trigger) return;
     const data = profile || {};
-    const isVerified = Boolean(data.isVerified || checkIsVerified(data));
-    const cleanAida = cleanProfileAidaLevel(data.aidaLevel || data.aida_level);
+    const levelState = resolveDisplayLevel(data, data.aidaLevel || data.aida_level);
+    const isVerified = levelState.isVerified;
+    const cleanAida = levelState.level;
 
     trigger.dataset.buddyProfileUserId = String(userId || "");
     trigger.dataset.buddyProfileName = data.displayName || "다이버";
@@ -129,8 +136,9 @@
     const data = profile || {};
     const displayName = data.displayName || "다이버";
     const avatarUrl = data.avatarUrl || DEFAULT_AVATAR;
-    const isVerified = Boolean(data.isVerified || checkIsVerified(data));
-    const cleanAida = cleanProfileAidaLevel(data.aidaLevel || data.aida_level);
+    const levelState = resolveDisplayLevel(data, data.aidaLevel || data.aida_level);
+    const isVerified = levelState.isVerified;
+    const cleanAida = levelState.level;
     const safeClassName = String(className).replace(/[^a-z0-9 _-]/gi, "");
 
     return `<button type="button" class="buddy-profile-photo-trigger ${safeClassName}"` +
@@ -177,6 +185,21 @@
     return clean;
   }
 
+  function resolveDisplayLevel(profile, fallbackActivityLevel = "") {
+    if (global.SNORKYUserProfile?.getDisplayLevel) {
+      return global.SNORKYUserProfile.getDisplayLevel(profile, fallbackActivityLevel);
+    }
+    if (global.SNORKYCertification?.resolveDisplayLevel) {
+      return global.SNORKYCertification.resolveDisplayLevel(profile, fallbackActivityLevel);
+    }
+    const level = cleanProfileAidaLevel(profile?.aidaLevel || profile?.aida_level || fallbackActivityLevel);
+    return { level: level || "없음", isVerified: Boolean(level && checkIsVerified(profile)) };
+  }
+
+  function certificationMarkHtml(level = "") {
+    return global.SNORKYCertification?.renderCertificationMark?.(level) || "";
+  }
+
   function isValidVal(val) {
     if (!val) return false;
     const s = String(val).trim().toLowerCase();
@@ -206,32 +229,29 @@
       items.push(rawAge);
     }
 
-    // 4. 활동 레벨 / 인증 자격 (자격값 항상 표시, APPROVED일 때만 ✓ 추가, 미입력 시 숨김)
-    const cleanAida = cleanProfileAidaLevel(profile.aidaLevel || profile.aida_level);
-    const isVerified = Boolean(
-      profile.isVerified ||
-      profile.isVerified === "true" ||
-      (global.SNORKYCertification ? global.SNORKYCertification.checkIsVerified(profile) : checkIsVerified(profile))
-    );
-
-    if (isValidVal(cleanAida)) {
-      const aidaText = isVerified ? `${cleanAida} ✓` : cleanAida;
-      items.push(aidaText);
-    }
+    // 4. 승인된 자격 레벨 우선, 없으면 활동 레벨, 둘 다 없으면 없음
+    const levelState = resolveDisplayLevel(profile, profile.aidaLevel || profile.aida_level);
+    items.push(levelState.level);
 
     return items.join(" · ");
+  }
+
+  function formatProfileMetaHtml(profile, options = {}) {
+    const text = formatProfileMetaText(profile, options);
+    const levelState = resolveDisplayLevel(profile, profile?.aidaLevel || profile?.aida_level);
+    if (!levelState.isVerified) return escapeHtml(text);
+    const levelSuffix = ` · ${levelState.level}`;
+    const textWithoutLevel = text.endsWith(levelSuffix) ? text.slice(0, -levelSuffix.length) : text;
+    return `${escapeHtml(textWithoutLevel)}${textWithoutLevel ? " · " : ""}${certificationMarkHtml(levelState.level)}`;
   }
 
   function renderHostProfileRow(container, post, author) {
     if (!container) return null;
     const userId = post?.user_id || author?.userId || "";
     const baseProfile = resolveProfile(userId, author || {});
-    const authorAida = cleanProfileAidaLevel(author?.aidaLevel || author?.aida_level);
     const profile = {
-      ...baseProfile,
       ...(author || {}),
-      aidaLevel: authorAida || baseProfile.aidaLevel,
-      isVerified: Boolean(author?.isVerified || checkIsVerified(author) || baseProfile.isVerified)
+      ...baseProfile
     };
 
     const avatarTrigger = renderTrigger({
@@ -241,11 +261,11 @@
       resolved: true
     });
 
-    const metaText = formatProfileMetaText(profile, { includeNickname: true });
+    const metaHtml = formatProfileMetaHtml(profile, { includeNickname: true });
 
     container.innerHTML = `
       ${avatarTrigger}
-      <span class="buddy-detail-host-meta" data-buddy-profile-user-id="${escapeHtml(String(userId || ''))}" data-buddy-profile-name="${escapeHtml(profile.displayName || '')}" data-buddy-profile-avatar="${escapeHtml(profile.avatarUrl || '')}" data-buddy-profile-gender="${escapeHtml(profile.gender || '')}" data-buddy-profile-age-group="${escapeHtml(profile.ageGroup || '')}" data-buddy-profile-activity-region="${escapeHtml(profile.activityRegion || '')}" data-buddy-profile-activity-depth="${escapeHtml(profile.activityDepth || '')}" data-buddy-profile-aida="${escapeHtml(profile.aidaLevel || '')}" data-buddy-profile-verified="${profile.isVerified ? 'true' : 'false'}" data-buddy-profile-bio="${escapeHtml(profile.bio || '')}" role="button" tabindex="0" style="cursor:pointer;">${escapeHtml(metaText)}</span>
+      <span class="buddy-detail-host-meta" data-buddy-profile-user-id="${escapeHtml(String(userId || ''))}" data-buddy-profile-name="${escapeHtml(profile.displayName || '')}" data-buddy-profile-avatar="${escapeHtml(profile.avatarUrl || '')}" data-buddy-profile-gender="${escapeHtml(profile.gender || '')}" data-buddy-profile-age-group="${escapeHtml(profile.ageGroup || '')}" data-buddy-profile-activity-region="${escapeHtml(profile.activityRegion || '')}" data-buddy-profile-activity-depth="${escapeHtml(profile.activityDepth || '')}" data-buddy-profile-aida="${escapeHtml(profile.aidaLevel || '')}" data-buddy-profile-verified="${profile.isVerified ? 'true' : 'false'}" data-buddy-profile-bio="${escapeHtml(profile.bio || '')}" role="button" tabindex="0" style="cursor:pointer;">${metaHtml}</span>
     `;
     return profile;
   }
@@ -287,7 +307,7 @@
           </button>
         </header>
         <div class="buddy-profile-modal-body">
-          <!-- 1. 상단: 프로필 요약 (프로필 사진, 닉네임, 성별 · 나이대, 인증 자격 + ✓) -->
+          <!-- 1. 상단: 프로필 요약 (프로필 사진, 닉네임, 성별 · 나이대, 인증 자격) -->
           <div class="buddy-profile-summary-row">
              <img class="buddy-profile-summary-avatar" data-buddy-profile-card-avatar src="${DEFAULT_AVATAR}" alt="프로필 사진">
              <div class="buddy-profile-summary-info">
@@ -348,9 +368,10 @@
     return modal;
   }
 
-  function showReportModal(targetUser, postId = "") {
+  function showReportModal(targetUser, postId = "", options = {}) {
     const existing = document.getElementById("buddyReportModal");
     if (existing) removeModalDom(existing);
+    const isPostReport = options.reportTarget === "post";
 
     const reportModal = document.createElement("div");
     reportModal.id = "buddyReportModal";
@@ -359,7 +380,7 @@
     reportModal.innerHTML = `
       <div class="buddy-profile-modal-card" style="max-width:380px;">
         <header class="buddy-profile-modal-head">
-          <h3 class="buddy-profile-modal-title">사용자 신고</h3>
+          <h3 class="buddy-profile-modal-title">${isPostReport ? "게시글 신고" : "사용자 신고"}</h3>
           <button type="button" class="buddy-profile-modal-close" data-report-close aria-label="닫기">
             <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
           </button>
@@ -381,6 +402,7 @@
             <label style="font-size:13px;font-weight:700;color:#334155;display:block;margin-bottom:6px;">상세 내용 <span style="font-size:11.5px;color:#94a3b8;font-weight:400;">(선택)</span></label>
             <textarea name="report_details" rows="3" placeholder="신고 내용을 자세히 적어주시면 빠른 처리에 도움이 됩니다." style="width:100%;border:1px solid #cbd5e1;border-radius:10px;padding:10px 12px;font-size:13.5px;font-family:inherit;box-sizing:border-box;resize:none;outline:none;line-height:1.5;"></textarea>
           </div>
+          <div><label style="font-size:13px;font-weight:700;color:#334155;display:block;margin-bottom:6px;">증빙 이미지 (선택, 최대 3장)</label><input name="report_images" type="file" accept="image/jpeg,image/png,image/webp" multiple></div>
           <div style="display:flex;gap:8px;margin-top:6px;">
             <button type="button" data-report-cancel style="flex:1;height:42px;border:1px solid #e2e8f0;background:#f8fafc;color:#64748b;border-radius:10px;font-size:14px;font-weight:700;cursor:pointer;">취소</button>
             <button type="submit" data-report-submit style="flex:1;height:42px;border:0;background:#ef4444;color:#fff;border-radius:10px;font-size:14px;font-weight:700;cursor:pointer;">신고 접수</button>
@@ -388,6 +410,18 @@
         </form>
       </div>
     `;
+
+    const imageInput = reportModal.querySelector('input[name="report_images"]');
+    if (imageInput?.previousElementSibling) imageInput.previousElementSibling.textContent = "증빙 이미지 (필수, 최대 3장)";
+    const detailsInput = reportModal.querySelector('textarea[name="report_details"]');
+    if (detailsInput?.previousElementSibling) detailsInput.previousElementSibling.textContent = "상세 내용 *";
+    const submitButton = reportModal.querySelector("[data-report-submit]");
+    if (submitButton) {
+      const notice = document.createElement("p");
+      notice.textContent = "신고 접수 후에는 취소할 수 없으니 내용을 확인해 주세요.";
+      notice.style.cssText = "margin:0;color:#b42318;font-size:14px;line-height:1.5;";
+      submitButton.parentElement.parentElement.insertBefore(notice, submitButton.parentElement);
+    }
 
     const closeReport = () => removeModalDom(reportModal);
     reportModal.querySelector("[data-report-close]")?.addEventListener("click", closeReport);
@@ -401,11 +435,26 @@
       if (isReportSubmitting) return;
       const reason = form.report_reason.value;
       const details = form.report_details.value;
+      const imageFiles = Array.from(form.report_images.files || []);
       const submitBtn = reportModal.querySelector("[data-report-submit]");
       if (!reason) {
         alert("신고 사유를 선택해 주세요.");
         return;
       }
+      if (!details.trim()) {
+        alert("상세 내용을 입력해 주세요.");
+        return;
+      }
+      if (imageFiles.length < 1 || imageFiles.length > 3 || imageFiles.some(file => !["image/jpeg", "image/png", "image/webp"].includes(file.type))) {
+        alert("JPG, PNG, WebP 이미지를 1~3장 첨부해 주세요.");
+        return;
+      }
+      const images = await Promise.all(imageFiles.map(file => new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve({ name: file.name, mime_type: file.type, content_base64: String(reader.result).split(",")[1] || "" });
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+      })));
       isReportSubmitting = true;
       submitBtn.disabled = true;
       submitBtn.textContent = "접수 중...";
@@ -413,16 +462,31 @@
       const sessionUser = getSessionUser();
       try {
         if (!global.SNORKYFriends?.reportUser) throw new Error("신고 모듈을 불러오지 못했습니다.");
-        await global.SNORKYFriends.reportUser({
+        const res = await global.SNORKYFriends.reportUser({
           reporterId: sessionUser?.id || "",
           reporterNickname: global.SNORKYUserProfile?.getDisplayName?.(sessionUser) || "다이버",
           targetId: targetUser.userId,
           targetNickname: targetUser.displayName || "",
           reason,
           details,
+          images,
           postId: postId || ""
         });
-        alert("신고가 접수되었습니다.");
+        if (!res?.ok) throw new Error("신고 접수 결과를 확인하지 못했습니다.");
+        const originalAlert = window.alert;
+        window.alert = () => {};
+        form.reset();
+        const successModal = document.createElement("div");
+        successModal.className = "buddy-profile-modal-overlay";
+        successModal.style.zIndex = "1600";
+        successModal.innerHTML = `<div class="buddy-profile-modal-card" style="max-width:340px;padding:24px;text-align:center;"><p style="margin:0 0 20px;color:#123849;font-size:16px;font-weight:800;line-height:1.5;">신고가 정상적으로 접수되었습니다.</p><button type="button" data-report-success-confirm style="width:100%;height:42px;border:0;border-radius:10px;background:#087aa0;color:#fff;font-size:14px;font-weight:800;cursor:pointer;">확인</button></div>`;
+        successModal.querySelector("[data-report-success-confirm]")?.addEventListener("click", () => {
+          window.alert = originalAlert;
+          successModal.remove();
+          closeReport();
+        });
+        document.body.appendChild(successModal);
+        alert("신고가 정상적으로 접수되었습니다.");
         closeReport();
       } catch (err) {
         alert(err?.message || "신고 접수 중 오류가 발생했습니다.");
@@ -444,8 +508,9 @@
     const postId = options.postId || "";
     const sessionUser = getSessionUser();
     const myUserId = sessionUser?.id ? String(sessionUser.id) : "";
+    const isGuest = !myUserId;
     const isSelf = Boolean(targetUserId && myUserId && targetUserId === myUserId);
-    const allowActions = !isSelf || global.SNORKYTestMode?.TEST_MODE_ALLOW_DUPLICATE_USERS === true;
+    const allowActions = !isGuest && (!isSelf || global.SNORKYTestMode?.TEST_MODE_ALLOW_DUPLICATE_USERS === true);
 
     // 1. 상단: 프로필 사진
     const avatar = modal.querySelector("[data-buddy-profile-card-avatar]");
@@ -472,13 +537,14 @@
       submetaEl.textContent = ageGroup ? `${gender} · ${ageGroup}` : gender;
     }
 
-    // 1. 상단: 프로필 자격 (user_profiles의 현재 프로필 자격값 항상 표시, APPROVED일 때만 ✓ 추가, 미입력 시 숨김)
-    const isVerified = Boolean(data.isVerified || data.isVerified === "true" || checkIsVerified(data));
-    const rawAida = cleanProfileAidaLevel(data.aidaLevel || data.aida_level);
+    // 1. 상단: 승인된 자격 레벨 우선, 없으면 활동 레벨
+    const levelState = resolveDisplayLevel(data, data.aidaLevel || data.aida_level);
+    const isVerified = levelState.isVerified;
+    const rawAida = levelState.level;
     const certEl = modal.querySelector("[data-buddy-profile-card-cert]");
     if (certEl) {
       if (rawAida) {
-        certEl.textContent = isVerified ? `${rawAida} ✓` : rawAida;
+        certEl.innerHTML = isVerified ? certificationMarkHtml(rawAida) : escapeHtml(rawAida);
         certEl.style.display = "inline-flex";
         if (isVerified) {
           certEl.style.background = "#ecfdf5";
@@ -660,6 +726,17 @@
     modal.style.display = "flex";
   }
 
+  function openPostReportModal(targetUser, postId) {
+    const sessionUser = getSessionUser();
+    if (!sessionUser) {
+      global.SNORKYAuthSession?.showLoginPrompt?.("게시글 신고는 로그인 후 이용할 수 있어요.");
+      return;
+    }
+    const normalizedPostId = Number(postId);
+    if (!targetUser?.userId || !Number.isSafeInteger(normalizedPostId) || normalizedPostId <= 0) return;
+    showReportModal(targetUser, normalizedPostId, { reportTarget: "post" });
+  }
+
   async function openByUserId(userId, fallback, forceRefresh = false, options = {}) {
     const rawId = userId !== null && userId !== undefined ? String(userId).trim() : "";
     const id = (rawId && rawId !== "null" && rawId !== "undefined" && rawId !== "[object Object]") ? rawId : "";
@@ -805,6 +882,7 @@
   global.SNORKYBuddyProfileCard = Object.freeze({
     open,
     openByUserId,
+    openPostReportModal,
     close,
     invalidateCache,
     setCachedProfile,
@@ -813,6 +891,7 @@
     setTriggerProfile,
     renderConfirmedParticipants,
     formatProfileMetaText,
+    formatProfileMetaHtml,
     renderHostProfileRow,
     resolveProfile
   });

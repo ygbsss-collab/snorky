@@ -2,86 +2,795 @@
 <html lang="ko">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>SNORKY 운영 콘솔</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>SNORKY Operations Console</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <!-- 1. 한글 전용 Pretendard 웹폰트 (글자 깨짐 방지 및 고품질 가독성) -->
+  <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
+  <link href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet">
+  <style>
+    @layer base {
+      html, body {
+        margin: 0;
+        padding: 0;
+        font-family: "Pretendard", -apple-system, BlinkMacSystemFont, system-ui, Roboto, "Helvetica Neue", "Segoe UI", "Apple SD Gothic Neo", "Noto Sans KR", "Malgun Gothic", sans-serif;
+        -webkit-font-smoothing: antialiased;
+        -moz-osx-font-smoothing: grayscale;
+        text-rendering: optimizeLegibility;
+        word-break: keep-all;
+        overflow-wrap: break-word;
+      }
+      body { overscroll-behavior: none; }
+    }
+    .material-symbols-outlined {
+      font-family: 'Material Symbols Outlined' !important;
+      font-weight: normal !important;
+      font-style: normal !important;
+      font-size: 20px;
+      line-height: 1;
+      letter-spacing: normal;
+      text-transform: none;
+      display: inline-block;
+      white-space: nowrap;
+      word-wrap: normal;
+      direction: ltr;
+      -webkit-font-feature-settings: 'liga';
+      -webkit-font-smoothing: antialiased;
+      vertical-align: middle;
+      font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+    }
+  </style>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script id="tailwind-config">
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          colors: {
+            "inverse-surface": "#213145",
+            "secondary": "#565e74",
+            "surface": "#f8f9ff",
+            "surface-container": "#e5eeff",
+            "surface-container-lowest": "#ffffff",
+            "on-primary-fixed-variant": "#005049",
+            "surface-container-high": "#dce9ff",
+            "on-background": "#0b1c30",
+            "inverse-primary": "#6bd8cb",
+            "on-surface": "#0b1c30",
+            "on-error-container": "#93000a",
+            "on-primary-container": "#f4fffc",
+            "tertiary-fixed": "#71f8e4",
+            "secondary-fixed-dim": "#bec6e0",
+            "primary-container": "#008378",
+            "primary-fixed-dim": "#6bd8cb",
+            "inverse-on-surface": "#eaf1ff",
+            "error-container": "#ffdad6",
+            "surface-bright": "#f8f9ff",
+            "error": "#ba1a1a",
+            "on-tertiary-fixed-variant": "#005048",
+            "primary": "#00685f",
+            "tertiary-fixed-dim": "#4fdbc8",
+            "on-secondary-fixed": "#131b2e",
+            "secondary-fixed": "#dae2fd",
+            "on-secondary-container": "#5c647a",
+            "surface-container-highest": "#d3e4fe",
+            "on-tertiary": "#ffffff",
+            "background": "#f8f9ff",
+            "outline-variant": "#bcc9c6",
+            "tertiary": "#00685d",
+            "tertiary-container": "#008376",
+            "surface-dim": "#cbdbf5",
+            "on-error": "#ffffff",
+            "surface-tint": "#006a61",
+            "on-primary-fixed": "#00201d",
+            "on-surface-variant": "#3d4947",
+            "on-secondary-fixed-variant": "#3f465c",
+            "surface-variant": "#d3e4fe",
+            "on-secondary": "#ffffff",
+            "on-tertiary-container": "#f4fffb",
+            "on-tertiary-fixed": "#00201c",
+            "on-primary": "#ffffff",
+            "outline": "#6d7a77",
+            "secondary-container": "#dae2fd",
+            "primary-fixed": "#89f5e7",
+            "surface-container-low": "#eff4ff"
+          },
+          fontFamily: {
+            "body-md": ["Pretendard", "-apple-system", "BlinkMacSystemFont", "system-ui", "Roboto", "Helvetica Neue", "Segoe UI", "Apple SD Gothic Neo", "Noto Sans KR", "Malgun Gothic", "sans-serif"],
+            "headline": ["Pretendard", "-apple-system", "BlinkMacSystemFont", "system-ui", "Roboto", "Helvetica Neue", "Segoe UI", "Apple SD Gothic Neo", "Noto Sans KR", "Malgun Gothic", "sans-serif"],
+            "mono": ["JetBrains Mono", "SFMono-Regular", "Menlo", "Monaco", "Consolas", "monospace"]
+          }
+        }
+      }
+    };
+  </script>
   <link rel="stylesheet" href="./public/css/admin-page.css">
   <link rel="stylesheet" href="./public/css/condition-analysis-overlay.css?v=20260901_custom_v1">
 </head>
-<body>
-  <main class="admin-shell">
-    <header class="admin-topbar">
-      <div class="admin-brand"><span class="admin-brand-mark">S</span><div><strong>SNORKY</strong><span>Operations Console</span></div></div>
-      <div class="admin-topbar-actions">
-        <span class="admin-env-badge"><i></i>PRODUCTION</span>
-        <div class="admin-profile"><span class="admin-avatar">A</span><div><strong>Administrator</strong><span id="adminProfileEmail">관리자 계정</span></div></div>
-        <button id="adminExit" class="admin-logout" type="button">로그아웃</button>
+<body class="bg-background font-body-md text-on-surface antialiased min-h-screen">
+  <!-- 1. Left Persistent Sidebar (Desktop Fixed / Mobile Off-canvas Drawer) -->
+  <aside id="sidebar-drawer" hidden class="fixed inset-y-0 left-0 z-50 w-64 bg-inverse-surface text-inverse-on-surface transform -translate-x-full lg:translate-x-0 transition-transform duration-200 ease-in-out flex flex-col shadow-[0_1px_8px_rgba(0,0,0,0.04)]">
+    <!-- Brand Header -->
+    <div class="h-14 px-4 flex items-center justify-between bg-inverse-surface border-b border-surface-container-highest/10">
+      <div class="flex items-center gap-3">
+        <div class="w-8 h-8 rounded-lg bg-primary flex items-center justify-center text-on-primary shadow-sm">
+          <span class="material-symbols-outlined text-[20px]">scuba_diving</span>
+        </div>
+        <div class="flex flex-col">
+          <span class="font-headline font-bold text-inverse-on-surface tracking-tight leading-none text-base">SNORKY</span>
+          <span class="font-mono text-[10px] text-primary-fixed-dim uppercase tracking-wider pt-0.5 font-semibold">Ops Console</span>
+        </div>
+      </div>
+      <button type="button" class="lg:hidden text-inverse-on-surface hover:text-on-primary-container p-1 rounded transition-colors" onclick="document.getElementById('sidebar-drawer').classList.add('-translate-x-full');document.getElementById('sidebar-backdrop').classList.add('hidden')">
+        <span class="material-symbols-outlined text-[20px]">close</span>
+      </button>
+    </div>
+
+    <!-- Platform Node Status Badge -->
+    <div class="px-4 py-3">
+      <div class="px-3 py-1.5 rounded-lg bg-surface-container-highest/10 flex items-center justify-between border border-surface-container-highest/10">
+        <span class="font-mono text-[10px] text-primary-fixed-dim uppercase font-semibold">Platform Node</span>
+        <span class="inline-flex items-center gap-1 font-mono text-[11px] text-primary-fixed font-semibold">
+          <span class="w-1.5 h-1.5 rounded-full bg-primary-fixed animate-pulse"></span> v2.4.0-prod
+        </span>
+      </div>
+    </div>
+
+    <!-- Sidebar Navigation -->
+    <nav class="flex-1 px-3 py-2 flex flex-col gap-1 overflow-y-auto" aria-label="관리자 메뉴">
+      <button type="button" data-admin-tab="dashboard" class="sidebar-nav-item is-active flex items-center gap-3 px-3 py-2.5 rounded-lg text-left transition-colors bg-primary-container text-on-primary-container font-semibold">
+        <span class="material-symbols-outlined text-[20px]">dashboard</span>
+        <span class="text-sm font-medium">운영 대시보드</span>
+      </button>
+      <button type="button" data-admin-tab="points" class="sidebar-nav-item flex items-center gap-3 px-3 py-2.5 rounded-lg text-left transition-colors text-inverse-on-surface/75 hover:bg-surface-container-highest/15 hover:text-inverse-on-surface">
+        <span class="material-symbols-outlined text-[20px]">pin_drop</span>
+        <span class="text-sm font-medium">지역/다이빙 포인트 관리</span>
+      </button>
+      <button type="button" data-admin-tab="indoor" class="sidebar-nav-item flex items-center gap-3 px-3 py-2.5 rounded-lg text-left transition-colors text-inverse-on-surface/75 hover:bg-surface-container-highest/15 hover:text-inverse-on-surface">
+        <span class="material-symbols-outlined text-[20px]">pool</span>
+        <span class="text-sm font-medium">실내 다이빙센터 관리</span>
+      </button>
+      <button type="button" data-admin-tab="users" id="adminUserManager" class="sidebar-nav-item flex items-center gap-3 px-3 py-2.5 rounded-lg text-left transition-colors text-inverse-on-surface/75 hover:bg-surface-container-highest/15 hover:text-inverse-on-surface">
+        <span class="material-symbols-outlined text-[20px]">group</span>
+        <span class="text-sm font-medium">사용자 관리</span>
+      </button>
+      <button type="button" data-admin-tab="certification" id="adminCertificationManager" class="sidebar-nav-item flex items-center gap-3 px-3 py-2.5 rounded-lg text-left transition-colors text-inverse-on-surface/75 hover:bg-surface-container-highest/15 hover:text-inverse-on-surface">
+        <span class="material-symbols-outlined text-[20px]">verified</span>
+        <span class="text-sm font-medium">자격 인증</span>
+      </button>
+      <button type="button" data-admin-tab="reports" id="adminReportManager" class="sidebar-nav-item flex items-center gap-3 px-3 py-2.5 rounded-lg text-left transition-colors text-inverse-on-surface/75 hover:bg-surface-container-highest/15 hover:text-inverse-on-surface">
+        <span class="material-symbols-outlined text-[20px]">gavel</span>
+        <span class="text-sm font-medium">신고/제재</span>
+      </button>
+      <button type="button" data-admin-tab="services" class="sidebar-nav-item flex items-center gap-3 px-3 py-2.5 rounded-lg text-left transition-colors text-inverse-on-surface/75 hover:bg-surface-container-highest/15 hover:text-inverse-on-surface">
+        <span class="material-symbols-outlined text-[20px]">settings</span>
+        <span class="text-sm font-medium">서비스 설정</span>
+      </button>
+    </nav>
+
+    <!-- Footer Ops Guard Status -->
+    <div class="p-4 bg-inverse-surface border-t border-surface-container-highest/10 mt-auto">
+      <div class="p-3 rounded-lg bg-surface-container-highest/10 flex flex-col gap-1 border border-surface-container-highest/10">
+        <div class="flex items-center justify-between">
+          <span class="font-mono text-[10px] text-inverse-on-surface/70 uppercase font-semibold">Ops Guard</span>
+          <span class="font-mono text-[10px] text-primary-fixed font-bold">STABLE</span>
+        </div>
+        <span class="font-mono text-[11px] text-inverse-on-surface/90">KR-SEOUL-DC2</span>
+      </div>
+    </div>
+  </aside>
+
+  <!-- Mobile Sidebar Backdrop -->
+  <div id="sidebar-backdrop" class="fixed inset-0 bg-inverse-surface/50 backdrop-blur-sm z-40 hidden lg:hidden" onclick="document.getElementById('sidebar-drawer').classList.add('-translate-x-full');this.classList.add('hidden')"></div>
+
+  <!-- 2. Main Content Shell -->
+  <div id="adminShell" class="flex flex-col min-h-screen">
+    <!-- Topbar Header -->
+    <header id="adminTopbar" hidden class="fixed top-0 right-0 left-0 lg:left-64 z-30 h-14 bg-surface-container-lowest/90 backdrop-blur-xl border-b border-surface-container-high shadow-[0_1px_8px_rgba(0,0,0,0.04)]">
+      <div class="h-14 w-full px-4 lg:px-6 flex items-center justify-between">
+        <!-- Left Title & Mobile Menu Toggle -->
+        <div class="flex items-center gap-3">
+          <button type="button" class="lg:hidden p-1.5 rounded-lg text-on-surface-variant hover:bg-surface-container-high transition-colors" onclick="document.getElementById('sidebar-drawer').classList.remove('-translate-x-full');document.getElementById('sidebar-backdrop').classList.remove('hidden')">
+            <span class="material-symbols-outlined text-[22px]">menu</span>
+          </button>
+          <div class="hidden sm:flex items-center gap-1.5 text-on-surface-variant font-mono text-xs">
+            <span class="material-symbols-outlined text-[16px] text-primary">security</span>
+            <span class="font-semibold text-on-surface">SNORKY Enterprise Operations Console</span>
+          </div>
+        </div>
+
+        <!-- Right User Actions & Status Badges -->
+        <div class="flex items-center gap-3">
+          <div class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-surface-container-low text-primary-container font-mono text-[10px] font-bold border border-surface-container-high">
+            <span class="w-1.5 h-1.5 rounded-full bg-primary-container animate-ping"></span>
+            <span class="tracking-wider">PRODUCTION</span>
+          </div>
+          <div class="hidden md:flex items-center gap-1.5 font-mono text-xs text-on-surface-variant bg-surface-container-lowest px-2.5 py-1 rounded-lg border border-surface-container-high shadow-xs">
+            <span class="material-symbols-outlined text-[15px] text-secondary">badge</span>
+            <span id="adminProfileEmail" class="font-medium">관리자 계정</span>
+          </div>
+          <div class="w-8 h-8 rounded-full bg-primary flex items-center justify-center text-on-primary shadow-xs">
+            <span class="material-symbols-outlined text-[18px]">person</span>
+          </div>
+          <button id="adminExit" type="button" class="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface transition-colors font-body-md text-xs font-semibold" title="Logout">
+            <span class="material-symbols-outlined text-[18px]">logout</span>
+            <span class="hidden sm:inline">로그아웃</span>
+          </button>
+        </div>
       </div>
     </header>
 
-    <nav class="admin-console-nav" aria-label="관리자 메뉴">
-      <button class="is-active" data-admin-tab="dashboard" type="button"><span>⌂</span>대시보드</button>
-      <button data-admin-tab="users" id="adminUserManager" type="button"><span>♙</span>사용자</button>
-      <button data-admin-tab="certification" id="adminCertificationManager" type="button"><span>✓</span>자격 인증</button>
-      <button data-admin-tab="reports" id="adminReportManager" type="button"><span>!</span>신고/제재</button>
-      <button data-admin-tab="services" type="button"><span>◇</span>서비스 관리</button>
-    </nav>
+    <!-- Hidden Auth Status Helper for Event Subscriptions -->
+    <span id="adminPageStatus" class="hidden">관리자 인증 확인 중</span>
 
-    <section class="admin-auth-state">
-      <span id="adminPageStatus" class="admin-page-status">관리자 인증 확인 중</span>
-    </section>
-
-    <section class="admin-workspace">
-      <div id="adminLoginPanel" class="admin-login-card">
-        <p class="admin-eyebrow">SECURE ACCESS</p>
-        <h1>운영 콘솔 로그인</h1>
-        <p>관리자 계정으로 로그인해 주세요.</p>
-        <form id="adminLoginForm">
-          <label for="adminEmail">이메일<input id="adminEmail" type="email" autocomplete="username" required></label>
-          <label for="adminPassword">비밀번호<input id="adminPassword" type="password" autocomplete="current-password" required></label>
-          <div id="adminLoginError" class="admin-login-error"></div>
-          <button type="submit">관리자 로그인</button>
+    <!-- Main Workspace Container -->
+    <main class="w-full pt-14 flex-1 bg-surface">
+      <!-- A. Login Panel (Visible when logged out) -->
+      <div id="adminLoginPanel" class="max-w-md mx-auto my-16 p-8 bg-surface-container-lowest rounded-2xl shadow-lg border border-surface-container-high flex flex-col gap-4">
+        <div class="flex items-center gap-3 mb-2">
+          <div class="w-10 h-10 rounded-xl bg-primary flex items-center justify-center text-on-primary shadow-sm">
+            <span class="material-symbols-outlined text-[24px]">shield_lock</span>
+          </div>
+          <div>
+            <p class="font-mono text-[10px] text-primary uppercase font-bold tracking-wider">SECURE ACCESS</p>
+            <h1 class="font-headline text-2xl font-bold text-on-surface">운영 콘솔 로그인</h1>
+          </div>
+        </div>
+        <p class="text-secondary text-sm">관리자 계정으로 로그인해 주세요.</p>
+        <form id="adminLoginForm" class="flex flex-col gap-4 mt-2">
+          <label class="flex flex-col gap-1 font-mono text-xs text-on-surface-variant font-semibold" for="adminEmail">
+            이메일
+            <input id="adminEmail" type="email" autocomplete="username" required class="w-full h-11 px-3 bg-surface-container-low border border-outline-variant/50 rounded-lg text-on-surface font-body-md focus:outline-none focus:border-primary focus:bg-surface-container transition-all">
+          </label>
+          <label class="flex flex-col gap-1 font-mono text-xs text-on-surface-variant font-semibold" for="adminPassword">
+            비밀번호
+            <input id="adminPassword" type="password" autocomplete="current-password" required class="w-full h-11 px-3 bg-surface-container-low border border-outline-variant/50 rounded-lg text-on-surface font-body-md focus:outline-none focus:border-primary focus:bg-surface-container transition-all">
+          </label>
+          <div id="adminLoginError" class="text-xs text-error min-h-[20px]"></div>
+          <button type="submit" class="w-full h-11 bg-primary hover:bg-primary-container text-on-primary font-headline text-sm font-semibold rounded-lg shadow-sm transition-all flex items-center justify-center gap-2">
+            <span class="material-symbols-outlined text-[20px]">login</span>
+            <span>관리자 로그인</span>
+          </button>
         </form>
       </div>
 
+      <!-- B. Authorized Admin Workspace Panels -->
       <div id="adminPageIntro" hidden>
+        <!-- Tab 1: 운영 대시보드 -->
         <section class="admin-tab-panel" data-admin-panel="dashboard">
-          <header class="admin-section-head"><div><p class="admin-eyebrow">OVERVIEW</p><h1>운영 대시보드</h1><p>SNORKY 서비스의 주요 운영 현황입니다.</p></div><span class="admin-data-note">실시간 조회 기준</span></header>
-          <div class="admin-kpi-grid">
-            <article class="admin-kpi"><span class="admin-kpi-icon is-blue">♙</span><div><span>총 회원</span><strong id="adminKpiTotalUsers">-</strong><small>전체 가입 계정</small></div></article>
-            <article class="admin-kpi"><span class="admin-kpi-icon is-green">●</span><div><span>활성 사용자</span><strong id="adminKpiActiveUsers">-</strong><small>현재 정상 이용</small></div></article>
-            <article class="admin-kpi"><span class="admin-kpi-icon is-amber">✓</span><div><span>자격 인증 대기</span><strong id="adminKpiPendingCertifications">-</strong><small>검토 필요</small></div></article>
-            <article class="admin-kpi"><span class="admin-kpi-icon is-red">!</span><div><span>미처리 신고</span><strong id="adminKpiPendingReports">-</strong><small>운영 조치 필요</small></div></article>
+          <!-- Dashboard Section Header -->
+          <div class="px-4 lg:px-8 py-6 flex flex-col md:flex-row md:items-end justify-between gap-4">
+            <div>
+              <div class="flex items-center gap-2 mb-1">
+                <span class="font-mono text-[10px] tracking-widest text-primary font-bold uppercase">Overview</span>
+                <span class="text-secondary/40 font-mono text-xs">/</span>
+                <span class="font-mono text-[10px] text-secondary font-medium uppercase">Ops Central</span>
+              </div>
+              <h1 class="font-headline text-2xl lg:text-3xl font-bold text-on-surface tracking-tight leading-none mb-1.5">운영 대시보드</h1>
+              <p class="text-sm text-secondary">SNORKY 서비스의 주요 운영 현황 및 인프라 지표입니다.</p>
+            </div>
+            <div class="flex items-center gap-3 self-start md:self-auto">
+              <div class="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-surface-container-lowest shadow-sm border border-surface-container-high text-secondary">
+                <span class="relative flex h-2 w-2">
+                  <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75"></span>
+                  <span class="relative inline-flex rounded-full h-2 w-2 bg-primary"></span>
+                </span>
+                <span class="font-mono text-xs font-semibold text-on-surface">실시간 조회 기준</span>
+                <span class="font-mono text-[10px] text-secondary/60">방금 전</span>
+              </div>
+              <button class="p-2 rounded-lg bg-surface-container-lowest hover:bg-surface-container border border-surface-container-high text-secondary hover:text-on-surface transition-colors shadow-sm" onclick="window.location.reload()" title="데이터 새로고침" type="button">
+                <span class="material-symbols-outlined text-[18px] leading-none">refresh</span>
+              </button>
+            </div>
           </div>
-          <div class="admin-dashboard-grid">
-            <article class="admin-card admin-alert-card"><div class="admin-card-head"><div><p class="admin-eyebrow">URGENT</p><h2>긴급 운영 알림</h2></div><span id="adminUrgentCount" class="admin-count-pill">-</span></div><div id="adminUrgentAlerts" class="admin-alert-list"><p>운영 데이터를 확인하는 중입니다.</p></div></article>
-            <article class="admin-card"><div class="admin-card-head"><div><p class="admin-eyebrow">INFRASTRUCTURE</p><h2>서비스 사용량</h2></div><span class="admin-placeholder-pill">연동 예정</span></div><div class="admin-usage-list"><div><span>Database</span><strong>-</strong><i></i></div><div><span>Storage</span><strong>-</strong><i></i></div><div><span>API / Edge Function</span><strong>-</strong><i></i></div></div></article>
+
+          <!-- KPI Metric Cards Grid (4 Cards) -->
+          <div class="px-4 lg:px-8 pb-8 space-y-6">
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+              <!-- Card 1: 총 회원 -->
+              <div class="bg-surface-container-lowest p-5 rounded-2xl border border-surface-container-high shadow-sm hover:shadow-md transition-shadow flex flex-col justify-between group">
+                <div class="flex items-center justify-between">
+                  <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-xl bg-primary-container/10 flex items-center justify-center text-primary group-hover:scale-105 transition-transform">
+                      <span class="material-symbols-outlined text-[22px]">person</span>
+                    </div>
+                    <div>
+                      <span class="text-sm text-secondary block">총 회원</span>
+                      <span class="font-mono text-[10px] text-secondary/70">전체 가입 계정</span>
+                    </div>
+                  </div>
+                  <span class="font-mono text-[10px] px-2 py-0.5 rounded-full bg-surface-container text-secondary font-bold">ALL</span>
+                </div>
+                <div class="mt-4 flex items-baseline justify-between">
+                  <span class="font-headline text-2xl lg:text-3xl font-bold text-on-surface"><strong id="adminKpiTotalUsers">-</strong><span class="text-sm text-secondary ml-1 font-normal">명</span></span>
+                  <span class="font-mono text-[11px] text-primary flex items-center gap-0.5 font-semibold">
+                    <span class="material-symbols-outlined text-[14px]">arrow_upward</span>정상 집계
+                  </span>
+                </div>
+              </div>
+
+              <!-- Card 2: 활성 사용자 -->
+              <div class="bg-surface-container-lowest p-5 rounded-2xl border border-surface-container-high shadow-sm hover:shadow-md transition-shadow flex flex-col justify-between group">
+                <div class="flex items-center justify-between">
+                  <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-xl bg-tertiary-container/15 flex items-center justify-center text-tertiary group-hover:scale-105 transition-transform">
+                      <span class="material-symbols-outlined text-[22px]">verified_user</span>
+                    </div>
+                    <div>
+                      <span class="text-sm text-secondary block">활성 사용자</span>
+                      <span class="font-mono text-[10px] text-secondary/70">현재 정상 이용</span>
+                    </div>
+                  </div>
+                  <span class="inline-flex items-center gap-1 font-mono text-[10px] px-2 py-0.5 rounded-full bg-tertiary-fixed/40 text-on-tertiary-fixed-variant font-semibold">
+                    <span class="w-1.5 h-1.5 rounded-full bg-primary"></span>
+                    ACTIVE
+                  </span>
+                </div>
+                <div class="mt-4 flex items-baseline justify-between">
+                  <span class="font-headline text-2xl lg:text-3xl font-bold text-on-surface"><strong id="adminKpiActiveUsers">-</strong><span class="text-sm text-secondary ml-1 font-normal">명</span></span>
+                  <span class="font-mono text-[11px] text-secondary font-semibold">정상 이용</span>
+                </div>
+              </div>
+
+              <!-- Card 3: 자격 인증 대기 -->
+              <div class="bg-surface-container-lowest p-5 rounded-2xl border border-surface-container-high shadow-sm hover:shadow-md transition-shadow flex flex-col justify-between group">
+                <div class="flex items-center justify-between">
+                  <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-xl bg-surface-container-highest/60 flex items-center justify-center text-secondary-fixed-dim group-hover:scale-105 transition-transform">
+                      <span class="material-symbols-outlined text-[22px]">approval</span>
+                    </div>
+                    <div>
+                      <span class="text-sm text-secondary block">자격 인증 대기</span>
+                      <span class="font-mono text-[10px] text-secondary/70">검토 필요</span>
+                    </div>
+                  </div>
+                  <span class="font-mono text-[10px] px-2 py-0.5 rounded-full bg-surface-container text-secondary font-bold">대기</span>
+                </div>
+                <div class="mt-4 flex items-baseline justify-between">
+                  <span class="font-headline text-2xl lg:text-3xl font-bold text-on-surface"><strong id="adminKpiPendingCertifications">-</strong><span class="text-sm text-secondary ml-1 font-normal">건</span></span>
+                  <span class="font-mono text-[11px] text-secondary flex items-center gap-0.5 font-semibold">
+                    <span class="material-symbols-outlined text-[14px]">done_all</span>실시간
+                  </span>
+                </div>
+              </div>
+
+              <!-- Card 4: 미처리 신고 -->
+              <div class="bg-surface-container-lowest p-5 rounded-2xl border border-surface-container-high shadow-sm hover:shadow-md transition-shadow flex flex-col justify-between group">
+                <div class="flex items-center justify-between">
+                  <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-xl bg-error-container/40 flex items-center justify-center text-error group-hover:scale-105 transition-transform">
+                      <span class="material-symbols-outlined text-[22px]">report_problem</span>
+                    </div>
+                    <div>
+                      <span class="text-sm text-secondary block">미처리 신고</span>
+                      <span class="font-mono text-[10px] text-secondary/70">운영 조치 필요</span>
+                    </div>
+                  </div>
+                  <span class="font-mono text-[10px] px-2 py-0.5 rounded-full bg-surface-container text-secondary font-bold">신고</span>
+                </div>
+                <div class="mt-4 flex items-baseline justify-between">
+                  <span class="font-headline text-2xl lg:text-3xl font-bold text-on-surface"><strong id="adminKpiPendingReports">-</strong><span class="text-sm text-secondary ml-1 font-normal">건</span></span>
+                  <span class="font-mono text-[11px] text-primary flex items-center gap-0.5 font-semibold">
+                    <span class="material-symbols-outlined text-[14px]">check_circle</span>안전 상태
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Dual Panels Grid: 긴급 운영 알림 & 서비스 사용량(연동예정) -->
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+              <!-- Left Panel: 긴급 운영 알림 -->
+              <div class="lg:col-span-7 bg-surface-container-lowest rounded-2xl p-6 border border-surface-container-high shadow-sm flex flex-col justify-between min-h-[320px]">
+                <div>
+                  <div class="flex items-center justify-between mb-4">
+                    <div class="flex items-center gap-2">
+                      <div class="flex flex-col">
+                        <span class="font-mono text-[10px] text-primary uppercase font-bold tracking-wider">Urgent</span>
+                        <h2 class="font-headline text-lg text-on-surface font-semibold">긴급 운영 알림</h2>
+                      </div>
+                    </div>
+                    <span id="adminUrgentCount" class="px-2.5 py-0.5 rounded-full bg-error-container/40 text-error font-mono text-xs font-bold">-</span>
+                  </div>
+                  <div id="adminUrgentAlerts" class="admin-alert-list divide-y divide-surface-container-low">
+                    <p class="text-secondary text-center py-12 text-sm">운영 데이터를 확인하는 중입니다.</p>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Right Panel: 서비스 사용량 (연동 예정) -->
+              <div class="lg:col-span-5 bg-surface-container-lowest rounded-2xl p-6 border border-surface-container-high shadow-sm flex flex-col justify-between">
+                <div>
+                  <div class="flex items-center justify-between mb-4">
+                    <div>
+                      <span class="font-mono text-[10px] text-secondary uppercase font-bold tracking-wider">Infrastructure</span>
+                      <h2 class="font-headline text-lg text-on-surface font-semibold">서비스 사용량</h2>
+                    </div>
+                    <span class="badge-planned">연동 예정</span>
+                  </div>
+                  <div class="space-y-4 pt-2">
+                    <div>
+                      <div class="flex justify-between text-xs font-mono text-secondary mb-1.5">
+                        <span>Database (PostgreSQL)</span>
+                        <span class="text-on-surface font-bold">정상 (연동예정)</span>
+                      </div>
+                      <div class="w-full bg-surface-container h-2 rounded-full overflow-hidden">
+                        <div class="bg-primary h-2 rounded-full" style="width: 25%"></div>
+                      </div>
+                    </div>
+                    <div>
+                      <div class="flex justify-between text-xs font-mono text-secondary mb-1.5">
+                        <span>Storage (Media &amp; Images)</span>
+                        <span class="text-on-surface font-bold">정상 (연동예정)</span>
+                      </div>
+                      <div class="w-full bg-surface-container h-2 rounded-full overflow-hidden">
+                        <div class="bg-primary h-2 rounded-full" style="width: 40%"></div>
+                      </div>
+                    </div>
+                    <div>
+                      <div class="flex justify-between text-xs font-mono text-secondary mb-1.5">
+                        <span>API &amp; Edge Functions</span>
+                        <span class="text-on-surface font-bold">정상 (연동예정)</span>
+                      </div>
+                      <div class="w-full bg-surface-container h-2 rounded-full overflow-hidden">
+                        <div class="bg-primary h-2 rounded-full" style="width: 15%"></div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <div class="mt-6 pt-4 border-t border-surface-container-high flex items-center justify-between text-xs text-secondary">
+                  <span>인프라 모니터링 에이전트</span>
+                  <span class="font-mono text-primary font-bold">STABLE</span>
+                </div>
+              </div>
+            </div>
           </div>
         </section>
-        <section class="admin-tab-panel" data-admin-panel="users"><header class="admin-section-head"><div><p class="admin-eyebrow">MEMBERS</p><h1>사용자 관리</h1><p>계정 상태를 확인하고 필요한 제재를 적용합니다.</p></div></header><div id="adminUsersHost"></div></section>
-        <section class="admin-tab-panel" data-admin-panel="certification"><header class="admin-section-head"><div><p class="admin-eyebrow">VERIFICATION</p><h1>자격 인증</h1><p>신청 정보와 자격 정보를 확인해 처리합니다.</p></div></header><div id="adminCertificationHost"></div></section>
-        <section class="admin-tab-panel" data-admin-panel="reports"><header class="admin-section-head"><div><p class="admin-eyebrow">TRUST &amp; SAFETY</p><h1>신고/제재</h1><p>신고 이력과 상세 내용을 검토하고 조치합니다.</p></div></header><div id="adminReportsHost"></div></section>
-        <section class="admin-tab-panel" data-admin-panel="services"><header class="admin-section-head"><div><p class="admin-eyebrow">SERVICE</p><h1>서비스 관리</h1><p>SNORKY 서비스 운영 항목을 관리합니다.</p></div></header><div class="admin-service-grid"><article class="admin-card"><span>지역/다이빙 포인트</span><strong>서비스 데이터 관리</strong><small>기존 관리자 기능에서 관리할 수 있습니다.</small></article><article class="admin-card"><span>실내 다이빙센터</span><strong>센터 정보 관리</strong><small>기존 관리자 기능에서 관리할 수 있습니다.</small></article><article class="admin-card"><span>운영 설정</span><strong>SNORKY Community</strong><div class="community-settings-form"><label class="admin-management-field" style="display:flex;align-items:center;gap:8px;margin-top:12px;"><input id="communityEnabled" type="checkbox"> 활성화</label><label class="admin-management-field" for="communityOpenChatUrl">오픈채팅 URL<input id="communityOpenChatUrl" type="url" placeholder="https://open.kakao.com/o/..."></label><label class="admin-management-field" for="communityBannerText">배너 문구<input id="communityBannerText" type="text"></label><button id="saveCommunityConfig" class="admin-management-primary" type="button">저장</button><p id="communityConfigMessage" class="admin-management-message" role="status"></p></div></article></div></section>
+
+        <!-- Tab 2: 지역/다이빙 포인트 관리 (Stitch Screen 2 UI - 2-Column Master-Detail) -->
+        <section class="admin-tab-panel" data-admin-panel="points" hidden>
+          <div class="px-4 lg:px-8 py-6">
+            <!-- Breadcrumb & Top Bar -->
+            <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
+              <div>
+                <div class="flex items-center gap-2 mb-1">
+                  <span class="font-mono text-[10px] text-primary uppercase tracking-widest font-bold">SERVICE MANAGEMENT</span>
+                  <span class="text-secondary/40 font-mono text-xs">/</span>
+                  <span class="font-mono text-[10px] text-secondary font-medium">GEO DATA</span>
+                </div>
+                <h1 class="font-headline text-2xl lg:text-3xl font-bold text-on-surface tracking-tight">지역/다이빙 포인트 관리</h1>
+                <p class="text-sm text-secondary mt-0.5">전국 바다 및 자연 다이빙 스팟 메타데이터, GPS 좌표계 및 운영 정보를 중앙 관리합니다.</p>
+              </div>
+              <!-- Action Tools: Region Selector & Region Buttons & New Point Button -->
+              <div class="flex flex-wrap items-center gap-2">
+                <div class="flex items-center bg-surface-container rounded-lg p-1">
+                  <div class="relative flex items-center">
+                    <span class="material-symbols-outlined absolute left-2 text-[18px] text-secondary pointer-events-none">pin_drop</span>
+                    <select id="adminServiceRegionSelect" class="bg-surface-container-lowest text-on-surface font-body-md text-xs font-semibold rounded py-1.5 pl-8 pr-7 appearance-none focus:outline-none focus:bg-surface-container-low cursor-pointer shadow-sm"></select>
+                    <span class="material-symbols-outlined absolute right-1 text-[16px] text-secondary pointer-events-none">expand_more</span>
+                  </div>
+                  <button type="button" class="px-2.5 py-1.5 ml-1 text-on-surface hover:bg-surface-container-lowest font-body-md text-xs rounded flex items-center gap-1 transition-colors" data-service-add-region title="새 지역 추가">
+                    <span class="material-symbols-outlined text-[16px]">add_location_alt</span>
+                    <span class="hidden sm:inline">지역 추가</span>
+                  </button>
+                  <button type="button" class="px-2 py-1.5 text-secondary hover:bg-surface-container-lowest hover:text-on-surface text-xs rounded transition-colors" data-service-rename-region title="선택 지역명 수정">
+                    <span class="material-symbols-outlined text-[16px]">edit</span>
+                  </button>
+                  <button type="button" class="px-2 py-1.5 text-error hover:bg-error-container/40 rounded transition-colors" data-service-delete-region title="선택 지역 삭제">
+                    <span class="material-symbols-outlined text-[16px]">delete_sweep</span>
+                  </button>
+                </div>
+                <button type="button" class="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-primary hover:bg-primary-container text-on-primary font-headline text-xs font-semibold shadow-sm transition-all" data-service-add-point>
+                  <span class="material-symbols-outlined text-[18px]">add</span>
+                  <span>포인트 신규 등록</span>
+                </button>
+              </div>
+            </div>
+
+            <!-- Master-Detail 2-Column Workspace -->
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+              <!-- LEFT COLUMN: Master List (lg:col-span-5) -->
+              <section class="lg:col-span-5 flex flex-col gap-4">
+                <!-- Search & Header Bar -->
+                <div class="bg-surface-container-lowest p-4 rounded-xl border border-surface-container-high shadow-sm flex flex-col gap-3">
+                  <div class="flex items-center justify-between">
+                    <div class="flex items-center gap-2">
+                      <span id="pointsRegionTitle" class="font-headline text-sm font-semibold text-on-surface">포인트 목록</span>
+                      <span id="pointsCountBadge" class="px-2 py-0.5 rounded-full bg-surface-container text-secondary font-mono text-[10px] font-bold">0</span>
+                    </div>
+                  </div>
+                  <div class="relative flex items-center">
+                    <span class="material-symbols-outlined absolute left-3 text-[18px] text-secondary">search</span>
+                    <input id="pointSearchInput" class="w-full bg-surface-container-low text-on-surface font-body-md text-xs pl-9 pr-3 py-2 rounded-lg focus:outline-none focus:bg-surface-container transition-all" placeholder="포인트명 또는 좌표 검색..." type="text">
+                  </div>
+                </div>
+
+                <!-- Master Points Table Stream Container -->
+                <div class="bg-surface-container-lowest rounded-xl border border-surface-container-high shadow-sm overflow-hidden flex flex-col">
+                  <div class="overflow-x-auto max-h-[720px] overflow-y-auto">
+                    <div id="adminServicePointsBody"></div>
+                  </div>
+                  <p id="adminServicePointsMessage" class="admin-management-message px-4 py-2 text-xs"></p>
+                </div>
+              </section>
+
+              <!-- RIGHT COLUMN: Detail & Edit Form (lg:col-span-7) -->
+              <section class="lg:col-span-7 flex flex-col gap-4">
+                <div id="adminServicePointForm" class="bg-surface-container-lowest p-6 rounded-2xl border border-surface-container-high shadow-sm">
+                  <!-- Point form injected dynamically -->
+                </div>
+              </section>
+            </div>
+          </div>
+        </section>
+
+        <!-- Tab 3: 실내 다이빙센터 관리 (Stitch Screen 4 UI - 2-Column Master-Detail) -->
+        <section class="admin-tab-panel" data-admin-panel="indoor" hidden>
+          <div class="px-4 lg:px-8 py-6">
+            <!-- Breadcrumb & Top Bar -->
+            <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
+              <div>
+                <div class="flex items-center gap-2 mb-1">
+                  <span class="font-mono text-[10px] text-primary uppercase tracking-widest font-bold">SERVICE MANAGEMENT</span>
+                  <span class="text-secondary/40 font-mono text-xs">/</span>
+                  <span class="font-mono text-[10px] text-secondary font-medium">INDOOR FACILITIES</span>
+                </div>
+                <h1 class="font-headline text-2xl lg:text-3xl font-bold text-on-surface tracking-tight">실내 다이빙센터 관리</h1>
+                <p class="text-sm text-secondary mt-0.5">전국 실내 다이빙풀 센터 목록, 수심 규격, 예약/이용요금 정보, 배너 및 썸네일 사진을 관리합니다.</p>
+              </div>
+              <div class="flex items-center gap-2">
+                <button type="button" class="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-primary hover:bg-primary-container text-on-primary font-headline text-xs font-semibold shadow-sm transition-all" data-service-add-indoor>
+                  <span class="material-symbols-outlined text-[18px]">add</span>
+                  <span>센터 신규 등록</span>
+                </button>
+              </div>
+            </div>
+
+            <!-- Master-Detail 2-Column Workspace -->
+            <div class="grid grid-cols-1 xl:grid-cols-12 gap-6 items-start">
+              <!-- LEFT COLUMN: Centers List Stream (xl:col-span-5) -->
+              <section class="xl:col-span-5 flex flex-col bg-surface-container-lowest rounded-xl border border-surface-container-high shadow-sm overflow-hidden">
+                <!-- Search Header -->
+                <div class="p-4 bg-surface-container-low border-b border-surface-container-high flex flex-col gap-3">
+                  <div class="flex items-center justify-between">
+                    <div class="flex items-center gap-2">
+                      <span class="material-symbols-outlined text-primary text-[20px]">pool</span>
+                      <span class="font-headline text-sm font-semibold text-on-surface">전체 실내센터</span>
+                      <span id="indoorCountBadge" class="font-mono text-[10px] px-2 py-0.5 rounded-full bg-surface-container-highest text-primary font-bold">0개</span>
+                    </div>
+                    <div class="flex items-center gap-1 text-secondary text-xs font-mono">
+                      <span class="w-2 h-2 rounded-full bg-primary animate-pulse"></span>
+                      <span>동기화 완료</span>
+                    </div>
+                  </div>
+                  <div class="relative w-full">
+                    <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-secondary text-[18px]">search</span>
+                    <input id="indoorCenterSearchInput" class="w-full h-9 pl-9 pr-3 bg-surface-container-lowest border border-outline-variant/40 rounded-lg text-xs text-on-surface focus:outline-none focus:border-primary transition-all" placeholder="센터명, 주소, 지역명으로 검색..." type="text">
+                  </div>
+                </div>
+
+                <!-- Centers List Stream -->
+                <div id="adminServiceIndoorBody" class="max-h-[720px] overflow-y-auto divide-y divide-surface-container/60">
+                  <!-- Centers cards injected dynamically -->
+                </div>
+                <p id="adminServiceIndoorMessage" class="admin-management-message px-4 py-2 text-xs"></p>
+              </section>
+
+              <!-- RIGHT COLUMN: Center Detail & Edit Form (xl:col-span-7) -->
+              <section class="xl:col-span-7 flex flex-col">
+                <div id="adminServiceIndoorForm" class="bg-surface-container-lowest p-6 rounded-2xl border border-surface-container-high shadow-sm">
+                  <!-- Center editor injected dynamically -->
+                </div>
+              </section>
+            </div>
+          </div>
+        </section>
+
+        <!-- Tab 4: 사용자 관리 -->
+        <section class="admin-tab-panel" data-admin-panel="users" hidden>
+          <div class="px-4 lg:px-8 py-6">
+            <div class="flex items-center gap-2 mb-1">
+              <span class="font-mono text-[10px] text-primary uppercase tracking-widest font-bold">MEMBERS</span>
+              <span class="text-secondary/40 font-mono text-xs">/</span>
+              <span class="font-mono text-[10px] text-secondary font-medium">USER DIRECTORY</span>
+            </div>
+            <h1 class="font-headline text-2xl lg:text-3xl font-bold text-on-surface tracking-tight">사용자 관리</h1>
+            <p class="text-sm text-secondary mt-0.5">계정 상태를 확인하고 필요한 제재를 적용합니다.</p>
+          </div>
+          <div class="px-4 lg:px-8 pb-8">
+            <div id="adminUsersHost"></div>
+          </div>
+        </section>
+
+        <!-- Tab 5: 자격 인증 -->
+        <section class="admin-tab-panel" data-admin-panel="certification" hidden>
+          <div class="px-4 lg:px-8 py-6">
+            <div class="flex items-center gap-2 mb-1">
+              <span class="font-mono text-[10px] text-primary uppercase tracking-widest font-bold">VERIFICATION</span>
+              <span class="text-secondary/40 font-mono text-xs">/</span>
+              <span class="font-mono text-[10px] text-secondary font-medium">CERTIFICATION AUDIT</span>
+            </div>
+            <h1 class="font-headline text-2xl lg:text-3xl font-bold text-on-surface tracking-tight">자격 인증 관리</h1>
+            <p class="text-sm text-secondary mt-0.5">신청 정보와 자격 라이선스 증빙 사진을 확인해 승인 또는 거절 처리합니다.</p>
+          </div>
+          <div class="px-4 lg:px-8 pb-8">
+            <div id="adminCertificationHost"></div>
+          </div>
+        </section>
+
+        <!-- Tab 6: 신고/제재 -->
+        <section class="admin-tab-panel" data-admin-panel="reports" hidden>
+          <div class="px-4 lg:px-8 py-6">
+            <div class="flex items-center gap-2 mb-1">
+              <span class="font-mono text-[10px] text-primary uppercase tracking-widest font-bold">TRUST &amp; SAFETY</span>
+              <span class="text-secondary/40 font-mono text-xs">/</span>
+              <span class="font-mono text-[10px] text-secondary font-medium">REPORTS &amp; SANCTIONS</span>
+            </div>
+            <h1 class="font-headline text-2xl lg:text-3xl font-bold text-on-surface tracking-tight">신고 및 제재 관리</h1>
+            <p class="text-sm text-secondary mt-0.5">신고 이력과 상세 증빙을 검토하고 제재 조치를 집행합니다.</p>
+          </div>
+          <div class="px-4 lg:px-8 pb-8">
+            <div id="adminReportsHost"></div>
+          </div>
+        </section>
+
+        <!-- Tab 7: 서비스 설정 -->
+        <section class="admin-tab-panel" data-admin-panel="services" hidden>
+          <div class="px-4 lg:px-8 py-6">
+            <div class="flex items-center gap-2 mb-1">
+              <span class="font-mono text-[10px] text-primary uppercase tracking-widest font-bold">SERVICE</span>
+              <span class="text-secondary/40 font-mono text-xs">/</span>
+              <span class="font-mono text-[10px] text-secondary font-medium">CONFIGURATION</span>
+            </div>
+            <h1 class="font-headline text-2xl lg:text-3xl font-bold text-on-surface tracking-tight">서비스 관리 및 설정</h1>
+            <p class="text-sm text-secondary mt-0.5">SNORKY 서비스 운영 항목 및 커뮤니티 기본 설정을 관리합니다.</p>
+          </div>
+          <div class="px-4 lg:px-8 pb-8">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+              <!-- Service Card 1: Points -->
+              <article class="bg-surface-container-lowest p-6 rounded-2xl border border-surface-container-high shadow-sm hover:shadow-md transition-shadow cursor-pointer flex flex-col justify-between" data-service-action="points" role="button" tabindex="0">
+                <div>
+                  <div class="w-12 h-12 rounded-xl bg-primary/10 text-primary flex items-center justify-center mb-4">
+                    <span class="material-symbols-outlined text-[26px]">pin_drop</span>
+                  </div>
+                  <span class="font-mono text-[10px] text-primary font-bold uppercase">지역 / 다이빙 포인트</span>
+                  <strong class="font-headline text-base text-on-surface block mt-1">포인트 데이터 관리</strong>
+                  <p class="text-xs text-secondary mt-2 leading-relaxed">전국 포인트 등록, 지도 핀 위치 조정, 사진 관리를 실행합니다.</p>
+                </div>
+                <span class="inline-flex items-center gap-1 text-primary text-xs font-semibold mt-4">
+                  관리하기 <span class="material-symbols-outlined text-[16px]">arrow_forward</span>
+                </span>
+              </article>
+
+              <!-- Service Card 2: Indoor Centers -->
+              <article class="bg-surface-container-lowest p-6 rounded-2xl border border-surface-container-high shadow-sm hover:shadow-md transition-shadow cursor-pointer flex flex-col justify-between" data-service-action="indoor" role="button" tabindex="0">
+                <div>
+                  <div class="w-12 h-12 rounded-xl bg-primary/10 text-primary flex items-center justify-center mb-4">
+                    <span class="material-symbols-outlined text-[26px]">pool</span>
+                  </div>
+                  <span class="font-mono text-[10px] text-primary font-bold uppercase">실내 다이빙센터</span>
+                  <strong class="font-headline text-base text-on-surface block mt-1">센터 정보 관리</strong>
+                  <p class="text-xs text-secondary mt-2 leading-relaxed">전국 실내 잠수풀 데이터, 시설, 대표 이미지 관리를 실행합니다.</p>
+                </div>
+                <span class="inline-flex items-center gap-1 text-primary text-xs font-semibold mt-4">
+                  관리하기 <span class="material-symbols-outlined text-[16px]">arrow_forward</span>
+                </span>
+              </article>
+
+              <!-- Service Card 3: Community Settings -->
+              <article class="bg-surface-container-lowest p-6 rounded-2xl border border-surface-container-high shadow-sm flex flex-col justify-between">
+                <div>
+                  <div class="w-12 h-12 rounded-xl bg-primary/10 text-primary flex items-center justify-center mb-4">
+                    <span class="material-symbols-outlined text-[26px]">forum</span>
+                  </div>
+                  <span class="font-mono text-[10px] text-primary font-bold uppercase">운영 설정</span>
+                  <strong class="font-headline text-base text-on-surface block mt-1">SNORKY Community</strong>
+                  <div class="community-settings-form mt-4 space-y-3">
+                    <label class="flex items-center gap-2 text-xs text-on-surface font-semibold cursor-pointer">
+                      <input id="communityEnabled" type="checkbox" class="w-4 h-4 rounded text-primary focus:ring-primary">
+                      커뮤니티 기능 활성화
+                    </label>
+                    <label class="flex flex-col gap-1 font-mono text-xs text-on-surface-variant font-semibold" for="communityOpenChatUrl">
+                      오픈채팅 URL
+                      <input id="communityOpenChatUrl" type="url" placeholder="https://open.kakao.com/o/..." class="w-full px-3 py-1.5 bg-surface-container-low border border-outline-variant/50 rounded-lg text-on-surface text-xs focus:outline-none focus:border-primary">
+                    </label>
+                    <label class="flex flex-col gap-1 font-mono text-xs text-on-surface-variant font-semibold" for="communityBannerText">
+                      배너 문구
+                      <input id="communityBannerText" type="text" class="w-full px-3 py-1.5 bg-surface-container-low border border-outline-variant/50 rounded-lg text-on-surface text-xs focus:outline-none focus:border-primary">
+                    </label>
+                    <button id="saveCommunityConfig" class="w-full py-2 bg-primary hover:bg-primary-container text-on-primary font-headline text-xs font-semibold rounded-lg shadow-sm transition-all" type="button">설정 저장</button>
+                    <p id="communityConfigMessage" class="admin-management-message text-xs" role="status"></p>
+                  </div>
+                </div>
+              </article>
+            </div>
+          </div>
+        </section>
       </div>
-    </section>
+    </main>
 
-    <nav class="admin-bottom-nav" aria-label="모바일 관리자 메뉴">
+    <!-- Mobile Bottom Navigation -->
+    <nav class="admin-bottom-nav lg:hidden" aria-label="모바일 관리자 메뉴">
       <button class="is-active" data-admin-tab="dashboard" type="button"><span>⌂</span>홈</button>
+      <button data-admin-tab="points" type="button"><span>📍</span>포인트</button>
+      <button data-admin-tab="indoor" type="button"><span>🏊</span>센터</button>
       <button data-admin-tab="users" type="button"><span>♙</span>사용자</button>
-      <button data-admin-tab="certification" type="button"><span>✓</span>인증</button>
       <button data-admin-tab="reports" type="button"><span>!</span>신고</button>
-      <button data-admin-tab="services" type="button"><span>◇</span>서비스</button>
     </nav>
-  </main>
 
+    <!-- Dialog Modals for Service Points & Indoor Centers -->
+    <div id="adminServicePointsModal" class="admin-dialog" role="dialog" aria-modal="true" aria-labelledby="adminServicePointsTitle">
+      <article class="admin-dialog-card">
+        <header class="admin-dialog-head">
+          <h2 id="adminServicePointsTitle">지역/다이빙 포인트 관리</h2>
+          <button class="admin-dialog-close" data-close-service-points type="button">×</button>
+        </header>
+        <div id="adminServicePointsBody"></div>
+        <p id="adminServicePointsMessage" class="admin-management-message"></p>
+      </article>
+    </div>
+
+    <div id="adminServiceIndoorModal" class="admin-dialog" role="dialog" aria-modal="true" aria-labelledby="adminServiceIndoorTitle">
+      <article class="admin-dialog-card">
+        <header class="admin-dialog-head">
+          <h2 id="adminServiceIndoorTitle">실내 다이빙센터 관리</h2>
+          <button class="admin-dialog-close" data-close-service-indoor type="button">×</button>
+        </header>
+        <div id="adminServiceIndoorBody"></div>
+        <p id="adminServiceIndoorMessage" class="admin-management-message"></p>
+      </article>
+    </div>
+  </div>
+
+  <!-- Scripts -->
+  <script>window._KAKAO_MAP_APP_KEY="c29f1a71a53af406429520da0df21772";</script>
+  <script src="https://dapi.kakao.com/v2/maps/sdk.js?appkey=c29f1a71a53af406429520da0df21772&autoload=false&libraries=services"></script>
   <script async src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" onload="window.dispatchEvent(new Event('snorky:supabase-ready'))"></script>
   <script src="./public/js/supabase-client.js?v=20260820_stitch_v76"></script>
-  <script src="./public/js/supabase-admin.js?v=20260905_moderation_v1"></script>
-  <script src="./public/js/admin-moderation.js?v=20260905_v1"></script>
+  <script src="./public/js/supabase-admin.js?v=20260916_admin_auth_v1"></script>
+  <script src="./public/js/admin-moderation.js?v=20260916_skyview_v1"></script>
   <script>
-    document.getElementById('adminLoginForm')?.addEventListener('submit',event=>{event.preventDefault();window.SNORKYAdmin?.login()});
-    document.getElementById('adminExit')?.addEventListener('click',()=>window.SNORKYAdmin?.logout());
-    window.addEventListener('snorky:supabase-ready',()=>{document.getElementById('adminPageStatus').textContent='운영 환경 연결됨'});
-    window.addEventListener('snorky:admin-state',event=>{const authorized=Boolean(event.detail?.authorized);document.getElementById('adminLoginPanel').hidden=authorized;document.getElementById('adminPageIntro').hidden=!authorized;document.getElementById('adminPageStatus').textContent=authorized?'관리자 인증 완료':'관리자 로그인 필요';const email=event.detail?.email||document.getElementById('adminEmail')?.value;if(email)document.getElementById('adminProfileEmail').textContent=email;if(authorized)document.querySelector('[data-admin-tab="dashboard"]')?.click()});
+    document.getElementById('adminLoginForm')?.addEventListener('submit', event => {
+      event.preventDefault();
+      window.SNORKYAdmin?.login();
+    });
+    document.getElementById('adminExit')?.addEventListener('click', () => window.SNORKYAdmin?.logout());
+    document.getElementById('btnOpenPointsDirect')?.addEventListener('click', () => window.SNORKYAdminModeration?.openServicePoints?.());
+    document.getElementById('btnOpenIndoorDirect')?.addEventListener('click', () => window.SNORKYAdminModeration?.openServiceIndoor?.());
+    window.addEventListener('snorky:supabase-ready', () => {
+      const st = document.getElementById('adminPageStatus');
+      if (st) st.textContent = '운영 환경 연결됨';
+    });
+    (function(){
+      let _adminWasAuthorized = false;
+      window.addEventListener('snorky:admin-state', event => {
+        const authorized = Boolean(event.detail?.authorized);
+        const loginPanel = document.getElementById('adminLoginPanel');
+        const pageIntro = document.getElementById('adminPageIntro');
+        const sidebar = document.getElementById('sidebar-drawer');
+        const topbar = document.getElementById('adminTopbar');
+        const shell = document.getElementById('adminShell');
+        const pageStatus = document.getElementById('adminPageStatus');
+        const profileEmail = document.getElementById('adminProfileEmail');
+
+        if (loginPanel) loginPanel.hidden = authorized;
+        if (pageIntro) pageIntro.hidden = !authorized;
+        if (sidebar) sidebar.hidden = !authorized;
+        if (topbar) topbar.hidden = !authorized;
+        if (shell) shell.classList.toggle('lg:pl-64', authorized);
+        if (pageStatus) pageStatus.textContent = authorized ? '관리자 인증 완료' : '관리자 로그인 필요';
+
+        const email = event.detail?.email || document.getElementById('adminEmail')?.value;
+        if (email && profileEmail) profileEmail.textContent = email;
+
+        if (authorized && !_adminWasAuthorized) {
+          _adminWasAuthorized = true;
+          document.querySelector('[data-admin-tab="dashboard"]')?.click();
+        }
+        if (!authorized) _adminWasAuthorized = false;
+      });
+    })();
   </script>
 </body>
 </html>

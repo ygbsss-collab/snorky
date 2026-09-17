@@ -74,7 +74,7 @@
       </div>
 
       <section class="privacy-intro-box">
-        <p>SNORKY(운영자: 윤교혁)는 정보통신망법 및 개인정보 보호법을 준수하며, 이용자의 개인정보를 소중히 보호하고 관련 고충을 신속하게 처리하기 위해 다음과 같이 개인정보처리방침을 공개합니다.</p>
+        <p>SNORKY(운영자: 윤교혁)는 서비스 제공에 필요한 범위에서만 개인정보를 처리합니다. 실제 처리 구조와 삭제 범위를 기준으로 다음과 같이 개인정보처리방침을 공개합니다.</p>
       </section>
 
       <!-- 1. 수집 항목 및 방법 -->
@@ -86,18 +86,18 @@
           <div class="privacy-data-card">
             <strong class="privacy-data-card-title">카카오 로그인</strong>
             <div class="privacy-data-row">
-              <span><strong>수집 항목:</strong> 카카오 사용자 식별값(ID), 닉네임, 프로필 사진(동의 시)</span>
-              <span><strong>수집 방법:</strong> 카카오 OAuth 계정 연동 시 자동 수집</span>
-              <span><strong>보유 위치:</strong> Supabase 보안 클라우드 데이터베이스</span>
+              <span><strong>수집 항목:</strong> 카카오 회원 고유 ID(provider_user_id), 닉네임, 프로필 이미지 URL</span>
+              <span><strong>수집 방법:</strong> 카카오 OAuth 계정 연동 시 처리</span>
+              <span><strong>수집하지 않는 항목:</strong> 카카오 이메일, 전화번호, 실명, 성별 및 연령정보</span>
             </div>
           </div>
 
           <div class="privacy-data-card">
             <strong class="privacy-data-card-title">프로필 설정</strong>
             <div class="privacy-data-row">
-              <span><strong>수집 항목:</strong> SNORKY 커스텀 닉네임, 프로필 사진 이미지</span>
-              <span><strong>수집 방법:</strong> 마이페이지 내 이용자 직접 등록</span>
-              <span><strong>보유 위치:</strong> Supabase 보안 스토리지 및 데이터베이스</span>
+              <span><strong>수집 항목:</strong> 닉네임, 성별, 연령대, 활동지역, 활동수심, 자기소개, 자격정보</span>
+              <span><strong>수집 방법:</strong> 프로필 및 자격 인증 화면에서 이용자가 직접 입력</span>
+              <span><strong>보유 위치:</strong> Supabase 데이터베이스 및 avatars 스토리지</span>
             </div>
           </div>
 
@@ -106,7 +106,7 @@
             <div class="privacy-data-row">
               <span><strong>수집 항목:</strong> 기기 접속 위치 좌표(위도, 경도)</span>
               <span><strong>이용 목적:</strong> '내 주변 추천' 및 포인트별 실시간 거리(km) 계산</span>
-              <span><strong>저장 방식:</strong> <strong>서버에 전송하거나 저장하지 않으며</strong>, 사용자가 위치 권한을 허용한 시점에 브라우저 메모리에서 일시적으로만 계산 후 즉시 소멸 (상시 위치 추적을 하지 않습니다.)</span>
+              <span><strong>저장 방식:</strong> <strong>서버 및 DB에 저장하지 않으며</strong>, 브라우저 sessionStorage에 최대 5분 동안 임시 캐시합니다. 세션 종료 시 소멸하며 상시 위치 추적을 하지 않습니다.</span>
             </div>
           </div>
 
@@ -121,8 +121,32 @@
           <div class="privacy-data-card">
             <strong class="privacy-data-card-title">문의하기</strong>
             <div class="privacy-data-row">
-              <span><strong>수집 항목:</strong> 작성자명/닉네임, 이메일 또는 연락처, 문의 내용</span>
-              <span><strong>수집 방법:</strong> 문의하기 작성 시 이용자 직접 입력</span>
+              <span><strong>수집 항목:</strong> 문의 유형, 포인트명(선택), 문의 내용, 회신 이메일(선택)</span>
+              <span><strong>수집 방법:</strong> 문의하기 화면에서 이용자가 직접 입력</span>
+            </div>
+          </div>
+
+          <div class="privacy-data-card">
+            <strong class="privacy-data-card-title">버디 모집 및 참가신청</strong>
+            <div class="privacy-data-row">
+              <span><strong>수집 항목:</strong> 활동유형, 지역/포인트, 일정/입수시간, 모집 성별 조건, 모집인원, 난이도, 설명, 오픈채팅 URL, 참가신청 및 승인·거절·취소 상태</span>
+              <span><strong>이용 목적:</strong> 버디 모집·참가신청·일정 공유 및 상태 관리</span>
+            </div>
+          </div>
+
+          <div class="privacy-data-card">
+            <strong class="privacy-data-card-title">자격 인증</strong>
+            <div class="privacy-data-row">
+              <span><strong>수집 항목:</strong> 발급기관, 등급, 자격번호, 자격증 증빙 사진</span>
+              <span><strong>처리 방식:</strong> 증빙 사진은 관리자 심사에 사용되며, 심사 완료 후 삭제됩니다.</span>
+            </div>
+          </div>
+
+          <div class="privacy-data-card">
+            <strong class="privacy-data-card-title">신고·차단·제재</strong>
+            <div class="privacy-data-row">
+              <span><strong>수집 항목:</strong> 신고자·피신고자 식별정보 및 닉네임, 신고 사유·상세내용, 관련 버디 게시글 ID, 신고 증거 이미지, 차단 관계, 경고·정지·영구정지 등 제재 이력</span>
+              <span><strong>이용 목적:</strong> 신고 접수, 운영자 검토, 사용자 보호 및 제재 이력 관리</span>
             </div>
           </div>
         </div>
@@ -132,66 +156,95 @@
       <section class="privacy-section">
         <h3 class="privacy-section-title">2. 개인정보 및 위치정보의 이용 목적</h3>
         <ul>
-          <li><strong>회원 식별 및 관리:</strong> 카카오 간편 로그인을 통한 본인 식별, 중복 가입 방지, 프로필 관리</li>
-          <li><strong>위치기반 서비스 제공:</strong> 이용자 현재 위치 기준 근거리 스노클링 포인트 추천 및 거리 계산</li>
-          <li><strong>맞춤형 서비스 제공:</strong> 바다 컨디션 추천, 즐겨찾기 및 나만의 스팟 관리, 다이빙 일정 기록</li>
-          <li><strong>고객 문의 응대:</strong> 포인트 정보 수정 제보, 신규 포인트 등록 제보 및 서비스 불편사항 처리</li>
-          <li><strong>목적 외 사용 금지:</strong> 수집된 개인정보 및 위치정보는 명시된 서비스 제공 목적 외 다른 용도로 사용하거나 제3자에게 제공하지 않습니다.</li>
+          <li><strong>회원 식별 및 프로필 관리:</strong> 카카오 회원 고유 ID를 이용한 로그인, 계정 식별 및 프로필 관리</li>
+          <li><strong>커뮤니티 및 버디 기능:</strong> 버디 모집·참가신청, 프렌즈, 일정 공유, 자격 인증 및 사용자 간 정보 표시</li>
+          <li><strong>안전한 서비스 운영:</strong> 신고·차단·제재 처리, 허위 이용 및 서비스 운영 방해 대응</li>
+          <li><strong>위치기반 기능:</strong> 현재 위치 기준 추천 및 거리 계산</li>
+          <li><strong>문의 응대:</strong> 포인트 정보 제보 및 서비스 문의 처리</li>
         </ul>
       </section>
 
       <!-- 3. 보유 및 이용 기간 -->
       <section class="privacy-section">
         <h3 class="privacy-section-title">3. 개인정보의 보유 및 이용 기간</h3>
-        <p class="privacy-section-body">이용자의 개인정보는 원칙적으로 <strong>회원탈퇴 시까지</strong> 보유 및 이용하며, 탈퇴 시 지체 없이 파기합니다. 단, 관계 법령의 규정에 의하여 보존할 필요가 있는 경우 해당 법령에서 정한 기간 동안 보관합니다.</p>
+        <p class="privacy-section-body">개인정보는 서비스 제공 및 운영 목적이 달성될 때까지 처리합니다. 다만 회원탈퇴 시 실제 삭제되는 정보와 잔여할 수 있는 정보가 구분되므로, 구체적인 보유·삭제 기준은 <strong>[확인 필요]</strong>입니다.</p>
         <ul>
-          <li><strong>문의 접수 및 처리 기록:</strong> 전자상거래법에 따라 3년간 보관</li>
-          <li><strong>웹사이트 방문 로그 기록:</strong> 통신비밀보호법에 따라 3개월간 보관</li>
+          <li><strong>자격증 증빙 사진:</strong> 관리자 심사 완료 후 삭제됩니다.</li>
+          <li><strong>신고 증거 이미지:</strong> 현재 자동 삭제 스케줄이 없습니다. 구체적인 보유·삭제 기준은 <strong>[확인 필요]</strong>입니다.</li>
         </ul>
       </section>
 
       <!-- 4. 파기 절차 및 방법 -->
       <section class="privacy-section">
-        <h3 class="privacy-section-title">4. 개인정보의 파기 절차 및 방법</h3>
-        <ol>
-          <li><strong>파기 절차:</strong> 이용자가 회원탈퇴를 신청하거나 보유 기간이 경과한 개인정보는 즉시 파기 대상이 됩니다.</li>
-          <li><strong>파기 방법:</strong> 전자적 파일 형태로 저장된 개인정보는 기록을 재생할 수 없는 기술적 방법을 사용하여 삭제합니다. (카카오 OAuth 연결 끊기, Supabase 데이터베이스 레코드 및 스토리지 이미지 영구 삭제, 브라우저 로컬 저장값 삭제)</li>
-        </ol>
+        <h3 class="privacy-section-title">4. 회원탈퇴 및 파기 범위</h3>
+        <p class="privacy-section-body">회원은 account-delete.html에서 계정 삭제를 요청할 수 있습니다. 현재 탈퇴 처리에서 확인되는 삭제 대상은 다음과 같습니다.</p>
+        <ul>
+          <li><strong>삭제:</strong> user_profiles 레코드, avatars 스토리지의 사용자 아바타, 이용자 기기의 로컬 저장 데이터</li>
+          <li><strong>잔여 가능:</strong> buddy_posts, buddy_applications, certification_requests, user_reports 관련 데이터는 현재 일부 잔여할 수 있으며 즉시 모두 삭제된다고 보장하지 않습니다.</li>
+          <li><strong>구체적인 보유·삭제 정책:</strong> [확인 필요]</li>
+        </ul>
       </section>
 
       <!-- 5. 제3자 제공 -->
       <section class="privacy-section">
         <h3 class="privacy-section-title">5. 개인정보의 제3자 제공</h3>
-        <p class="privacy-section-body">SNORKY는 이용자의 사전 동의 없이 개인정보를 외부에 제공하지 않습니다. 단, 법률의 특별한 규정이 있는 경우에 한하여 제공됩니다.</p>
+        <p class="privacy-section-body">SNORKY는 이용자의 사전 동의 없이 개인정보를 제3자에게 제공하지 않습니다. 다만 법률상 근거가 있는 경우 또는 서비스 이용자가 외부 서비스로 이동하여 해당 서비스의 정책이 적용되는 경우는 예외로 합니다.</p>
       </section>
 
-      <!-- 6. 처리 위탁 -->
+      <!-- 6. 처리 위탁 및 외부 처리 -->
       <section class="privacy-section">
-        <h3 class="privacy-section-title">6. 개인정보 처리 위탁</h3>
-        <p class="privacy-section-body">서비스의 안정적인 인프라 운영을 위해 다음과 같이 개인정보 처리 업무를 위탁하고 있습니다.</p>
+        <h3 class="privacy-section-title">6. 개인정보 처리 위탁 및 외부 처리</h3>
+        <p class="privacy-section-body">서비스 운영을 위해 다음 외부 사업자 및 서비스가 개인정보 또는 이용자 입력정보를 처리할 수 있습니다.</p>
         
         <div class="privacy-data-list">
           <div class="privacy-data-card">
-            <strong class="privacy-data-card-title">Supabase, Inc.</strong>
+            <strong class="privacy-data-card-title">Supabase Inc.</strong>
             <div class="privacy-data-row">
-              <span><strong>위탁 업무:</strong> 클라우드 데이터베이스 호스팅 및 파일 스토리지 인프라 운영</span>
-              <span><strong>보유 기간:</strong> 회원탈퇴 시 또는 위탁계약 종료 시까지</span>
+              <span><strong>처리 목적:</strong> 데이터베이스, 인증 연동 및 스토리지 운영</span>
+              <span><strong>처리 범위:</strong> user_profiles, buddy_posts, buddy_applications, certification_requests, user_reports, user_notifications 및 avatars·certification-photos·report-evidence 저장정보</span>
             </div>
           </div>
 
           <div class="privacy-data-card">
             <strong class="privacy-data-card-title">카카오(Kakao Corp.)</strong>
             <div class="privacy-data-row">
-              <span><strong>위탁 업무:</strong> 카카오 간편 로그인 인증 및 계정 연동 지원</span>
-              <span><strong>보유 기간:</strong> 회원탈퇴 또는 카카오 연결 해제 시까지</span>
+              <span><strong>처리 목적:</strong> 카카오 로그인 및 계정 연동</span>
+              <span><strong>처리 범위:</strong> 카카오 회원 고유 ID, 닉네임, 프로필 이미지 URL 등 로그인 연동에 필요한 정보</span>
+            </div>
+          </div>
+
+          <div class="privacy-data-card">
+            <strong class="privacy-data-card-title">Resend Inc.</strong>
+            <div class="privacy-data-row">
+              <span><strong>처리 목적:</strong> 문의 및 자격 인증 관련 운영자 이메일 전달</span>
+              <span><strong>처리 범위:</strong> 문의 내용, 포인트명, 선택적 회신 이메일 및 자격 인증 처리에 필요한 입력정보</span>
+            </div>
+          </div>
+
+          <div class="privacy-data-card">
+            <strong class="privacy-data-card-title">Google LLC (Google Fonts)</strong>
+            <div class="privacy-data-row">
+              <span><strong>처리 목적:</strong> 웹폰트 제공</span>
+              <span><strong>처리 범위:</strong> 브라우저의 폰트 요청 과정에서 처리될 수 있는 IP 주소, 브라우저·접속 관련 기술정보 및 요청 정보</span>
             </div>
           </div>
         </div>
       </section>
 
-      <!-- 7. 이용자의 권리와 행사 방법 -->
+      <!-- 7. 스토리지 및 알림 -->
       <section class="privacy-section">
-        <h3 class="privacy-section-title">7. 이용자의 권리와 행사 방법</h3>
+        <h3 class="privacy-section-title">7. 스토리지 및 알림 처리</h3>
+        <ul>
+          <li><strong>avatars:</strong> 프로필 이미지 저장에 사용되며, 서비스 화면에서 표시될 수 있는 공개 스토리지입니다.</li>
+          <li><strong>certification-photos:</strong> 자격증 증빙 사진 저장에 사용되며, 비공개 스토리지로 관리자 심사에만 사용되고 심사 완료 후 삭제됩니다.</li>
+          <li><strong>report-evidence:</strong> 신고 증거 이미지 저장에 사용되며, 비공개 스토리지로 운영자 검토 목적에 한해 접근됩니다. 자동 삭제 스케줄은 현재 없습니다(<strong>[확인 필요]</strong>).</li>
+          <li><strong>인앱 알림:</strong> user_notifications 기반의 서비스 내 알림만 사용합니다. FCM/APNs Push 및 기기 토큰은 수집하지 않습니다.</li>
+        </ul>
+      </section>
+
+      <!-- 8. 이용자의 권리와 행사 방법 -->
+      <section class="privacy-section">
+        <h3 class="privacy-section-title">8. 이용자의 권리와 행사 방법</h3>
         <ol>
           <li>이용자는 언제든지 자신의 개인정보를 조회하거나 수정할 수 있으며, 회원탈퇴를 통해 개인정보의 삭제를 요구할 수 있습니다.</li>
           <li><strong>회원탈퇴 경로:</strong> SNORKY 홈 하단 [회원탈퇴] 메뉴 또는 회원탈퇴 전용 화면(account-delete.html)에서 직접 즉시 탈퇴할 수 있습니다.</li>
@@ -199,18 +252,19 @@
         </ol>
       </section>
 
-      <!-- 8. 안전성 확보조치 -->
+      <!-- 9. 안전성 확보조치 -->
       <section class="privacy-section">
-        <h3 class="privacy-section-title">8. 개인정보의 안전성 확보조치</h3>
+        <h3 class="privacy-section-title">9. 개인정보의 안전성 확보조치</h3>
         <ul>
           <li><strong>전송 암호화:</strong> HTTPS(SSL/TLS) 암호화 통신을 적용하여 데이터를 전송합니다.</li>
-          <li><strong>접근 제어:</strong> 데이터베이스 Row Level Security(RLS) 정책 및 서비스 롤 키 보안을 통해 인가되지 않은 접근을 차단합니다.</li>
+          <li><strong>접근 제어:</strong> 데이터베이스 Row Level Security(RLS) 및 비공개 스토리지 정책으로 인가되지 않은 접근을 제한합니다.</li>
+          <li><strong>자격·신고 자료:</strong> 자격증 사진과 신고 증거 이미지는 공개되지 않는 스토리지에서 운영자 검토 목적으로 처리합니다.</li>
         </ul>
       </section>
 
-      <!-- 9. 보호책임자 -->
+      <!-- 10. 보호책임자 -->
       <section class="privacy-section">
-        <h3 class="privacy-section-title">9. 개인정보 보호책임자 및 담당부서</h3>
+        <h3 class="privacy-section-title">10. 개인정보 보호책임자 및 담당부서</h3>
         <p class="privacy-section-body">개인정보 처리에 관한 문의, 불만 처리 및 피해구제 등을 위하여 아래와 같이 개인정보 보호책임자를 지정하고 있습니다.</p>
         <div class="privacy-contact-card">
           <ul>
@@ -221,10 +275,10 @@
         </div>
       </section>
 
-      <!-- 10. 고지의 의무 -->
+      <!-- 11. 고지의 의무 -->
       <section class="privacy-section">
-        <h3 class="privacy-section-title">10. 고지의 의무</h3>
-        <p class="privacy-section-body">본 개인정보처리방침의 내용 추가, 삭제 및 수정이 있을 경우 개정 최소 7일 전부터 서비스 화면을 통해 공지합니다.</p>
+        <h3 class="privacy-section-title">11. 고지의 의무</h3>
+        <p class="privacy-section-body">본 개인정보처리방침의 내용 추가, 삭제 및 수정이 있을 경우 서비스 화면을 통해 공지합니다.</p>
       </section>
 
       <div class="privacy-bottom-nav">

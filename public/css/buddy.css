@@ -608,6 +608,23 @@ html, body {
   line-height: 1.4;
   flex-wrap: wrap;
 }
+.snorky-certification-mark {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 1.45em;
+  margin-left: 4px;
+  padding: 0 .55em;
+  border-radius: 999px;
+  background: #e8f7e9;
+  color: #19733a;
+  font-size: .78em;
+  font-weight: 800;
+  line-height: 1.45;
+  white-space: nowrap;
+  vertical-align: .04em;
+  flex: 0 0 auto;
+}
 .buddy-detail-host-name {
   min-width: 0;
   overflow: hidden;

@@ -271,12 +271,12 @@
     const requestedPointId = targetPid === null || targetPid === undefined ? "" : String(targetPid);
     const rawDryRowsForPoint = requestedPointId ? getDryRunRows(requestedPointId, "TODAY") : null;
     const dryRowsForPoint = rawDryRowsForPoint ? filterCurrentMetricRows(rawDryRowsForPoint) : null;
+    if (dryRowsForPoint?.length) {
+      const map = todayCache ? new Map(todayCache) : new Map();
+      map.set(requestedPointId, dryRowsForPoint[0]);
+      return map;
+    }
     if (!force && todayCache && now - todayCacheTime < CACHE_TTL_MS) {
-      if (dryRowsForPoint?.length) {
-        const map = new Map(todayCache);
-        map.set(requestedPointId, dryRowsForPoint[0]);
-        return map;
-      }
       if (!requestedPointId || todayCache.has(requestedPointId)) return todayCache;
     }
 
@@ -563,12 +563,37 @@
     }
   }
 
+  async function prepareTodayForPoint(pointId, options = {}) {
+    const id = String(pointId || "");
+    if (!id) throw new Error("POINT_ID_REQUIRED");
+    const forceRefresh = Boolean(options.forceRefresh);
+    const hasDryRun = Boolean(getDryRunRows(id, "TODAY") || getDryRunRows(id, "TODAY_HOURLY"));
+    const readCached = async (force) => {
+      const [todayMap, hourly] = await Promise.all([
+        loadTodayResults(force, id, { allowOnDemand: false }),
+        loadTodayHourly(id, force, { allowOnDemand: false }),
+      ]);
+      return { today: todayMap.get(id) || null, hourly };
+    };
+
+    const cached = await readCached(forceRefresh);
+    if (cached.today && cached.hourly.length === 7) return { ...cached, cache: "HIT" };
+    if (hasDryRun) throw new Error("CUSTOM_EVALUATION_INCOMPLETE");
+
+    const refreshed = await triggerOnDemandRefresh(id);
+    if (!refreshed) throw new Error("ON_DEMAND_REFRESH_FAILED");
+    const prepared = await readCached(true);
+    if (!prepared.today || prepared.hourly.length !== 7) throw new Error("TODAY_EVALUATION_INCOMPLETE");
+    return { ...prepared, cache: "MISS" };
+  }
+
   window.SNORKYEvaluationResults = Object.freeze({
     getKstDateString,
     getKstDateByOffset,
     triggerOnDemandRefresh,
     loadTodayResults,
     loadTodayHourly,
+    prepareTodayForPoint,
     getResultHour,
     selectCurrentTodayHourlySlot,
     formatSafetyBlockSummary,

@@ -41,6 +41,7 @@
       avatarType,
       aidaLevel: cleanString(user.aidaLevel ?? user.aida_level) || "없음",
       certificationStatus: cleanString(user.certificationStatus ?? user.certification_status),
+      certificationOrganization: cleanString(user.certificationOrganization ?? user.certification_organization),
       qualificationStatus: cleanString(user.qualificationStatus ?? user.qualification_status),
       verificationStatus: cleanString(user.verificationStatus ?? user.verification_status),
       certificationVerified: user.certificationVerified === true,
@@ -81,6 +82,15 @@
       fallbackUrl = cleanString(fallback);
     }
     return normalized.customAvatarUrl || normalized.profileImageUrl || fallbackUrl || null;
+  }
+
+  function getDisplayLevel(profile, fallbackActivityLevel = "") {
+    if (global.SNORKYCertification?.resolveDisplayLevel) {
+      return global.SNORKYCertification.resolveDisplayLevel(profile, fallbackActivityLevel);
+    }
+    const normalized = normalizeUserProfile(profile);
+    const level = cleanString(normalized.aidaLevel || fallbackActivityLevel);
+    return { level: level && level !== "미설정" ? level : "없음", isVerified: false };
   }
 
   function getProfileCacheKey(provider, providerUserId) {
@@ -232,7 +242,7 @@
       }
       let query = sb
         .from("user_profiles")
-        .select("provider, provider_user_id, custom_nickname, custom_avatar_url, avatar_type, aida_level, certification_status, banned, suspended_until, gender, bio, age_group, activity_region, activity_depth")
+        .select("provider, provider_user_id, custom_nickname, custom_avatar_url, avatar_type, aida_level, certification_status, certification_organization, banned, suspended_until, gender, bio, age_group, activity_region, activity_depth")
         .eq("provider_user_id", normalizedUserId);
       if (provider) query = query.eq("provider", provider);
       const { data, error } = await query.limit(1).maybeSingle();
@@ -550,6 +560,7 @@
     normalizeUserProfile,
     getDisplayName,
     getAvatarUrl,
+    getDisplayLevel,
     fetchRemoteProfile,
     validateNickname,
     checkNicknameAvailability,

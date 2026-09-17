@@ -50,7 +50,14 @@
     if (modalText) modalText.textContent = communityConfig.banner_text;
   }
 
+  function requireCommunityLogin() {
+    if (window.SNORKYAuthSession?.isLoggedIn?.()) return true;
+    window.SNORKYAuthSession?.showLoginPrompt?.("SNORKY Community는 로그인 후 이용할 수 있어요.");
+    return false;
+  }
+
   function openModal() {
+    if (!requireCommunityLogin()) return;
     const modal = el("buddyCommunityModal");
     if (!modal) return;
     modal.style.display = "flex";

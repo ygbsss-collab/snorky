@@ -2,6 +2,8 @@
   "use strict";
 
   const STORAGE_KEY = "snorky_auth_session_v1";
+  const GUEST_SELECTION_KEY = "snorky_guest_selected_v1";
+  const RESTRICTED_INQUIRY_KEY = "snorky_restricted_open_inquiry";
 
   function normalizeUser(user) {
     if (!user || user.id === undefined || user.id === null) return null;
@@ -26,6 +28,7 @@
       aidaVerified: user.aidaVerified === true,
       banned: user.banned === true,
       suspendedUntil: user.suspendedUntil ? String(user.suspendedUntil) : null,
+      sanctionType: user.sanctionType ? String(user.sanctionType) : null,
     };
   }
 
@@ -69,6 +72,15 @@
 
   function clear() {
     localStorage.removeItem(STORAGE_KEY);
+    localStorage.removeItem(GUEST_SELECTION_KEY);
+  }
+
+  function hasGuestSelection() {
+    return localStorage.getItem(GUEST_SELECTION_KEY) === "true";
+  }
+
+  function selectGuest() {
+    localStorage.setItem(GUEST_SELECTION_KEY, "true");
   }
 
   function getCurrentUserId() {
@@ -154,6 +166,9 @@
     if (profileUpdates.suspendedUntil !== undefined) {
       session.user.suspendedUntil = profileUpdates.suspendedUntil || null;
     }
+    if (profileUpdates.sanctionType !== undefined) {
+      session.user.sanctionType = profileUpdates.sanctionType || null;
+    }
     save(session);
     try {
       window.dispatchEvent(new CustomEvent("snorky:profile-updated", {
@@ -179,30 +194,53 @@
     return {
       banned: user?.banned === true,
       suspendedUntil: isSuspended ? suspendedUntil.toISOString() : null,
+      sanctionType: user?.sanctionType || null,
       isSuspended
     };
   }
 
-  function showBannedOverlay() {
-    if (document.getElementById("snorkyBannedAccountOverlay")) return;
+  function showBannedOverlay(state = getAccessState()) {
+    document.getElementById("snorkyBannedAccountOverlay")?.remove();
+    const sanctionLabels = {
+      SUSPEND_3_DAYS: "3일 정지",
+      SUSPEND_7_DAYS: "7일 정지",
+      SUSPEND_30_DAYS: "30일 정지"
+    };
+    const sanctionLabel = state.banned ? "영구 정지" : (sanctionLabels[state.sanctionType] || "기간 정지");
+    const endLabel = state.banned
+      ? "영구 정지"
+      : new Date(state.suspendedUntil).toLocaleString("ko-KR", { year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit" });
     const overlay = document.createElement("div");
     overlay.id = "snorkyBannedAccountOverlay";
     overlay.setAttribute("role", "alertdialog");
     overlay.setAttribute("aria-modal", "true");
     overlay.innerHTML = `
       <div style="width:min(360px,calc(100vw - 40px));padding:24px 20px;border-radius:18px;background:#fff;box-shadow:0 24px 70px rgba(0,0,0,.3);text-align:center;box-sizing:border-box;">
-        <h2 style="margin:0 0 9px;font-size:19px;color:#172b3a;">앱 이용이 제한된 계정입니다</h2>
-        <p style="margin:0 0 18px;color:#64748b;font-size:13.5px;line-height:1.55;">관리자에게 문의해 주세요. 기존 활동 이력은 보존됩니다.</p>
-        <button type="button" data-banned-account-logout style="width:100%;height:42px;border:0;border-radius:10px;background:#e9eff2;color:#334155;font:inherit;font-size:14px;font-weight:700;cursor:pointer;">로그아웃</button>
+        <h2 style="margin:0 0 14px;font-size:19px;color:#172b3a;">운영 방침 위반으로 서비스 이용이 제한되었습니다</h2>
+        <dl style="margin:0 0 16px;padding:14px;border-radius:12px;background:#f6f9fb;text-align:left;font-size:13.5px;line-height:1.6;">
+          <div style="display:flex;justify-content:space-between;gap:16px;"><dt style="color:#64748b;">현재 제재</dt><dd style="margin:0;font-weight:800;color:#172b3a;">${sanctionLabel}</dd></div>
+          <div style="display:flex;justify-content:space-between;gap:16px;"><dt style="color:#64748b;">제재 종료일</dt><dd style="margin:0;font-weight:700;color:#172b3a;text-align:right;">${endLabel}</dd></div>
+        </dl>
+        <p style="margin:0 0 18px;color:#64748b;font-size:13.5px;line-height:1.55;">운영 방침 위반으로 인해 제재 기간 동안 SNORKY 서비스 이용이 제한됩니다.</p>
+        <div style="display:flex;gap:8px;">
+          <button type="button" data-snorky-access-allowed data-restricted-account-inquiry style="flex:1;height:42px;border:0;border-radius:10px;background:#172b3a;color:#fff;font:inherit;font-size:14px;font-weight:700;cursor:pointer;">문의하기</button>
+          <button type="button" data-snorky-access-allowed data-restricted-account-close style="flex:1;height:42px;border:0;border-radius:10px;background:#e9eff2;color:#334155;font:inherit;font-size:14px;font-weight:700;cursor:pointer;">닫기</button>
+        </div>
       </div>`;
     Object.assign(overlay.style, {
       position: "fixed", inset: "0", zIndex: "100000", display: "grid", placeItems: "center",
       padding: "20px", background: "rgba(8,35,50,.72)", boxSizing: "border-box"
     });
-    overlay.querySelector("[data-banned-account-logout]")?.addEventListener("click", () => {
-      clear();
-      location.href = "./login.html";
+    overlay.querySelector("[data-restricted-account-inquiry]")?.addEventListener("click", () => {
+      if (global.SNORKYInquiry?.open) {
+        overlay.remove();
+        global.SNORKYInquiry.open();
+        return;
+      }
+      try { sessionStorage.setItem(RESTRICTED_INQUIRY_KEY, "1"); } catch (_) {}
+      location.href = "./index.html";
     });
+    overlay.querySelector("[data-restricted-account-close]")?.addEventListener("click", () => overlay.remove());
     document.body.appendChild(overlay);
   }
 
@@ -219,16 +257,39 @@
         .eq("provider_user_id", String(session.user.id))
         .maybeSingle();
       if (!result.error && result.data) {
+        const suspendedUntil = result.data.suspended_until ? new Date(result.data.suspended_until) : null;
+        const isSuspended = Boolean(suspendedUntil && !Number.isNaN(suspendedUntil.getTime()) && suspendedUntil.getTime() > Date.now());
+        let sanctionType = null;
+        if (result.data.banned === true || isSuspended) {
+          const actionResult = await sb.rpc("get_current_user_moderation_action", {
+            p_user_id: String(session.user.id)
+          });
+          if (!actionResult.error && ["SUSPEND_3_DAYS", "SUSPEND_7_DAYS", "SUSPEND_30_DAYS", "PERMANENT_BAN"].includes(actionResult.data)) {
+            sanctionType = actionResult.data;
+          } else if (result.data.banned === true) {
+            sanctionType = "PERMANENT_BAN";
+          }
+        }
         updateProfile({
           certificationStatus: result.data.certification_status || null,
           banned: result.data.banned === true,
-          suspendedUntil: result.data.suspended_until || null
+          suspendedUntil: result.data.suspended_until || null,
+          sanctionType
         });
       }
     }
     const state = getAccessState();
-    if (state.banned && document.body) showBannedOverlay();
+    if ((state.banned || state.isSuspended) && document.body && !isAccountDeletePage()) showBannedOverlay(state);
     return state;
+  }
+
+  function isAccountDeletePage() {
+    return /(?:^|\/)account-delete\.html$/i.test(location.pathname);
+  }
+
+  async function requireServiceAccess() {
+    const state = await refreshAccessState();
+    return !(state.banned || state.isSuspended);
   }
 
   async function requirePostingAccess() {
@@ -241,7 +302,7 @@
     return true;
   }
 
-  function showLoginPrompt(message = "즐겨찾기는 로그인 후 이용할 수 있어요.") {
+  function showLoginPrompt(message = "즐겨찾기는 로그인 후 이용할 수 있어요.", redirectUrl = "") {
     const existing = document.getElementById("snorkyLoginPromptModal");
     if (existing) existing.remove();
 
@@ -347,13 +408,14 @@
         }
         .snorky-login-prompt-confirm {
           border: 0;
-          background: linear-gradient(135deg, #1570ef, #0e54b6);
-          color: #ffffff;
+          background: #fee500;
+          color: #191919;
           font-weight: 800;
-          box-shadow: 0 4px 12px rgba(21, 112, 239, 0.25);
+          box-shadow: 0 4px 12px rgba(254, 229, 0, 0.35);
+          gap: 6px;
         }
         .snorky-login-prompt-confirm:hover {
-          filter: brightness(1.05);
+          filter: brightness(0.97);
         }
       </style>
       <div class="snorky-login-prompt-card">
@@ -367,7 +429,10 @@
         <p class="snorky-login-prompt-desc">${message || "즐겨찾기는 로그인 후 이용할 수 있어요."}</p>
         <div class="snorky-login-prompt-actions">
           <button id="snorkyLoginPromptCancel" class="snorky-login-prompt-btn snorky-login-prompt-cancel" type="button">취소</button>
-          <a id="snorkyLoginPromptConfirm" class="snorky-login-prompt-btn snorky-login-prompt-confirm" href="./login.html">로그인하기</a>
+          <a id="snorkyLoginPromptConfirm" class="snorky-login-prompt-btn snorky-login-prompt-confirm" href="${redirectUrl ? `./login.html?redirect=${encodeURIComponent(redirectUrl)}` : `./login.html`}">
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="#191919" aria-hidden="true" style="flex-shrink:0;"><path d="M12 3c-4.97 0-9 3.185-9 7.115 0 2.557 1.707 4.8 4.27 6.054-.188.702-.682 2.545-.78 2.94-.122.49.18.483.377.352.155-.103 2.466-1.675 3.47-2.36.544.08 1.102.13 1.663.13 4.97 0 9-3.186 9-7.116S16.97 3 12 3z"/></svg>
+            <span>카카오 로그인</span>
+          </a>
         </div>
       </div>
     `;
@@ -386,6 +451,8 @@
     save,
     get,
     clear,
+    hasGuestSelection,
+    selectGuest,
     getCurrentUserId,
     isLoggedIn,
     showLoginPrompt,
@@ -393,10 +460,55 @@
     updateProfile,
     getAccessState,
     refreshAccessState,
+    requireServiceAccess,
     requirePostingAccess,
   });
 
-  const refreshOnLoad = () => { refreshAccessState().catch(() => {}); };
+  const replayAllowed = new WeakSet();
+  const isAllowedAction = (element) => Boolean(element?.closest?.("[data-snorky-access-allowed], #homeInquiry, #homeInquiryTrigger, a[href*='account-delete.html'], #homeFooterLogoutBtn, #logoutBtn"));
+
+  document.addEventListener("click", (event) => {
+    if (isAccountDeletePage() || !isLoggedIn()) return;
+    const action = event.target?.closest?.("a, button, [role='button'], [data-action], [onclick], [tabindex]");
+    if (!action || isAllowedAction(action)) return;
+    if (replayAllowed.has(action)) { replayAllowed.delete(action); return; }
+    event.preventDefault();
+    event.stopImmediatePropagation();
+    requireServiceAccess().then((allowed) => {
+      if (!allowed || !action.isConnected) return;
+      replayAllowed.add(action);
+      if (action.form) replayAllowed.add(action.form);
+      action.click();
+    }).catch(() => {});
+  }, true);
+
+  document.addEventListener("submit", (event) => {
+    if (isAccountDeletePage() || !isLoggedIn()) return;
+    const form = event.target;
+    if (isAllowedAction(form)) return;
+    if (replayAllowed.has(form)) { replayAllowed.delete(form); return; }
+    event.preventDefault();
+    event.stopImmediatePropagation();
+    requireServiceAccess().then((allowed) => {
+      if (!allowed || !form.isConnected) return;
+      replayAllowed.add(form);
+      form.requestSubmit();
+    }).catch(() => {});
+  }, true);
+
+  const refreshOnLoad = async () => {
+    if (isAccountDeletePage()) return;
+    const state = await refreshAccessState();
+    let openRestrictedInquiry = false;
+    try {
+      openRestrictedInquiry = sessionStorage.getItem(RESTRICTED_INQUIRY_KEY) === "1";
+      if (openRestrictedInquiry) sessionStorage.removeItem(RESTRICTED_INQUIRY_KEY);
+    } catch (_) {}
+    if (openRestrictedInquiry && (state.banned || state.isSuspended) && global.SNORKYInquiry?.open) {
+      document.getElementById("snorkyBannedAccountOverlay")?.remove();
+      global.SNORKYInquiry.open();
+    }
+  };
   if (document.readyState === "complete") refreshOnLoad();
   else global.addEventListener("load", refreshOnLoad, { once: true });
 })(window);

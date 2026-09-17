@@ -109,6 +109,7 @@
   ];
 
   window.SNORKYIndoorCenters = window.SNORKYIndoorCenters || INDOOR_CENTERS;
+  INDOOR_CENTERS.forEach(center => { center.isActive = true; });
 
   // DB 행 데이터를 JS 센터 객체로 변환
   function mapDbRowToCenter(row) {
@@ -120,6 +121,7 @@
       subRegion: row.sub_region || "",
       lat: row.lat,
       lng: row.lng,
+      isActive: row.is_active === true,
       maxDepth: row.max_depth ? Number(row.max_depth) : null,
       hasFreediving: Boolean(row.has_freediving),
       hasScuba: Boolean(row.has_scuba),
@@ -133,7 +135,7 @@
       facilities: row.facilities || "",
       homepage: row.homepage || "",
       mapGuide: row.map_guide || "",
-      imageUrl: row.image_url || "",
+      imageUrl: row.hero_image_url || row.image_url || "",
       description: row.description || "",
       featureShort: row.feature_short || "",
       featureFull: row.feature_full || "",
@@ -148,6 +150,18 @@
       sortOrder: row.sort_order || 0,
       images: []
     };
+  }
+
+  function resolveCenterImageUrl(sb, imgPath, defaultUrl = "") {
+    if (!imgPath) return defaultUrl;
+    if (imgPath.startsWith("http://") || imgPath.startsWith("https://") || imgPath.startsWith("./") || imgPath.startsWith("/")) {
+      return imgPath;
+    }
+    if (sb?.storage?.from) {
+      const pubUrl = sb.storage.from("point-images").getPublicUrl(imgPath).data?.publicUrl;
+      if (pubUrl) return pubUrl;
+    }
+    return imgPath || defaultUrl;
   }
 
   // Supabase 실내센터 데이터 비동기 로드
@@ -182,9 +196,11 @@
           if (c.images.length > 0) {
             const primaryImg = c.images.find((im) => im.is_primary) || c.images[0];
             if (primaryImg && primaryImg.storage_path) {
-              const pubUrl = sb.storage.from("point-images").getPublicUrl(primaryImg.storage_path).data?.publicUrl;
-              if (pubUrl) c.imageUrl = pubUrl;
+              c.imageUrl = resolveCenterImageUrl(sb, primaryImg.storage_path, c.imageUrl);
             }
+          }
+          if (!c.imageUrl) {
+            c.imageUrl = row.hero_image_url || row.image_url || "./public/images/indoor-centers/stitch_pool_1.png";
           }
           return c;
         });
@@ -240,6 +256,7 @@
   // Selected Center for Modal
   let activeCenter = null;
   async function init() {
+    tryCacheUserLocation();
     if (!document.getElementById("indoorCardsGrid") && !document.getElementById("indoorSearchInput")) {
       await loadIndoorCenters();
       return;
@@ -268,7 +285,7 @@
   window.SNORKYIndoor = {
     loadIndoorCenters,
     mapDbRowToCenter,
-    getCenters: () => window.SNORKYIndoorCenters || INDOOR_CENTERS
+    getCenters: () => (window.SNORKYIndoorCenters || INDOOR_CENTERS).filter(center => center.isActive === true)
   };
 
   function bindDOMElements() {
@@ -463,6 +480,46 @@
     });
   }
 
+  function getEffectiveUserLocation() {
+    const storageKeys = ["snorky_user_coords", "snorky_user_location", "user_coords", "user_location"];
+    for (const key of storageKeys) {
+      try {
+        const raw = sessionStorage.getItem(key) || localStorage.getItem(key);
+        if (raw) {
+          const parsed = JSON.parse(raw);
+          const lat = Number(parsed.latitude ?? parsed.lat);
+          const lng = Number(parsed.longitude ?? parsed.lng);
+          if (Number.isFinite(lat) && Number.isFinite(lng)) {
+            return { lat, lng };
+          }
+        }
+      } catch (_) {}
+    }
+    if (window.SNORKYUserCoords && Number.isFinite(window.SNORKYUserCoords.latitude) && Number.isFinite(window.SNORKYUserCoords.longitude)) {
+      return { lat: Number(window.SNORKYUserCoords.latitude), lng: Number(window.SNORKYUserCoords.longitude) };
+    }
+    return null;
+  }
+
+  function tryCacheUserLocation() {
+    if (!navigator.geolocation) return;
+    if (navigator.permissions?.query) {
+      navigator.permissions.query({ name: "geolocation" }).then(res => {
+        if (res.state === "granted") {
+          navigator.geolocation.getCurrentPosition(pos => {
+            try {
+              sessionStorage.setItem("snorky_user_coords", JSON.stringify({
+                latitude: pos.coords.latitude,
+                longitude: pos.coords.longitude,
+                timestamp: Date.now()
+              }));
+            } catch (_) {}
+          }, () => {}, { enableHighAccuracy: false, timeout: 8000, maximumAge: 5 * 60 * 1000 });
+        }
+      }).catch(() => {});
+    }
+  }
+
   function bindModalActionButtons() {
     const buddyCtaBtn = document.getElementById("modalBuddyCtaBtn");
     const navBtn = document.getElementById("modalNavBtn");
@@ -470,17 +527,102 @@
     const callBtn = document.getElementById("modalCallBtn");
     const copyAddressBtn = document.getElementById("modalCopyAddressBtn");
 
-    // 길찾기 버튼: 카카오맵 길찾기 링크 실행
+    // 길찾기 버튼: 카카오맵 길찾기 링크 실행 (내 위치 -> 목적지 자동 지정)
     if (navBtn) {
       navBtn.addEventListener("click", () => {
         if (!activeCenter) return;
-        const destination = encodeURIComponent(activeCenter.name);
-        const lat = activeCenter.lat || "";
-        const lng = activeCenter.lng || "";
-        const url = (lat && lng)
-          ? `https://map.kakao.com/link/to/${destination},${lat},${lng}`
-          : `https://map.kakao.com/?eName=${encodeURIComponent(activeCenter.address || activeCenter.name)}`;
-        window.open(url, "_blank", "noopener,noreferrer");
+
+        const openKakaoRoute = (destLat, destLng, userLoc) => {
+          const destination = encodeURIComponent(activeCenter.name);
+          const origin = userLoc || getEffectiveUserLocation();
+          const hasDest = Number.isFinite(destLat) && Number.isFinite(destLng);
+          const hasOrigin = origin && Number.isFinite(origin.lat) && Number.isFinite(origin.lng);
+
+          let url = "";
+          if (hasDest && hasOrigin) {
+            url = `https://map.kakao.com/link/from/내 위치,${origin.lat},${origin.lng}/to/${destination},${destLat},${destLng}`;
+          } else if (hasDest) {
+            url = `https://map.kakao.com/link/to/${destination},${destLat},${destLng}`;
+          } else if (hasOrigin) {
+            url = `https://map.kakao.com/?sName=${encodeURIComponent("내 위치")}&eName=${encodeURIComponent(activeCenter.address || activeCenter.name)}`;
+          } else {
+            url = `https://map.kakao.com/?eName=${encodeURIComponent(activeCenter.address || activeCenter.name)}`;
+          }
+          window.open(url, "_blank", "noopener,noreferrer");
+        };
+
+        const destinationLat = Number(activeCenter.lat);
+        const destinationLng = Number(activeCenter.lng);
+        const hasCoords = Number.isFinite(destinationLat) && Number.isFinite(destinationLng);
+
+        // 1. 이미 캐시된 내 위치가 있는 경우 즉시 이동
+        const cachedLoc = getEffectiveUserLocation();
+        if (cachedLoc) {
+          if (hasCoords) {
+            openKakaoRoute(destinationLat, destinationLng, cachedLoc);
+          } else if (activeCenter.address && window.kakao?.maps?.services?.Geocoder) {
+            geocodeAndOpen(cachedLoc);
+          } else {
+            openKakaoRoute(NaN, NaN, cachedLoc);
+          }
+          return;
+        }
+
+        // 2. 캐시된 위치가 없으면 Geolocation 조회 후 이동
+        if (navigator.geolocation) {
+          navigator.geolocation.getCurrentPosition(
+            (pos) => {
+              const freshLoc = { lat: pos.coords.latitude, lng: pos.coords.longitude };
+              try {
+                sessionStorage.setItem("snorky_user_coords", JSON.stringify({
+                  latitude: freshLoc.lat,
+                  longitude: freshLoc.lng,
+                  timestamp: Date.now()
+                }));
+              } catch (_) {}
+              if (hasCoords) {
+                openKakaoRoute(destinationLat, destinationLng, freshLoc);
+              } else if (activeCenter.address && window.kakao?.maps?.services?.Geocoder) {
+                geocodeAndOpen(freshLoc);
+              } else {
+                openKakaoRoute(NaN, NaN, freshLoc);
+              }
+            },
+            () => {
+              if (hasCoords) {
+                openKakaoRoute(destinationLat, destinationLng, null);
+              } else if (activeCenter.address && window.kakao?.maps?.services?.Geocoder) {
+                geocodeAndOpen(null);
+              } else {
+                openKakaoRoute(NaN, NaN, null);
+              }
+            },
+            { enableHighAccuracy: false, timeout: 3000, maximumAge: 5 * 60 * 1000 }
+          );
+          return;
+        }
+
+        // 3. Geolocation 미지원 시 목적지만 지정
+        if (hasCoords) {
+          openKakaoRoute(destinationLat, destinationLng, null);
+        } else if (activeCenter.address && window.kakao?.maps?.services?.Geocoder) {
+          geocodeAndOpen(null);
+        } else {
+          openKakaoRoute(NaN, NaN, null);
+        }
+
+        function geocodeAndOpen(userLoc) {
+          const geocoder = new kakao.maps.services.Geocoder();
+          geocoder.addressSearch(activeCenter.address, (result, status) => {
+            if (status === kakao.maps.services.Status.OK && result && result.length > 0) {
+              const geocodedLat = parseFloat(result[0].y);
+              const geocodedLng = parseFloat(result[0].x);
+              openKakaoRoute(geocodedLat, geocodedLng, userLoc);
+            } else {
+              openKakaoRoute(NaN, NaN, userLoc);
+            }
+          });
+        }
       });
     }
 
@@ -802,6 +944,7 @@
 
   function getFilteredCenters() {
     return window.SNORKYIndoor.getCenters().filter(center => {
+      if (center.isActive !== true) return false;
       // 검색어 필터 (센터명, 지역, 주소)
       if (state.searchQuery) {
         const query = state.searchQuery;
@@ -914,24 +1057,17 @@
     const depthText = center.maxDepth ? `최대 ${center.maxDepth}m` : "";
     const metaText = [regionText, depthText].filter(Boolean).join(" · ");
 
-    const features = [
-      center.hasFreediving ? "프리다이빙" : "",
-      center.hasScuba ? "스쿠버" : "",
-      center.hasParking ? "주차" : ""
-    ].filter(Boolean).join(" · ");
-
     let statusClass = "open";
     if (center.status === "휴장") statusClass = "closed";
     else if (center.status === "확인 필요") statusClass = "check";
 
     card.innerHTML = `
       <span class="indoor-card-thumb">
-        ${center.imageUrl ? `<img src="${escapeHtml(center.imageUrl)}" alt="${escapeHtml(center.name)}" loading="lazy">` : ""}
+        ${center.imageUrl ? `<img src="${escapeHtml(center.imageUrl)}" alt="${escapeHtml(center.name)}" loading="lazy" style="width:100%;height:100%;object-fit:cover;display:block;" onerror="this.onerror=null;this.src='./public/images/indoor-centers/stitch_pool_1.png';">` : ""}
       </span>
       <span class="indoor-card-info">
         <strong class="indoor-card-name">${escapeHtml(center.name)}</strong>
         <small class="indoor-card-meta">${escapeHtml(metaText)}</small>
-        <span class="indoor-card-features">${escapeHtml(features)}</span>
       </span>
       <span class="indoor-card-right">
         <span class="indoor-status-chip ${statusClass}">${escapeHtml(center.status || "운영중")}</span>
@@ -962,7 +1098,13 @@
     const regionEl = document.getElementById("modalRegion");
     const statusEl = document.getElementById("modalStatus");
 
-    if (imgEl) imgEl.src = center.imageUrl || "";
+    if (imgEl) {
+      imgEl.src = center.imageUrl || "./public/images/indoor-centers/stitch_pool_1.png";
+      imgEl.onerror = function() {
+        this.onerror = null;
+        this.src = "./public/images/indoor-centers/stitch_pool_1.png";
+      };
+    }
     if (nameEl) nameEl.textContent = center.name;
     if (regionEl) regionEl.textContent = `${center.region} ${center.subRegion}`;
     if (statusEl) statusEl.textContent = center.status || "운영중";

@@ -552,7 +552,7 @@
   }
 
   // 7. 사용자 신고하기 (submit-inquiry 재사용)
-  async function reportUser({ reporterId, reporterNickname, targetId, targetNickname, reason, details, postId }) {
+  async function reportUser({ reporterId, reporterNickname, targetId, targetNickname, reason, details, postId, images = [] }) {
     if (!targetId) throw new Error("신고 대상 정보가 없습니다.");
     if (!reason) throw new Error("신고 사유를 선택해 주세요.");
 
@@ -568,7 +568,8 @@
       reporter_nickname: typeof reporterNickname === "string" && reporterNickname.trim() ? reporterNickname.trim() : null,
       reason: String(reason),
       details: typeof details === "string" && details.trim() ? details.trim() : null,
-      buddy_post_id: normalizedPostId
+      buddy_post_id: normalizedPostId,
+      images: Array.isArray(images) ? images : []
     };
 
     try {
