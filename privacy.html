@@ -167,10 +167,10 @@
       <!-- 3. 보유 및 이용 기간 -->
       <section class="privacy-section">
         <h3 class="privacy-section-title">3. 개인정보의 보유 및 이용 기간</h3>
-        <p class="privacy-section-body">개인정보는 서비스 제공 및 운영 목적이 달성될 때까지 처리합니다. 다만 회원탈퇴 시 실제 삭제되는 정보와 잔여할 수 있는 정보가 구분되므로, 구체적인 보유·삭제 기준은 <strong>[확인 필요]</strong>입니다.</p>
+        <p class="privacy-section-body">개인정보는 서비스 제공 및 운영 목적이 달성될 때까지 처리합니다. 자격증 증빙 사진은 관리자 심사 완료 후 삭제하며, 신고 증거 이미지는 신고 처리 완료 후 6개월간 보관한 뒤 자동 삭제합니다.</p>
         <ul>
           <li><strong>자격증 증빙 사진:</strong> 관리자 심사 완료 후 삭제됩니다.</li>
-          <li><strong>신고 증거 이미지:</strong> 현재 자동 삭제 스케줄이 없습니다. 구체적인 보유·삭제 기준은 <strong>[확인 필요]</strong>입니다.</li>
+          <li><strong>신고 증거 이미지:</strong> 신고 처리 완료 후 6개월간 보관한 뒤 자동 삭제합니다.</li>
         </ul>
       </section>
 
@@ -179,9 +179,8 @@
         <h3 class="privacy-section-title">4. 회원탈퇴 및 파기 범위</h3>
         <p class="privacy-section-body">회원은 account-delete.html에서 계정 삭제를 요청할 수 있습니다. 현재 탈퇴 처리에서 확인되는 삭제 대상은 다음과 같습니다.</p>
         <ul>
-          <li><strong>삭제:</strong> user_profiles 레코드, avatars 스토리지의 사용자 아바타, 이용자 기기의 로컬 저장 데이터</li>
-          <li><strong>잔여 가능:</strong> buddy_posts, buddy_applications, certification_requests, user_reports 관련 데이터는 현재 일부 잔여할 수 있으며 즉시 모두 삭제된다고 보장하지 않습니다.</li>
-          <li><strong>구체적인 보유·삭제 정책:</strong> [확인 필요]</li>
+          <li><strong>삭제:</strong> user_profiles 레코드, avatars 스토리지의 사용자 아바타, buddy_posts, buddy_applications, certification_requests 및 이용자 기기의 관련 로컬 저장 데이터를 삭제합니다.</li>
+          <li><strong>보존 가능:</strong> user_reports 및 user_moderation_actions는 신고 처리, 부정 이용 방지 및 분쟁 대응을 위해 보존할 수 있습니다.</li>
         </ul>
       </section>
 
@@ -237,7 +236,7 @@
         <ul>
           <li><strong>avatars:</strong> 프로필 이미지 저장에 사용되며, 서비스 화면에서 표시될 수 있는 공개 스토리지입니다.</li>
           <li><strong>certification-photos:</strong> 자격증 증빙 사진 저장에 사용되며, 비공개 스토리지로 관리자 심사에만 사용되고 심사 완료 후 삭제됩니다.</li>
-          <li><strong>report-evidence:</strong> 신고 증거 이미지 저장에 사용되며, 비공개 스토리지로 운영자 검토 목적에 한해 접근됩니다. 자동 삭제 스케줄은 현재 없습니다(<strong>[확인 필요]</strong>).</li>
+          <li><strong>report-evidence:</strong> 신고 증거 이미지 저장에 사용되며, 비공개 스토리지로 운영자 검토 목적에 한해 접근됩니다. 신고 처리 완료 후 6개월간 보관한 뒤 자동 삭제합니다.</li>
           <li><strong>인앱 알림:</strong> user_notifications 기반의 서비스 내 알림만 사용합니다. FCM/APNs Push 및 기기 토큰은 수집하지 않습니다.</li>
         </ul>
       </section>
@@ -257,7 +256,7 @@
         <h3 class="privacy-section-title">9. 개인정보의 안전성 확보조치</h3>
         <ul>
           <li><strong>전송 암호화:</strong> HTTPS(SSL/TLS) 암호화 통신을 적용하여 데이터를 전송합니다.</li>
-          <li><strong>접근 제어:</strong> 데이터베이스 Row Level Security(RLS) 및 비공개 스토리지 정책으로 인가되지 않은 접근을 제한합니다.</li>
+          <li><strong>접근 제어:</strong> 데이터베이스 및 스토리지에 접근 제어 정책을 적용하여 인가되지 않은 접근을 제한합니다.</li>
           <li><strong>자격·신고 자료:</strong> 자격증 사진과 신고 증거 이미지는 공개되지 않는 스토리지에서 운영자 검토 목적으로 처리합니다.</li>
         </ul>
       </section>
