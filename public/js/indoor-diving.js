@@ -200,7 +200,7 @@
             }
           }
           if (!c.imageUrl) {
-            c.imageUrl = row.hero_image_url || row.image_url || "./public/images/indoor-centers/stitch_pool_1.png";
+            c.imageUrl = row.hero_image_url || row.image_url || "https://vqpkckonpsnzhuwuybav.supabase.co/storage/v1/object/public/avatars/indoor_centers/stitch_pool_1.png";
           }
           return c;
         });

@@ -10,6 +10,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Pretendard:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="./public/css/buddy.css?v=20260911_certification_display_v1">
   <link rel="stylesheet" href="./public/css/bottom-nav.css?v=20260904_v3">
+  <script src="https://t1.kakaocdn.net/kakao_js_sdk/2.8.2/kakao.min.js" crossorigin="anonymous"></script>
   <script src="./public/js/bottom-nav.js?v=20260904_v3"></script>
   <script src="./public/js/buddy-point-detail-overlay.js?v=20260905_v1"></script>
   <style>
@@ -1376,8 +1377,53 @@
         };
       }
 
+      const KAKAO_JAVASCRIPT_KEY = "c29f1a71a53af406429520da0df21772";
+
+      function initKakaoSDK() {
+        if (window.Kakao && !window.Kakao.isInitialized()) {
+          try {
+            window.Kakao.init(KAKAO_JAVASCRIPT_KEY);
+          } catch (err) {
+            console.warn("[Kakao SDK Init Error]", err);
+          }
+        }
+      }
+
       async function shareBuddyPost(post) {
         const share = buildBuddyShareData(post);
+
+        // 1. 카카오톡 공유 최우선 실행
+        initKakaoSDK();
+        if (window.Kakao?.Share?.sendDefault) {
+          try {
+            window.Kakao.Share.sendDefault({
+              objectType: "feed",
+              content: {
+                title: share.title,
+                description: share.description,
+                imageUrl: share.imageUrl,
+                link: {
+                  mobileWebUrl: share.url,
+                  webUrl: share.url
+                }
+              },
+              buttons: [
+                {
+                  title: "버디 공고 보기",
+                  link: {
+                    mobileWebUrl: share.url,
+                    webUrl: share.url
+                  }
+                }
+              ]
+            });
+            return;
+          } catch (kErr) {
+            console.warn("[Kakao Share Error]", kErr);
+          }
+        }
+
+        // 2. Fallback: Web Share API
         if (navigator.share) {
           try {
             await navigator.share({ title: share.title, text: share.text });
@@ -1386,6 +1432,8 @@
             if (error?.name === "AbortError") return;
           }
         }
+
+        // 3. Fallback: 클립보드 복사
         if (navigator.clipboard?.writeText) {
           try {
             await navigator.clipboard.writeText(share.text);
