@@ -339,6 +339,16 @@ async function evaluatePointOnDemand(
       modes: ["TODAY", "TODAY_HOURLY", "SHORT", "MID"],
     });
     if (result.error) throw new Error(result.error);
+    if (
+      result.today_count !== REQUIRED_MODE_COUNTS.TODAY
+      || result.today_hourly_count !== REQUIRED_MODE_COUNTS.TODAY_HOURLY
+      || result.short_count !== REQUIRED_MODE_COUNTS.SHORT
+      || result.mid_count !== REQUIRED_MODE_COUNTS.MID
+    ) {
+      throw new Error(
+        `INCOMPLETE_POINT_EVALUATION:TODAY=${result.today_count},TODAY_HOURLY=${result.today_hourly_count},SHORT=${result.short_count},MID=${result.mid_count}`
+      );
+    }
 
     return {
       ok: true,

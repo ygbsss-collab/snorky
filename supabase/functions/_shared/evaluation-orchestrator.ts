@@ -327,12 +327,13 @@ export async function loadPointCaches(client: SupabaseClient, point: SnorkyPoint
   // Marine MISS -> single on-demand fetch
   if (!marineCache?.hourly?.time?.length && supabaseUrl) {
     bootstrapTasks.push(timedCache("marine_cache_ms", async () => {
-      try {
-        await fetch(`${supabaseUrl}/functions/v1/open-meteo-marine-cache?pointId=${pointId}&latitude=${lat}&longitude=${lng}`, {
-          headers: { apikey: serviceKey, Authorization: `Bearer ${serviceKey}` }
-        });
-        marineCache = await queryMarineDbCache(client, cacheKey);
-      } catch (_) {}
+      const response = await fetch(`${supabaseUrl}/functions/v1/open-meteo-marine-cache?pointId=${pointId}&latitude=${lat}&longitude=${lng}`, {
+        headers: { apikey: serviceKey, Authorization: `Bearer ${serviceKey}` }
+      });
+      const payload = await response.json().catch(() => null);
+      if (!response.ok || payload?.status !== "READY") throw new Error("MARINE_CACHE_PREPARE_FAILED");
+      marineCache = await queryMarineDbCache(client, cacheKey);
+      if (!marineCache?.hourly?.time?.length) throw new Error("MARINE_CACHE_NOT_STORED");
     }));
   }
 

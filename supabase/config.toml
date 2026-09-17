@@ -36,3 +36,6 @@ verify_jwt = false
 
 [functions.point-evaluation-refresh]
 verify_jwt = false
+
+[functions.purge-report-evidence]
+verify_jwt = false

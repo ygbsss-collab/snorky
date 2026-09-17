@@ -211,7 +211,80 @@ Deno.serve(async (request) => {
         auth: { persistSession: false, autoRefreshToken: false },
       });
 
-      // 5-1. user_profiles 테이블 레코드 삭제
+      // 5-1. 탈퇴 사용자의 버디 신청 및 모집 게시글 연결 데이터 삭제
+      const { data: ownedPosts, error: ownedPostsError } = await supabase
+        .from("buddy_posts")
+        .select("id")
+        .eq("user_id", verifiedKakaoUserId);
+
+      if (ownedPostsError) {
+        return json({
+          ok: false,
+          step: "db_buddy_posts_lookup",
+          message: "버디 데이터 확인 중 오류가 발생했습니다.",
+        }, 500, requestOrigin);
+      }
+
+      const ownedPostIds = (ownedPosts || [])
+        .map((row: { id?: number | string }) => row.id)
+        .filter((id: number | string | undefined): id is number | string => id !== undefined && id !== null);
+
+      const { error: applicantApplicationsDeleteError } = await supabase
+        .from("buddy_applications")
+        .delete()
+        .eq("applicant_user_id", verifiedKakaoUserId);
+
+      if (applicantApplicationsDeleteError) {
+        return json({
+          ok: false,
+          step: "db_buddy_applications_delete",
+          message: "버디 참가신청 데이터 삭제 중 오류가 발생했습니다.",
+        }, 500, requestOrigin);
+      }
+
+      if (ownedPostIds.length > 0) {
+        const { error: ownedPostApplicationsDeleteError } = await supabase
+          .from("buddy_applications")
+          .delete()
+          .in("buddy_post_id", ownedPostIds);
+
+        if (ownedPostApplicationsDeleteError) {
+          return json({
+            ok: false,
+            step: "db_owned_buddy_applications_delete",
+            message: "버디 모집글의 참가신청 데이터 삭제 중 오류가 발생했습니다.",
+          }, 500, requestOrigin);
+        }
+
+        const { error: ownedPostsDeleteError } = await supabase
+          .from("buddy_posts")
+          .delete()
+          .in("id", ownedPostIds);
+
+        if (ownedPostsDeleteError) {
+          return json({
+            ok: false,
+            step: "db_buddy_posts_delete",
+            message: "버디 모집글 데이터 삭제 중 오류가 발생했습니다.",
+          }, 500, requestOrigin);
+        }
+      }
+
+      // 신고 및 제재 이력(user_reports, user_moderation_actions)은 보존한다.
+      const { error: certificationRequestsDeleteError } = await supabase
+        .from("certification_requests")
+        .delete()
+        .eq("user_id", verifiedKakaoUserId);
+
+      if (certificationRequestsDeleteError) {
+        return json({
+          ok: false,
+          step: "db_certification_requests_delete",
+          message: "자격 인증 요청 데이터 삭제 중 오류가 발생했습니다.",
+        }, 500, requestOrigin);
+      }
+
+      // 5-2. user_profiles 테이블 레코드 삭제
       const { error: profileDeleteError } = await supabase
         .from("user_profiles")
         .delete()
@@ -226,7 +299,7 @@ Deno.serve(async (request) => {
         }, 500, requestOrigin);
       }
 
-      // 5-2. avatars 스토리지 버킷 파일 삭제
+      // 5-3. avatars 스토리지 버킷 파일 삭제
       try {
         const { data: files } = await supabase.storage.from("avatars").list("user_avatars", {
           search: `kakao_${verifiedKakaoUserId}_`,

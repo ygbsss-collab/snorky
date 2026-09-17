@@ -40,6 +40,7 @@ type InquiryInput = {
   reason?: unknown;
   details?: unknown;
   buddy_post_id?: unknown;
+  images?: Array<{ name?: unknown; mime_type?: unknown; content_base64?: unknown }>;
   photo?: {
     name?: unknown;
     mime_type?: unknown;
@@ -62,6 +63,12 @@ function clientIp(request: Request) {
 async function sha256(value: string) {
   const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(value));
   return Array.from(new Uint8Array(digest), byte => byte.toString(16).padStart(2, "0")).join("");
+}
+function decodeBase64(value: string) {
+  const binary = atob(value);
+  const bytes = new Uint8Array(binary.length);
+  for (let index = 0; index < binary.length; index += 1) bytes[index] = binary.charCodeAt(index);
+  return bytes;
 }
 function validationError(input: InquiryInput) {
   const inquiryType = text(input.inquiry_type), pointName = text(input.point_name);
@@ -143,19 +150,17 @@ async function sendAdminEmail(input: { inquiryType: string; pointName: string | 
 }
 
 async function sendCertificationEmail(input: {
+  requestId: string | number;
   userId: string;
   nickname: string;
   agency: string;
   level: string;
   certificationNumber: string;
-  photoMimeType: string;
-  photoBase64: string;
 }) {
   const apiKey = Deno.env.get("RESEND_API_KEY");
   const adminEmail = Deno.env.get("INQUIRY_ADMIN_EMAIL");
   const from = Deno.env.get("INQUIRY_FROM_EMAIL");
   if (!apiKey || !adminEmail || !from) return { status: "not_configured" as const, error: "MAIL_NOT_CONFIGURED" };
-  const extension = input.photoMimeType === "image/png" ? "png" : (input.photoMimeType === "image/webp" ? "webp" : "jpg");
   const safeAgency = input.agency.replace(/[\r\n]+/g, " ");
   const safeLevel = input.level.replace(/[\r\n]+/g, " ");
   const response = await fetch("https://api.resend.com/emails", {
@@ -171,13 +176,10 @@ async function sendCertificationEmail(input: {
         `인증기관: ${input.agency}`,
         `자격레벨: ${input.level}`,
         `자격번호: ${input.certificationNumber}`,
+        `신청 ID: ${input.requestId}`,
         "",
-        "첨부된 자격증 사진을 확인해 주세요. 사진은 DB 또는 Storage에 저장되지 않습니다.",
+        "관리자 페이지에서 자격증 사진을 검수해 주세요.",
       ].join("\n"),
-      attachments: [{
-        filename: `certification-${input.userId}.${extension}`,
-        content: input.photoBase64,
-      }],
     }),
   });
   if (response.ok) return { status: "sent" as const, error: null };
@@ -208,39 +210,79 @@ async function submitCertificationRequest(client: ReturnType<typeof createClient
   const level = text(input.level), certificationNumber = text(input.certification_number);
   const photoMimeType = text(input.photo?.mime_type), photoBase64 = text(input.photo?.content_base64);
 
-  if (!TEST_MODE_ALLOW_DUPLICATE_USERS) {
-    const pending = await client
-      .from("certification_requests")
-      .select("id", { count: "exact", head: true })
-      .eq("user_id", userId)
-      .eq("status", "PENDING");
-    if (pending.error) {
-      console.error("[submit-inquiry] certification pending query failed", pending.error.message);
-      return json({ ok: false, message: "인증 요청 상태를 확인하지 못했습니다. 잠시 후 다시 시도해 주세요." }, 500);
-    }
-    if ((pending.count || 0) > 0) return json({ ok: false, message: "이미 검토 중인 인증 요청이 있습니다." }, 409);
+  const pending = await client
+    .from("certification_requests")
+    .select("id", { count: "exact", head: true })
+    .eq("user_id", userId)
+    .eq("status", "PENDING");
+  if (pending.error) {
+    console.error("[submit-inquiry] certification pending query failed", pending.error.message);
+    return json({ ok: false, message: "인증 요청 상태를 확인하지 못했습니다. 잠시 후 다시 시도해 주세요." }, 500);
+  }
+  if ((pending.count || 0) > 0) return json({ ok: false, message: "이미 검토 중인 인증 요청이 있습니다." }, 409);
+
+  const extension = photoMimeType === "image/png" ? "png" : (photoMimeType === "image/webp" ? "webp" : "jpg");
+  const photoPath = `${await sha256(userId)}/${crypto.randomUUID()}.${extension}`;
+  let photoBytes: Uint8Array;
+  try {
+    photoBytes = decodeBase64(photoBase64);
+  } catch {
+    return json({ ok: false, message: "자격증 사진을 확인해 주세요." }, 400);
   }
 
-  const notification = await sendCertificationEmail({
-    userId, nickname, agency, level, certificationNumber, photoMimeType, photoBase64,
-  });
-  if (notification.status !== "sent") {
-    return json({ ok: false, message: "인증 메일을 보내지 못했습니다. 잠시 후 다시 시도해 주세요." }, 502);
+  const { error: uploadError } = await client.storage
+    .from("certification-photos")
+    .upload(photoPath, photoBytes, { contentType: photoMimeType, upsert: false });
+  if (uploadError) {
+    console.error("[submit-inquiry] certification photo upload failed", uploadError.message);
+    return json({ ok: false, message: "자격증 사진을 저장하지 못했습니다. 잠시 후 다시 시도해 주세요." }, 500);
   }
 
   const requestedAt = new Date().toISOString();
-  const { error: insertError } = await client.from("certification_requests").insert({
-    user_id: userId,
-    nickname: nickname || null,
-    agency,
-    level,
-    certification_number: certificationNumber,
-    status: "PENDING",
-    requested_at: requestedAt,
-  });
+  const { data: requestRow, error: insertError } = await client.from("certification_requests").insert({
+      user_id: userId,
+      nickname: nickname || null,
+      agency,
+      level,
+      certification_number: certificationNumber,
+      status: "PENDING",
+      requested_at: requestedAt,
+      photo_path: photoPath,
+      photo_mime_type: photoMimeType,
+    })
+    .select("id")
+    .single();
   if (insertError) {
     console.error("[submit-inquiry] certification insert failed", insertError.message);
+    await client.storage.from("certification-photos").remove([photoPath]);
+    if (insertError.code === "23505" || insertError.message.includes("CERTIFICATION_REQUEST_ALREADY_PENDING")) {
+      return json({ ok: false, message: "이미 검토 중인 인증 요청이 있습니다." }, 409);
+    }
     return json({ ok: false, message: "인증 요청을 저장하지 못했습니다. 잠시 후 다시 시도해 주세요." }, 500);
+  }
+
+  const { data: profileRow, error: profileUpdateError } = await client.from("user_profiles")
+    .update({ certification_status: "PENDING" })
+    .eq("provider_user_id", userId)
+    .select("id")
+    .maybeSingle();
+  if (profileUpdateError || !profileRow) {
+    console.error("[submit-inquiry] certification state update failed", profileUpdateError?.message || "CERTIFICATION_PROFILE_NOT_FOUND");
+    await client.storage.from("certification-photos").remove([photoPath]);
+    await client.from("certification_requests").delete().eq("id", requestRow.id);
+    return json({ ok: false, message: "인증 요청 상태를 저장하지 못했습니다. 잠시 후 다시 시도해 주세요." }, 500);
+  }
+
+  const notification = await sendCertificationEmail({
+    requestId: requestRow.id,
+    userId,
+    nickname,
+    agency,
+    level,
+    certificationNumber,
+  });
+  if (notification.status !== "sent") {
+    console.error("[submit-inquiry] certification request saved without email notification", notification.error);
   }
   return json({ ok: true, message: "인증 요청이 접수되었습니다." });
 }
@@ -323,6 +365,22 @@ async function submitUserReport(client: ReturnType<typeof createClient>, input: 
   const buddyPostId = rawPostId === null || rawPostId === undefined || rawPostId === ""
     ? null
     : Number(rawPostId);
+  const images = Array.isArray(input.images) ? input.images : [];
+  if (images.length < 1 || images.length > 3) return json({ ok: false, message: "이미지는 1~3장 첨부해야 합니다." }, 400);
+  const allowedMimeTypes = new Set(["image/jpeg", "image/png", "image/webp"]);
+  const uploadedPaths: string[] = [];
+  for (const image of images) {
+    const mimeType = text(image?.mime_type), base64 = text(image?.content_base64);
+    if (!allowedMimeTypes.has(mimeType) || !base64) return json({ ok: false, message: "JPG, PNG, WebP 이미지만 첨부할 수 있습니다." }, 400);
+    let bytes: Uint8Array;
+    try { bytes = decodeBase64(base64); } catch { return json({ ok: false, message: "이미지를 확인해 주세요." }, 400); }
+    if (bytes.byteLength > 5 * 1024 * 1024) return json({ ok: false, message: "이미지는 장당 5MB 이하로 첨부해 주세요." }, 400);
+    const extension = mimeType === "image/png" ? "png" : mimeType === "image/webp" ? "webp" : "jpg";
+    const path = `${reporterUserId || "anonymous"}/${crypto.randomUUID()}.${extension}`;
+    const { error } = await client.storage.from("report-evidence").upload(path, bytes, { contentType: mimeType, upsert: false });
+    if (error) { await client.storage.from("report-evidence").remove(uploadedPaths); return json({ ok: false, message: "신고 증빙 이미지를 저장하지 못했습니다." }, 500); }
+    uploadedPaths.push(path);
+  }
   if (!targetUserId || targetUserId.length > 128) return json({ ok: false, message: "신고 대상 정보가 올바르지 않습니다." }, 400);
   if (!TEST_MODE_ALLOW_DUPLICATE_USERS && reporterUserId && reporterUserId === targetUserId) {
     return json({ ok: false, message: "자기 자신은 신고할 수 없습니다." }, 400);
@@ -352,7 +410,7 @@ async function submitUserReport(client: ReturnType<typeof createClient>, input: 
     return json({ ok: false, message: "신고 접수 메일을 발송하지 못했습니다. 잠시 후 다시 시도해 주세요." }, 502);
   }
 
-  const { error: insertError } = await client.from("user_reports").insert({
+  const { data: insertedReport, error: insertError } = await client.from("user_reports").insert({
     target_user_id: targetUserId,
     target_nickname: targetNickname || null,
     reporter_user_id: reporterUserId || null,
@@ -362,10 +420,18 @@ async function submitUserReport(client: ReturnType<typeof createClient>, input: 
     buddy_post_id: buddyPostId,
     status: "PENDING",
     reported_at: reportedAt,
-  });
+    image_paths: uploadedPaths,
+  }).select("id").single();
   if (insertError) {
     console.error("[submit-inquiry] user report insert failed", insertError.message);
+    await client.storage.from("report-evidence").remove(uploadedPaths);
     return json({ ok: false, message: "신고 저장 중 오류가 발생했습니다. 잠시 후 다시 시도해 주세요." }, 500);
+  }
+  if (reporterUserId && insertedReport) {
+    const { error: notificationError } = await client.from("user_notifications").insert({ user_id: reporterUserId, type: "user_report", title: "신고 접수", content: "신고가 정상적으로 접수되었습니다." });
+    if (notificationError) {
+      console.error("[submit-inquiry] report notification insert failed", notificationError.message);
+    }
   }
   return json({ ok: true, message: "신고가 접수되었습니다." });
 }

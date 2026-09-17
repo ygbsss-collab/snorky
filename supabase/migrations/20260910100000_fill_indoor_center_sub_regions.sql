@@ -1,0 +1,26 @@
+-- Fill recommended sub_region values only for currently NULL center rows.
+UPDATE indoor_diving_centers SET sub_region = '시흥시' WHERE name = '파라다이브35' AND sub_region IS NULL;
+UPDATE indoor_diving_centers SET sub_region = '오산시' WHERE name = '테마 오산 잠수풀' AND sub_region IS NULL;
+UPDATE indoor_diving_centers SET sub_region = '광명시' WHERE name = '뉴서울다이빙풀' AND sub_region IS NULL;
+UPDATE indoor_diving_centers SET sub_region = '안산시' WHERE name = '대부잠수풀' AND sub_region IS NULL;
+UPDATE indoor_diving_centers SET sub_region = '포천시' WHERE name = '포프라자' AND sub_region IS NULL;
+UPDATE indoor_diving_centers SET sub_region = '양주시' WHERE name = '양주에코스포츠센터' AND sub_region IS NULL;
+UPDATE indoor_diving_centers SET sub_region = '시흥시' WHERE name = '웨이브파크 블루홀라군' AND sub_region IS NULL;
+UPDATE indoor_diving_centers SET sub_region = '청주시' WHERE name = '충북학생수영장' AND sub_region IS NULL;
+UPDATE indoor_diving_centers SET sub_region = '강릉시' WHERE name = '강릉 북부수영장' AND sub_region IS NULL;
+UPDATE indoor_diving_centers SET sub_region = '강릉시' WHERE name = '강릉국민체육센터' AND sub_region IS NULL;
+UPDATE indoor_diving_centers SET sub_region = '울진군' WHERE name = '올덴K10잠수풀' AND sub_region IS NULL;
+UPDATE indoor_diving_centers SET sub_region = '칠곡군' WHERE name = '패스나인 다이빙센터' AND sub_region IS NULL;
+UPDATE indoor_diving_centers SET sub_region = '울진군' WHERE name = '울진해양레포츠센터' AND sub_region IS NULL;
+UPDATE indoor_diving_centers SET sub_region = '밀양시' WHERE name = '밀양 아리랑 잠수풀' AND sub_region IS NULL;
+UPDATE indoor_diving_centers SET sub_region = '남구' WHERE name = '문수실내수영장 다이빙풀' AND sub_region IS NULL;
+UPDATE indoor_diving_centers SET sub_region = '동래구' WHERE name = '사직실내수영장 다이빙풀' AND sub_region IS NULL;
+UPDATE indoor_diving_centers SET sub_region = '고성군' WHERE name = '고성해양레포츠아카데미' AND sub_region IS NULL;
+UPDATE indoor_diving_centers SET sub_region = '금정구' WHERE name = '풀식스다이빙풀' AND sub_region IS NULL;
+UPDATE indoor_diving_centers SET sub_region = '부산진구' WHERE name = 'DIT 잠수풀장' AND sub_region IS NULL;
+UPDATE indoor_diving_centers SET sub_region = '익산시' WHERE name = '전북잠수전문학교 익산점' AND sub_region IS NULL;
+UPDATE indoor_diving_centers SET sub_region = '여수시' WHERE name = '여수시청소년해양교육원 잠수풀' AND sub_region IS NULL;
+UPDATE indoor_diving_centers SET sub_region = '군산시' WHERE name = '군산오션팔레트 잠수풀' AND sub_region IS NULL;
+UPDATE indoor_diving_centers SET sub_region = '전주시' WHERE name = '전주완산수영장 다이빙풀' AND sub_region IS NULL;
+UPDATE indoor_diving_centers SET sub_region = '제주시' WHERE name = '다이브자이언트 제주교육센터' AND sub_region IS NULL;
+UPDATE indoor_diving_centers SET sub_region = '아산시' WHERE name = '아산 실내스킨스쿠버 다이빙풀 (배미수영장)' AND sub_region IS NULL;
