@@ -42,7 +42,7 @@
       const now = Math.floor(Date.now() / 1000);
       return typeof payload.user_id === "string" && payload.user_id.length > 0
         && Number.isSafeInteger(payload.iat) && Number.isSafeInteger(payload.exp)
-        && payload.exp > now && payload.iat <= now + 60;
+        && payload.exp > now;
     } catch (_) {
       return false;
     }
@@ -50,23 +50,17 @@
 
   function create(provider, user, snorkySessionToken = null) {
     const normalizedUser = normalizeUser(user);
-    if (String(provider) === "kakao" && !isSessionTokenShape(snorkySessionToken)) {
-      throw new Error("SNORKY session token is required.");
-    }
     if (!normalizedUser) throw new Error("유효한 사용자 정보가 필요합니다.");
     return {
       version: 1,
       provider: String(provider),
       user: normalizedUser,
-      snorkySessionToken: snorkySessionToken ? String(snorkySessionToken) : null,
+      snorkySessionToken: isSessionTokenShape(snorkySessionToken) ? String(snorkySessionToken) : null,
       authenticatedAt: new Date().toISOString(),
     };
   }
 
   function save(session) {
-    if (session?.provider === "kakao" && !isSessionTokenShape(session.snorkySessionToken)) {
-      throw new Error("SNORKY session token is required.");
-    }
     if (!session || session.version !== 1 || !normalizeUser(session.user)) {
       throw new Error("유효한 로그인 세션이 필요합니다.");
     }
@@ -81,11 +75,11 @@
   function get() {
     try {
       const session = JSON.parse(localStorage.getItem(STORAGE_KEY) || "null");
-      if (session?.provider === "kakao" && !isSessionTokenShape(session.snorkySessionToken)) {
-        localStorage.removeItem(STORAGE_KEY);
-        return null;
-      }
       if (!session || session.version !== 1 || !normalizeUser(session.user)) return null;
+      if (session.provider === "kakao" && session.snorkySessionToken && !isSessionTokenShape(session.snorkySessionToken)) {
+        delete session.snorkySessionToken;
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(session));
+      }
       // 기존 세션에 저장되어 있던 토큰이 발견되면 자동 제거
       if ("kakaoAccessToken" in session) {
         delete session.kakaoAccessToken;
