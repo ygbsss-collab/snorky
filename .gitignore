@@ -38,7 +38,8 @@ test_cache_data.json
 # Dev/test pages ? exclude from production
 test-snorky-eval.html
 node_modules/
-twa/
+.gradle/
+build/
 *.keystore
 *.apk
 *.aab
