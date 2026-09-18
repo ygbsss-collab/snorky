@@ -85,7 +85,7 @@ function customPointFromInput(input: any, dbRegions?: RegionRecord[] | null): Sn
   if (!Number.isFinite(lat) || lat < 32 || lat > 39.8 || !Number.isFinite(lng) || lng < 124 || lng > 132) {
     throw new Error("INVALID_CUSTOM_POINT_COORDINATES");
   }
-  if (!region2DepthName || region2DepthName.length > 40) throw new Error("INVALID_CUSTOM_POINT_REGION");
+  if (region2DepthName && region2DepthName.length > 40) throw new Error("INVALID_CUSTOM_POINT_REGION");
 
   const resolved = resolveWarningCodes(region2DepthName, dbRegions);
   return {

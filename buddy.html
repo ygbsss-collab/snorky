@@ -1574,10 +1574,7 @@
           showToast("로그인이 필요합니다.");
           return;
         }
-        if (
-          window.SNORKYTestMode?.TEST_MODE_ALLOW_DUPLICATE_USERS !== true &&
-          String(pendingApplyPost.user_id || "") === curUser
-        ) {
+        if (String(pendingApplyPost.user_id || "") === curUser) {
           showToast("본인이 작성한 공고에는 참가 신청할 수 없습니다.");
           return;
         }
@@ -2086,7 +2083,7 @@
             btnDetailApply.textContent = "신청 마감";
             btnDetailApply.disabled = true;
             btnDetailApply.onclick = null;
-          } else if (isOwnPost && window.SNORKYTestMode?.TEST_MODE_ALLOW_DUPLICATE_USERS !== true) {
+          } else if (isOwnPost) {
             btnDetailApply.textContent = "내가 작성한 공고";
             btnDetailApply.disabled = true;
             btnDetailApply.onclick = null;
@@ -2669,5 +2666,6 @@
   <script async src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" onload="window.dispatchEvent(new Event('snorky:supabase-ready'))"></script>
   <script src="./public/js/supabase-client.js?v=20260820_stitch_v76"></script>
   <script src="./public/js/buddy-community.js"></script>
+  <script src="./public/js/web-push-manager.js"></script>
 </body>
 </html>

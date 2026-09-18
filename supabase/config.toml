@@ -39,3 +39,12 @@ verify_jwt = false
 
 [functions.purge-report-evidence]
 verify_jwt = false
+
+[functions.send-push-notification]
+verify_jwt = false
+
+[functions.register-push-subscription]
+verify_jwt = false
+
+[functions.delete-push-subscription]
+verify_jwt = false

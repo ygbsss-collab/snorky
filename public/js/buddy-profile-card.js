@@ -510,7 +510,7 @@
     const myUserId = sessionUser?.id ? String(sessionUser.id) : "";
     const isGuest = !myUserId;
     const isSelf = Boolean(targetUserId && myUserId && targetUserId === myUserId);
-    const allowActions = !isGuest && (!isSelf || global.SNORKYTestMode?.TEST_MODE_ALLOW_DUPLICATE_USERS === true);
+    const allowActions = !isGuest && !isSelf;
 
     // 1. 상단: 프로필 사진
     const avatar = modal.querySelector("[data-buddy-profile-card-avatar]");

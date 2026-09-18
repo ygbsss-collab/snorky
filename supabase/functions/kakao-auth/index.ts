@@ -67,6 +67,26 @@ async function readJson(response: Response): Promise<Record<string, unknown>> {
   }
 }
 
+function base64UrlEncode(value: string | Uint8Array) {
+  const bytes = typeof value === "string" ? new TextEncoder().encode(value) : value;
+  let binary = "";
+  bytes.forEach((byte) => { binary += String.fromCharCode(byte); });
+  return btoa(binary).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/g, "");
+}
+
+async function issueSnorkySessionToken(userId: string) {
+  const secret = Deno.env.get("SNORKY_SESSION_SECRET") || "";
+  if (!secret) throw new Error("SNORKY_SESSION_SECRET is not configured");
+  const iat = Math.floor(Date.now() / 1000);
+  const exp = iat + 60 * 60 * 24 * 7;
+  const header = base64UrlEncode(JSON.stringify({ alg: "HS256", typ: "JWT" }));
+  const payload = base64UrlEncode(JSON.stringify({ user_id: userId, iat, exp }));
+  const signingInput = `${header}.${payload}`;
+  const key = await crypto.subtle.importKey("raw", new TextEncoder().encode(secret), { name: "HMAC", hash: "SHA-256" }, false, ["sign"]);
+  const signature = await crypto.subtle.sign("HMAC", key, new TextEncoder().encode(signingInput));
+  return `${signingInput}.${base64UrlEncode(new Uint8Array(signature))}`;
+}
+
 Deno.serve(async (request) => {
   const requestOrigin = normalizeOrigin(request.headers.get("Origin"));
   if (request.method === "OPTIONS") {
@@ -181,7 +201,16 @@ Deno.serve(async (request) => {
       ? profile.properties as Record<string, unknown>
       : {};
 
+    let sessionToken: string;
+    try {
+      sessionToken = await issueSnorkySessionToken(String(profile.id));
+    } catch (error) {
+      console.error("[kakao-auth] session token issue failed", error);
+      return json({ message: "SNORKY 로그인 세션을 발급하지 못했습니다." }, 503, requestOrigin);
+    }
+
     return json({
+      snorkySessionToken: sessionToken,
       user: {
         id: String(profile.id),
         nickname: text(kakaoProfile.nickname) || text(properties.nickname) || "카카오 사용자",

@@ -218,29 +218,14 @@
     if (!myUserId || !targetUserId) {
       throw new Error("사용자 정보가 올바르지 않습니다.");
     }
-    await global.SNORKYAuthSession?.requirePostingAccess?.();
     const normMyId = String(myUserId);
     const normTargetId = String(targetUserId);
 
     if (normMyId === normTargetId) {
-      if (!allowDuplicateUsers()) {
-        throw new Error("자기 자신은 프렌즈로 등록할 수 없습니다.");
-      }
-      // TEST 전용 자기 자신 등록 (DB 제약 우회를 위해 세션 기반 가상 상태로 처리)
-      const selfFriends = getTestSelfFriends();
-      if (selfFriends.has(normMyId)) {
-        return { ok: true, alreadyFriend: true, id: `test_self_${normMyId}` };
-      }
-      selfFriends.add(normMyId);
-      setTestSelfFriends(selfFriends);
-
-      if (typeof global.dispatchEvent === "function") {
-        global.dispatchEvent(new CustomEvent("snorky:friends-changed", {
-          detail: { action: "add", targetUserId: normMyId }
-        }));
-      }
-      return { ok: true, id: `test_self_${normMyId}` };
+      throw new Error("본인은 프렌드로 추가할 수 없습니다.");
     }
+
+    await global.SNORKYAuthSession?.requirePostingAccess?.();
 
     const sb = getSupabase();
     if (!sb) throw new Error("데이터베이스 연결에 실패했습니다.");

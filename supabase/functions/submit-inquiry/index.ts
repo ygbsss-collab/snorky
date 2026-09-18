@@ -394,22 +394,6 @@ async function submitUserReport(client: ReturnType<typeof createClient>, input: 
   }
 
   const reportedAt = new Date().toISOString();
-  const notification = await sendUserReportEmail({
-    targetUserId,
-    targetNickname: targetNickname || null,
-    reporterUserId: reporterUserId || null,
-    reporterNickname: reporterNickname || null,
-    reason,
-    details: details || null,
-    buddyPostId,
-    reportedAt,
-  });
-
-  if (notification.status !== "sent") {
-    console.error("[submit-inquiry] user report rejected: email sending failed", notification.error);
-    return json({ ok: false, message: "신고 접수 메일을 발송하지 못했습니다. 잠시 후 다시 시도해 주세요." }, 502);
-  }
-
   const { data: insertedReport, error: insertError } = await client.from("user_reports").insert({
     target_user_id: targetUserId,
     target_nickname: targetNickname || null,
@@ -427,6 +411,25 @@ async function submitUserReport(client: ReturnType<typeof createClient>, input: 
     await client.storage.from("report-evidence").remove(uploadedPaths);
     return json({ ok: false, message: "신고 저장 중 오류가 발생했습니다. 잠시 후 다시 시도해 주세요." }, 500);
   }
+
+  try {
+    const notification = await sendUserReportEmail({
+      targetUserId,
+      targetNickname: targetNickname || null,
+      reporterUserId: reporterUserId || null,
+      reporterNickname: reporterNickname || null,
+      reason,
+      details: details || null,
+      buddyPostId,
+      reportedAt,
+    });
+    if (notification.status !== "sent") {
+      console.warn("[submit-inquiry] user report email failed after report insert", notification.error);
+    }
+  } catch (error) {
+    console.error("[submit-inquiry] user report email request exception after report insert", error);
+  }
+
   if (reporterUserId && insertedReport) {
     const { error: notificationError } = await client.from("user_notifications").insert({ user_id: reporterUserId, type: "user_report", title: "신고 접수", content: "신고가 정상적으로 접수되었습니다." });
     if (notificationError) {

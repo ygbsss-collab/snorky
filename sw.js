@@ -57,6 +57,40 @@ self.addEventListener('activate', event => {
   );
 });
 
+self.addEventListener('push', event => {
+  let payload = {};
+  try {
+    payload = event.data ? event.data.json() : {};
+  } catch (_) {
+    payload = { body: event.data ? event.data.text() : '' };
+  }
+  const title = payload.title || 'SNORKY 알림';
+  const body = payload.body || '';
+  const url = payload.url || './mypage.html';
+  event.waitUntil(self.registration.showNotification(title, {
+    body,
+    icon: './public/images/pwa/icon-192.png',
+    badge: './public/images/pwa/icon-192.png',
+    data: { url }
+  }));
+});
+
+self.addEventListener('notificationclick', event => {
+  event.notification.close();
+  const targetUrl = new URL(event.notification.data?.url || './mypage.html', self.location.origin).href;
+  event.waitUntil((async () => {
+    const clients = await self.clients.matchAll({ type: 'window', includeUncontrolled: true });
+    for (const client of clients) {
+      if ('focus' in client) {
+        await client.focus();
+        if ('navigate' in client && client.url !== targetUrl) await client.navigate(targetUrl);
+        return;
+      }
+    }
+    if (self.clients.openWindow) await self.clients.openWindow(targetUrl);
+  })());
+});
+
 async function networkFirst(request) {
   const cache = await caches.open(CACHE_NAME);
   try {

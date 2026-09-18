@@ -621,6 +621,17 @@ async function cancelUserReportSanctionAdmin(reportId) {
   return result.data;
 }
 
+async function cancelBuddyPostFromReportAdmin(reportId, buddyPostId, reason) {
+  await requireAdmin();
+  const result = await sb().rpc("moderate_buddy_post_admin", {
+    p_report_id: Number(reportId),
+    p_buddy_post_id: Number(buddyPostId),
+    p_reason: reason || null
+  });
+  if (result.error) throw result.error;
+  return result.data;
+}
+
 async function loadUsersAdmin(search = "") {
   await requireAdmin();
   const result = await sb().rpc("get_admin_users", { p_search: search || null });
@@ -674,6 +685,7 @@ window.SNORKYAdmin = {
   getReportEvidenceUrlAdmin,
   moderateUserReportAdmin,
   cancelUserReportSanctionAdmin,
+  cancelBuddyPostFromReportAdmin,
   loadUsersAdmin,
   moderateUserAdmin,loadCommunityConfig,saveCommunityConfig
 };

@@ -380,6 +380,19 @@
     }
   }
 
+  async function cancelReportedBuddyPost(reportId, buddyPostId) {
+    if (!reportId || !buddyPostId || !global.confirm("신고된 버디공고를 취소하시겠습니까? 관련 참가 신청도 취소됩니다.")) return;
+    const reason = el("reportActionReason")?.value.trim() || "게시글 신고에 따른 관리자 취소";
+    try {
+      await global.SNORKYAdmin.cancelBuddyPostFromReportAdmin(reportId, buddyPostId, reason);
+      setMessage("reportManagerMessage", "신고된 버디공고를 취소했습니다.");
+      await loadReportRows();
+      showReportDetail(reportId);
+    } catch (error) {
+      setMessage("reportManagerMessage", error?.message || "게시글 취소에 실패했습니다.", true);
+    }
+  }
+
   async function showReportDetail(reportId) {
     const row = reportRows.find((item) => Number(item.id) === Number(reportId));
     const detail = el("reportManagerDetail");
@@ -426,6 +439,16 @@
         <div class="admin-sanction-presets">${Object.entries(ACTION_LABELS).map(([value, label]) => `<button type="button" data-sanction-preset="${value}">${label}</button>`).join("")}</div>
         <label class="admin-management-field">처리 메모<textarea id="reportActionReason" maxlength="1000" placeholder="제재 사유 또는 관리자 메모"></textarea></label>
       </div>`;
+    if (row.buddy_post_id) {
+      const cancelPostButton = document.createElement("button");
+      cancelPostButton.type = "button";
+      cancelPostButton.className = "admin-management-danger";
+      cancelPostButton.textContent = relatedPost?.status === "CANCELED" ? "게시글 취소 완료" : "게시글 취소";
+      cancelPostButton.disabled = relatedPost?.status === "CANCELED";
+      cancelPostButton.dataset.cancelReportedPost = "true";
+      detail.querySelector(".admin-management-control-grid")?.appendChild(cancelPostButton);
+      cancelPostButton.addEventListener("click", () => cancelReportedBuddyPost(row.id, row.buddy_post_id));
+    }
     if (imagePaths.length) {
       const gallery = detail.querySelector("[data-report-evidence-gallery]");
       try {
