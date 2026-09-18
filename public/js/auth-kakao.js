@@ -77,7 +77,7 @@
     }
     return {
       user: payload.user,
-      sessionToken: payload.snorkySessionToken || null,
+      kakaoAccessToken: payload.kakaoAccessToken || null,
     };
   }
 
@@ -114,7 +114,7 @@
     clearError();
     try {
       const authResult = await exchangeCode(code, getRedirectUri());
-      const session = global.SNORKYAuthSession.create("kakao", authResult.user, authResult.sessionToken);
+      const session = global.SNORKYAuthSession.create("kakao", authResult.user);
       global.SNORKYAuthSession.save(session);
       queueProfileEnsure(session);
       cleanCallbackUrl();

@@ -32,30 +32,13 @@
     };
   }
 
-  function isSessionTokenShape(token) {
-    if (typeof token !== "string") return false;
-    const parts = token.split(".");
-    if (parts.length !== 3) return false;
-    try {
-      const encoded = parts[1].replace(/-/g, "+").replace(/_/g, "/");
-      const payload = JSON.parse(atob(encoded + "=".repeat((4 - (encoded.length % 4)) % 4)));
-      const now = Math.floor(Date.now() / 1000);
-      return typeof payload.user_id === "string" && payload.user_id.length > 0
-        && Number.isSafeInteger(payload.iat) && Number.isSafeInteger(payload.exp)
-        && payload.exp > now;
-    } catch (_) {
-      return false;
-    }
-  }
-
-  function create(provider, user, snorkySessionToken = null) {
+  function create(provider, user) {
     const normalizedUser = normalizeUser(user);
     if (!normalizedUser) throw new Error("유효한 사용자 정보가 필요합니다.");
     return {
       version: 1,
       provider: String(provider),
       user: normalizedUser,
-      snorkySessionToken: isSessionTokenShape(snorkySessionToken) ? String(snorkySessionToken) : null,
       authenticatedAt: new Date().toISOString(),
     };
   }
@@ -76,10 +59,6 @@
     try {
       const session = JSON.parse(localStorage.getItem(STORAGE_KEY) || "null");
       if (!session || session.version !== 1 || !normalizeUser(session.user)) return null;
-      if (session.provider === "kakao" && session.snorkySessionToken && !isSessionTokenShape(session.snorkySessionToken)) {
-        delete session.snorkySessionToken;
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(session));
-      }
       // 기존 세션에 저장되어 있던 토큰이 발견되면 자동 제거
       if ("kakaoAccessToken" in session) {
         delete session.kakaoAccessToken;
