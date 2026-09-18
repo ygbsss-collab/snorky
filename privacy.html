@@ -134,6 +134,14 @@
             </div>
           </div>
 
+            <div class="privacy-data-card">
+              <strong class="privacy-data-card-title">Web Push 알림</strong>
+              <div class="privacy-data-row">
+                <span><strong>수집 항목:</strong> Push 구독 endpoint, p256dh, auth, user_agent 및 연결된 user_id</span>
+                <span><strong>수집 방법:</strong> 이용자가 알림 권한을 허용하고 Web Push 구독을 등록할 때 처리</span>
+              </div>
+            </div>
+
           <div class="privacy-data-card">
             <strong class="privacy-data-card-title">자격 인증</strong>
             <div class="privacy-data-row">
@@ -161,6 +169,7 @@
           <li><strong>안전한 서비스 운영:</strong> 신고·차단·제재 처리, 허위 이용 및 서비스 운영 방해 대응</li>
           <li><strong>위치기반 기능:</strong> 현재 위치 기준 추천 및 거리 계산</li>
           <li><strong>문의 응대:</strong> 포인트 정보 제보 및 서비스 문의 처리</li>
+          <li><strong>서비스 Push 알림:</strong> 버디 신청·승인·일정 변경, 중요 공지 등 서비스 알림을 Web Push 및 서비스 내 알림으로 제공</li>
         </ul>
       </section>
 
@@ -179,7 +188,7 @@
         <h3 class="privacy-section-title">4. 회원탈퇴 및 파기 범위</h3>
         <p class="privacy-section-body">회원은 account-delete.html에서 계정 삭제를 요청할 수 있습니다. 현재 탈퇴 처리에서 확인되는 삭제 대상은 다음과 같습니다.</p>
         <ul>
-          <li><strong>삭제:</strong> user_profiles 레코드, avatars 스토리지의 사용자 아바타, buddy_posts, buddy_applications, certification_requests 및 이용자 기기의 관련 로컬 저장 데이터를 삭제합니다.</li>
+          <li><strong>삭제:</strong> user_profiles 레코드, avatars 스토리지의 사용자 아바타, buddy_posts, buddy_applications, certification_requests, user_push_subscriptions 및 이용자 기기의 관련 로컬 저장 데이터를 삭제합니다.</li>
           <li><strong>보존 가능:</strong> user_reports 및 user_moderation_actions는 신고 처리, 부정 이용 방지 및 분쟁 대응을 위해 보존할 수 있습니다.</li>
         </ul>
       </section>
@@ -200,7 +209,7 @@
             <strong class="privacy-data-card-title">Supabase Inc.</strong>
             <div class="privacy-data-row">
               <span><strong>처리 목적:</strong> 데이터베이스, 인증 연동 및 스토리지 운영</span>
-              <span><strong>처리 범위:</strong> user_profiles, buddy_posts, buddy_applications, certification_requests, user_reports, user_notifications 및 avatars·certification-photos·report-evidence 저장정보</span>
+              <span><strong>처리 범위:</strong> user_profiles, buddy_posts, buddy_applications, certification_requests, user_reports, user_notifications, user_push_subscriptions 및 avatars·certification-photos·report-evidence 저장정보</span>
             </div>
           </div>
 
@@ -237,7 +246,7 @@
           <li><strong>avatars:</strong> 프로필 이미지 저장에 사용되며, 서비스 화면에서 표시될 수 있는 공개 스토리지입니다.</li>
           <li><strong>certification-photos:</strong> 자격증 증빙 사진 저장에 사용되며, 비공개 스토리지로 관리자 심사에만 사용되고 심사 완료 후 삭제됩니다.</li>
           <li><strong>report-evidence:</strong> 신고 증거 이미지 저장에 사용되며, 비공개 스토리지로 운영자 검토 목적에 한해 접근됩니다. 신고 처리 완료 후 6개월간 보관한 뒤 자동 삭제합니다.</li>
-          <li><strong>인앱 알림:</strong> user_notifications 기반의 서비스 내 알림만 사용합니다. FCM/APNs Push 및 기기 토큰은 수집하지 않습니다.</li>
+          <li><strong>서비스 알림:</strong> user_notifications 기반의 서비스 내 알림과 이용자가 권한을 허용한 경우 Web Push 알림을 제공합니다. 이용자는 앱 또는 기기 설정에서 Web Push 수신을 철회할 수 있습니다.</li>
         </ul>
       </section>
 

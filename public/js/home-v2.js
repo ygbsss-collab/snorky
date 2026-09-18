@@ -32,7 +32,9 @@ function showInitialEntryChoice(){
   });
 }
 
-showInitialEntryChoice();
+const initialIntro=document.getElementById("snorkyIntro");
+if(initialIntro)document.addEventListener("snorky:intro-ended",showInitialEntryChoice,{once:true});
+else showInitialEntryChoice();
 const homeFilterRow=section.querySelector(".home-filter-row");
 const homeSearchButton=section.querySelector("#homeSearchButton");
 if(homeFilterRow&&homeSearchButton)homeFilterRow.appendChild(homeSearchButton);
