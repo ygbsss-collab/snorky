@@ -58,6 +58,7 @@
       version: 1,
       provider: String(provider),
       user: normalizedUser,
+      snorkySessionToken: snorkySessionToken ? String(snorkySessionToken) : null,
       authenticatedAt: new Date().toISOString(),
     };
   }
