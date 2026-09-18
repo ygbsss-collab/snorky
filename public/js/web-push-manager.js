@@ -4,8 +4,7 @@
   window.SNORKY_VAPID_PUBLIC_KEY = "BFMHoN18pyhY8yFyHSTWEYkvmI5wdh5YJfQy83gTgx89GNkfQcbd7no7D7brsjcgErnHIT68kUzZBbmRxlqZkgY";
   const VAPID_PUBLIC_KEY = window.SNORKY_VAPID_PUBLIC_KEY || "";
 
-  function getSession() { return window.SNORKYAuthSession?.get?.() || null; }
-  function getSessionToken() { return getSession()?.snorkySessionToken ? String(getSession().snorkySessionToken) : null; }
+  function getSessionToken() { try { return localStorage.getItem("snorky_push_token_v1") || null; } catch (_) { return null; } }
 
   function urlBase64ToUint8Array(value) {
     const padding = "=".repeat((4 - (value.length % 4)) % 4);

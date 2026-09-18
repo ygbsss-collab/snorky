@@ -2076,7 +2076,15 @@ document.getElementById("homeInquiryTrigger")?.addEventListener("click",()=>{
   else window.dispatchEvent(new Event("snorky:open-inquiry"));
 });
 
-document.getElementById("homeFooterLogoutBtn")?.addEventListener("click",()=>{
+document.getElementById("homeFooterLogoutBtn")?.addEventListener("click",async()=>{
+  try{
+    if(window.SNORKYWebPush?.removeSubscription){
+      const reg=await navigator.serviceWorker?.ready.catch(()=>null);
+      const sub=reg?await reg.pushManager?.getSubscription().catch(()=>null):null;
+      if(sub)await window.SNORKYWebPush.removeSubscription(sub).catch(e=>console.warn("[SNORKY] push 삭제 실패(무시):",e));
+    }
+  }catch(_){}
+  try{localStorage.removeItem("snorky_push_token_v1");}catch(_){}
   try{
     if(window.SNORKYAuthSession?.clear){
       window.SNORKYAuthSession.clear();

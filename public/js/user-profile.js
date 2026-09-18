@@ -536,7 +536,17 @@
       localStorage.removeItem("snorky_diving_schedules");
     } catch (_) {}
 
-    // 5. 로그인 세션 삭제
+    // 5. Push subscription 삭제 및 Push token 제거
+    try {
+      if (window.SNORKYWebPush?.removeSubscription) {
+        const reg = await navigator.serviceWorker?.ready.catch(() => null);
+        const sub = reg ? await reg.pushManager?.getSubscription().catch(() => null) : null;
+        if (sub) await window.SNORKYWebPush.removeSubscription(sub).catch((e) => console.warn("[SNORKY] push 삭제 실패(무시):", e));
+      }
+    } catch (_) {}
+    try { localStorage.removeItem("snorky_push_token_v1"); } catch (_) {}
+
+    // 6. 로그인 세션 삭제
     try {
       if (window.SNORKYAuthSession?.clear) {
         window.SNORKYAuthSession.clear();

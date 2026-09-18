@@ -1342,7 +1342,15 @@
       // 로그아웃 처리
       const logoutBtn = document.getElementById("logoutBtn");
       if (logoutBtn) {
-        logoutBtn.addEventListener("click", function () {
+        logoutBtn.addEventListener("click", async function () {
+          try {
+            if (window.SNORKYWebPush?.removeSubscription) {
+              const reg = await navigator.serviceWorker?.ready.catch(() => null);
+              const sub = reg ? await reg.pushManager?.getSubscription().catch(() => null) : null;
+              if (sub) await window.SNORKYWebPush.removeSubscription(sub).catch((e) => console.warn("[SNORKY] push 삭제 실패(무시):", e));
+            }
+          } catch (_) {}
+          try { localStorage.removeItem("snorky_push_token_v1"); } catch (_) {}
           try {
             if (window.SNORKYAuthSession?.clear) {
               window.SNORKYAuthSession.clear();

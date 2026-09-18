@@ -77,7 +77,7 @@
     }
     return {
       user: payload.user,
-      kakaoAccessToken: payload.kakaoAccessToken || null,
+      pushToken: payload.snorkySessionToken || null,
     };
   }
 
@@ -116,6 +116,9 @@
       const authResult = await exchangeCode(code, getRedirectUri());
       const session = global.SNORKYAuthSession.create("kakao", authResult.user);
       global.SNORKYAuthSession.save(session);
+      if (authResult.pushToken) {
+        try { localStorage.setItem("snorky_push_token_v1", authResult.pushToken); } catch (_) {}
+      }
       queueProfileEnsure(session);
       cleanCallbackUrl();
       global.location.replace(new URL("./index.html?fromLogin=1", global.location.href));

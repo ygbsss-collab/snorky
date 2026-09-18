@@ -1,5 +1,5 @@
 const CACHE_PREFIX = 'snorky-static-';
-const CACHE_NAME = `${CACHE_PREFIX}v119`;
+const CACHE_NAME = `${CACHE_PREFIX}v120`;
 const APP_SHELL = [
   './',
   './index.html',
