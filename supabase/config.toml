@@ -48,3 +48,6 @@ verify_jwt = false
 
 [functions.delete-push-subscription]
 verify_jwt = false
+
+[functions.update-user-profile]
+verify_jwt = false

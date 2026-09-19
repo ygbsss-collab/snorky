@@ -20,6 +20,56 @@
     return cleaned || null;
   }
 
+  function profileUpdateError(code, message) {
+    const error = new Error(message || code);
+    error.code = code;
+    return error;
+  }
+
+  function profileErrorCode(error, fallback) {
+    return typeof error?.code === "string" ? error.code : fallback;
+  }
+
+  async function updateProfileViaFunction(payload) {
+    let token = null;
+    try { token = localStorage.getItem("snorky_push_token_v1"); } catch (_) {}
+    if (!token) {
+      throw profileUpdateError("INVALID_SESSION_TOKEN", "로그인 세션이 만료되었습니다. 다시 로그인해 주세요.");
+    }
+
+    const config = global.SNORKY_SUPABASE_CONFIG;
+    if (!config?.url || !config?.publishableKey) {
+      throw profileUpdateError("PROFILE_UPDATE_UNAVAILABLE", "프로필 저장 설정을 불러오지 못했습니다.");
+    }
+
+    let response;
+    try {
+      response = await fetch(`${config.url.replace(/\/$/, "")}/functions/v1/update-user-profile`, {
+        method: "POST",
+        headers: {
+          apikey: config.publishableKey,
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(payload),
+      });
+    } catch (_) {
+      throw profileUpdateError("PROFILE_UPDATE_UNAVAILABLE", "프로필을 저장하지 못했습니다. 잠시 후 다시 시도해 주세요.");
+    }
+
+    const result = await response.json().catch(() => ({}));
+    if (response.status === 401 || result?.error === "INVALID_SESSION_TOKEN") {
+      throw profileUpdateError("INVALID_SESSION_TOKEN", "로그인 세션이 만료되었습니다. 다시 로그인해 주세요.");
+    }
+    if (!response.ok || result?.ok === false) {
+      if (result?.error === "NICKNAME_ALREADY_IN_USE") {
+        throw profileUpdateError("NICKNAME_ALREADY_IN_USE", "이미 사용 중인 닉네임입니다.");
+      }
+      throw profileUpdateError(result?.error || "PROFILE_UPDATE_FAILED", "프로필 저장에 실패했습니다.");
+    }
+    return result.profile || null;
+  }
+
   function normalizeUserProfile(source) {
     const root = source || {};
     const user = root.user || root;
@@ -187,40 +237,36 @@
   }
 
   async function ensureProfileDefaults(provider, providerUserId, sourceUser) {
+    const normalizedProvider = provider || "kakao";
+    if (normalizedProvider !== "kakao") return null;
     const sb = getSupabase();
     if (!sb || !providerUserId) return null;
-    const normalizedProvider = provider || "kakao";
     const normalizedUserId = String(providerUserId);
     const sessionUser = sourceUser || window.SNORKYAuthSession?.get?.()?.user || {};
     const loginNickname = String(sessionUser.nickname || "").trim() || null;
     const loginAvatarUrl = String(sessionUser.profileImageUrl || "").trim() || null;
+    let initialNickname = null;
+    try { initialNickname = validateNickname(loginNickname) || null; } catch (_) {}
     const { data: existing, error: selectError } = await sb.from("user_profiles")
       .select("custom_nickname, custom_avatar_url, avatar_type")
       .eq("provider", normalizedProvider).eq("provider_user_id", normalizedUserId).maybeSingle();
     if (selectError) throw selectError;
     if (!existing) {
-      const { error } = await sb.from("user_profiles").upsert({
-        provider: normalizedProvider,
-        provider_user_id: normalizedUserId,
-        custom_nickname: loginNickname,
+      await updateProfileViaFunction({
+        custom_nickname: initialNickname,
         custom_avatar_url: loginAvatarUrl,
         avatar_type: "default",
-        updated_at: new Date().toISOString()
-      }, { onConflict: "provider,provider_user_id" });
-      if (error) throw error;
+      });
       return null;
     }
     const updates = {};
-    if (!String(existing.custom_nickname || "").trim() && loginNickname) updates.custom_nickname = loginNickname;
+    if (!String(existing.custom_nickname || "").trim() && initialNickname) updates.custom_nickname = initialNickname;
     if (existing.avatar_type !== "none" && !String(existing.custom_avatar_url || "").trim() && loginAvatarUrl) {
       updates.custom_avatar_url = loginAvatarUrl;
       if (!existing.avatar_type) updates.avatar_type = "default";
     }
     if (Object.keys(updates).length) {
-      updates.updated_at = new Date().toISOString();
-      const { error } = await sb.from("user_profiles").update(updates)
-        .eq("provider", normalizedProvider).eq("provider_user_id", normalizedUserId);
-      if (error) throw error;
+      await updateProfileViaFunction(updates);
     }
     return { ...existing, ...updates };
   }
@@ -265,7 +311,11 @@
     const activeSession = session || window.SNORKYAuthSession?.get?.();
     if (!activeSession?.user?.id) return null;
     if (!getSupabase()) throw new Error("Supabase client is not ready.");
-    await ensureProfileDefaults(activeSession.provider || "kakao", activeSession.user.id, activeSession.user);
+    try {
+      await ensureProfileDefaults(activeSession.provider || "kakao", activeSession.user.id, activeSession.user);
+    } catch (error) {
+      console.warn("[SNORKY Profile] profile ensure failed", { code: profileErrorCode(error, "PROFILE_ENSURE_FAILED") });
+    }
     profileCache.delete(getProfileCacheKey(activeSession.provider || "kakao", activeSession.user.id));
     return getUserProfile(activeSession.user.id, {
       provider: activeSession.provider || "kakao",
@@ -433,16 +483,17 @@
       updated_at: new Date().toISOString(),
     };
 
-    const { error: upsertError } = await sb
-      .from("user_profiles")
-      .upsert(payload, { onConflict: "provider,provider_user_id" });
-
-    if (upsertError) {
-      if (upsertError.code === "23505") {
-        throw new Error("이미 사용 중인 닉네임입니다.");
-      }
-      throw new Error(`프로필 저장 실패: ${upsertError.message}`);
-    }
+    await updateProfileViaFunction({
+      custom_nickname: payload.custom_nickname,
+      custom_avatar_url: payload.custom_avatar_url,
+      avatar_type: payload.avatar_type,
+      aida_level: payload.aida_level,
+      gender: payload.gender,
+      age_group: payload.age_group,
+      activity_region: payload.activity_region,
+      activity_depth: payload.activity_depth,
+      bio: payload.bio,
+    });
 
     // 로컬 세션 동기화
     window.SNORKYAuthSession?.updateProfile({
@@ -587,6 +638,7 @@
     const session = window.SNORKYAuthSession?.get?.();
     if (!session?.user?.id || !getSupabase()) return;
     try {
+      await ensureProfileDefaults(session.provider || "kakao", session.user.id, session.user);
       await ensureUserProfile(session);
       localStorage.removeItem(PROFILE_ENSURE_PENDING_KEY);
     } catch (error) {

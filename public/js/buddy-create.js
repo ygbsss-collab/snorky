@@ -4,6 +4,49 @@
   // 1. 세션 확인
   const session = window.SNORKYAuthSession?.get?.();
   const userId = session?.user?.id ? String(session.user.id) : null;
+
+  function profileUpdateError(code, message) {
+    const error = new Error(message || code);
+    error.code = code;
+    return error;
+  }
+
+  async function updateProfileViaFunction(payload) {
+    let token = null;
+    try { token = localStorage.getItem("snorky_push_token_v1"); } catch (_) {}
+    if (!token) {
+      throw profileUpdateError("INVALID_SESSION_TOKEN", "로그인 세션이 만료되었습니다. 다시 로그인해 주세요.");
+    }
+
+    const config = window.SNORKY_SUPABASE_CONFIG;
+    if (!config?.url || !config?.publishableKey) {
+      throw profileUpdateError("PROFILE_UPDATE_UNAVAILABLE", "프로필 저장 설정을 불러오지 못했습니다.");
+    }
+
+    let response;
+    try {
+      response = await fetch(`${config.url.replace(/\/$/, "")}/functions/v1/update-user-profile`, {
+        method: "POST",
+        headers: {
+          apikey: config.publishableKey,
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(payload),
+      });
+    } catch (_) {
+      throw profileUpdateError("PROFILE_UPDATE_UNAVAILABLE", "프로필을 저장하지 못했습니다. 잠시 후 다시 시도해 주세요.");
+    }
+
+    const result = await response.json().catch(() => ({}));
+    if (response.status === 401 || result?.error === "INVALID_SESSION_TOKEN") {
+      throw profileUpdateError("INVALID_SESSION_TOKEN", "로그인 세션이 만료되었습니다. 다시 로그인해 주세요.");
+    }
+    if (!response.ok || result?.ok === false) {
+      throw profileUpdateError(result?.error || "PROFILE_UPDATE_FAILED", "프로필 저장에 실패했습니다.");
+    }
+  }
+
   async function getCurrentUserProfile() {
     if (!userId || !window.SNORKYUserProfile?.getUserProfile) return Promise.resolve(null);
     try {
@@ -809,7 +852,7 @@
         dispatchBuddyPostAlertNotifications(sb, { ...postPayload, id: targetPostId }).catch(e => console.warn("[BuddyCreate] Alert dispatch error:", e));
       }
 
-      // 프로필 정보 동기화 (user_profiles 테이블에 작성자의 닉네임/아바타가 없으면 자동 upsert)
+      // 프로필 정보 동기화 (닉네임/아바타가 없으면 서버 검증 경로로 작성)
       try {
         const myNick = session?.user?.customNickname || null;
         const myAvatar = session?.user?.customAvatarUrl || session?.user?.profileImageUrl || null;
@@ -822,16 +865,16 @@
           .maybeSingle();
 
         if (!existingProf || (!existingProf.custom_nickname && myNick)) {
-          await sb.from("user_profiles").upsert({
-            provider: session?.provider || "kakao",
-            provider_user_id: String(userId),
+          await updateProfileViaFunction({
             custom_nickname: existingProf?.custom_nickname || myNick,
             custom_avatar_url: existingProf?.custom_avatar_url || myAvatar,
             avatar_type: myType,
-            updated_at: new Date().toISOString(),
-          }, { onConflict: "provider,provider_user_id" });
+          });
         }
-      } catch (_) {}
+      } catch (error) {
+        const code = typeof error?.code === "string" ? error.code : "PROFILE_SYNC_FAILED";
+        console.warn("[BuddyCreate] profile sync failed", { code });
+      }
 
       // 내 다이빙 캘린더 추가 (addToCalendar === true)
       if (validatedFormPayload.addToCalendar && targetPostId) {
