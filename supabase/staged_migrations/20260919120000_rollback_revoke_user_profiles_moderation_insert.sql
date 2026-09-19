@@ -1,0 +1,42 @@
+grant insert (
+  activity_depth,
+  activity_region,
+  age_group,
+  aida_level,
+  avatar_type,
+  bio,
+  banned,
+  certification_number,
+  certification_organization,
+  certification_status,
+  created_at,
+  custom_avatar_url,
+  custom_nickname,
+  gender,
+  id,
+  provider,
+  provider_user_id,
+  suspended_until,
+  updated_at
+) on public.user_profiles to anon;
+
+grant insert (
+  activity_depth,
+  activity_region,
+  age_group,
+  aida_level,
+  avatar_type,
+  bio,
+  certification_number,
+  certification_organization,
+  certification_status,
+  created_at,
+  custom_avatar_url,
+  custom_nickname,
+  gender,
+  id,
+  provider,
+  provider_user_id,
+  suspended_until,
+  updated_at
+) on public.user_profiles to authenticated;
