@@ -123,6 +123,7 @@
       lng: row.lng,
       isActive: row.is_active === true,
       maxDepth: row.max_depth ? Number(row.max_depth) : null,
+      depthValues: row.depth_values || "",
       hasFreediving: Boolean(row.has_freediving),
       hasScuba: Boolean(row.has_scuba),
       hasParking: Boolean(row.has_parking),
@@ -150,6 +151,29 @@
       sortOrder: row.sort_order || 0,
       images: []
     };
+  }
+
+  function formatDepthSummary(depthValues, maxDepth) {
+    let values = depthValues;
+    if (typeof values === "string") {
+      const text = values.trim();
+      if (text) {
+        try {
+          values = JSON.parse(text);
+        } catch (_) {
+          values = text.replace(/^\[|\]$/g, "").split(",");
+        }
+      }
+    }
+
+    const depths = (Array.isArray(values) ? values : [])
+      .map((value) => typeof value === "number" ? value : Number(String(value).trim()))
+      .filter((value) => Number.isFinite(value));
+    const formatDepth = (value) => Number.isInteger(value) ? String(value) : String(value);
+
+    if (depths.length >= 2) return `${depths.map(formatDepth).join(" · ")}m`;
+    if (depths.length === 1) return `최대 ${formatDepth(depths[0])}m`;
+    return maxDepth ? `최대 ${maxDepth}m` : "-";
   }
 
   function resolveCenterImageUrl(sb, imgPath, defaultUrl = "") {
@@ -1109,73 +1133,52 @@
     if (regionEl) regionEl.textContent = `${center.region} ${center.subRegion}`;
     if (statusEl) statusEl.textContent = center.status || "운영중";
 
-    // 2. 상단 요약 탭 4개 (운영시간, 휴무일, 버디조건, 최대수심)
-    const tabHoursEl = document.getElementById("modalTabHours");
-    const tabHolidayEl = document.getElementById("modalTabHoliday");
-    const tabBuddyEl = document.getElementById("modalTabBuddy");
-    const tabDepthEl = document.getElementById("modalTabDepth");
+    // 2. 상단 요약 4개 (운영시간, 휴무일, 버디조건, 수심)
+    const summaryHoursEl = document.getElementById("modalSummaryHours");
+    const summaryHolidayEl = document.getElementById("modalSummaryHoliday");
+    const summaryBuddyEl = document.getElementById("modalSummaryBuddy");
+    const summaryDepthEl = document.getElementById("modalSummaryDepth");
 
-    if (tabHoursEl) {
+    if (summaryHoursEl) {
       const hourMatch = (center.businessHours || "").match(/\d{2}:\d{2}\s*~\s*\d{2}:\d{2}/);
-      tabHoursEl.textContent = hourMatch ? hourMatch[0] : (center.businessHours || "-");
+      summaryHoursEl.textContent = hourMatch ? hourMatch[0] : (center.businessHours || "-");
     }
-    if (tabHolidayEl) tabHolidayEl.textContent = center.holiday || "-";
-    if (tabBuddyEl) {
-      tabBuddyEl.textContent = center.buddyCondition ? (center.buddyCondition.includes("2인") ? "2인 이상 필수" : "버디 필수 동반") : "버디 필수";
+    if (summaryHolidayEl) summaryHolidayEl.textContent = center.holiday || "-";
+    if (summaryBuddyEl) {
+      summaryBuddyEl.textContent = center.buddyCondition ? (center.buddyCondition.includes("2인") ? "2인 이상 필수" : "버디 필수 동반") : "버디 필수";
     }
-    if (tabDepthEl) tabDepthEl.textContent = center.maxDepth ? `최대 ${center.maxDepth}m` : "-";
+    if (summaryDepthEl) summaryDepthEl.textContent = formatDepthSummary(center.depthValues, center.maxDepth);
 
-    // 3. 기본 핵심 운영/위치 정보 (중복 항목 제거)
-    const hoursEl = document.getElementById("modalHours");
-    const holidayEl = document.getElementById("modalHoliday");
+    // 3. 기본 핵심 운영/위치 정보
+    const weekdayHoursEl = document.getElementById("modalWeekdayHours");
+    const holidayDetailEl = document.getElementById("modalHolidayDetail");
     const addressEl = document.getElementById("modalAddress");
-    const parkingDetailEl = document.getElementById("modalParkingDetail");
-    const phoneEl = document.getElementById("modalPhone");
-    const homepageLinkEl = document.getElementById("modalHomepageLink");
+    const parkingInfoEl = document.getElementById("modalParkingInfo");
 
-    if (hoursEl) hoursEl.textContent = center.businessHours || "-";
-    if (holidayEl) holidayEl.textContent = center.holiday || "-";
+    if (weekdayHoursEl) weekdayHoursEl.textContent = center.businessHours || "-";
+    if (holidayDetailEl) holidayDetailEl.textContent = center.holiday || "-";
     if (addressEl) addressEl.textContent = center.address || "-";
-    if (parkingDetailEl) parkingDetailEl.textContent = center.parkingInfo || "주차 지원";
-    if (phoneEl) phoneEl.textContent = center.phone || "-";
-
-    if (homepageLinkEl) {
-      if (center.homepage) {
-        homepageLinkEl.href = center.homepage;
-        homepageLinkEl.textContent = center.homepage;
-        homepageLinkEl.style.display = "inline";
-      } else {
-        homepageLinkEl.style.display = "none";
-      }
-    }
+    if (parkingInfoEl) parkingInfoEl.textContent = center.parkingInfo || (center.hasParking ? "주차 가능" : "-");
 
     // 4. 상세정보 1: 시설 특징 (더보기)
-    const featureShortEl = document.getElementById("modalFeatureShort");
     const buddyDetailEl = document.getElementById("modalBuddyDetail");
-    const featureFullEl = document.getElementById("modalFeatureFull");
 
-    if (featureShortEl) featureShortEl.textContent = center.featureShort || center.description || "-";
     if (buddyDetailEl) buddyDetailEl.textContent = center.buddyCondition || "2인 이상 버디 필수 동반 (자격증 소지자)";
-    if (featureFullEl) featureFullEl.textContent = center.featureFull || center.description || "-";
 
-    // 5. 상세정보 2: 시설 정보 & 풀규격 (더보기)
-    const facilityShortEl = document.getElementById("modalFacilityShort");
+    // 5. 상세정보 2: 시설 정보 & 풀규격
+    const introEl = document.getElementById("modalIntro");
     const poolSpecsEl = document.getElementById("modalPoolSpecs");
     const poolTempEl = document.getElementById("modalPoolTemp");
-    const facilitiesFullEl = document.getElementById("modalFacilitiesFull");
 
-    if (facilityShortEl) facilityShortEl.textContent = center.facilityShort || center.facilities || "-";
+    if (introEl) introEl.textContent = center.featureFull || center.description || center.featureShort || center.facilities || "-";
     if (poolSpecsEl) poolSpecsEl.textContent = center.poolSpecs || "다이빙 전용 플랫폼 및 수심 풀";
     if (poolTempEl) poolTempEl.textContent = center.poolTemp || "사계절 항온 유지";
-    if (facilitiesFullEl) facilitiesFullEl.textContent = center.facilities || "-";
 
     // 6. 상세정보 3: 이용요금 & 예약안내 (더보기)
-    const priceShortEl = document.getElementById("modalPriceShort");
     const priceFullEl = document.getElementById("modalPriceFull");
     const rentalInfoEl = document.getElementById("modalRentalInfo");
     const reservationInfoEl = document.getElementById("modalReservationInfo");
 
-    if (priceShortEl) priceShortEl.textContent = center.priceShort || center.priceInfo || "-";
     if (priceFullEl) priceFullEl.textContent = center.priceFull || center.priceInfo || "-";
     if (rentalInfoEl) rentalInfoEl.textContent = center.rentalInfo || "스노클, 마스크, 슈트, 핀 렌탈 지원";
     if (reservationInfoEl) reservationInfoEl.textContent = center.reservationInfo || "사전 예약제 운영";
