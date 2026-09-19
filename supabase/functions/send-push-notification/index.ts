@@ -19,6 +19,21 @@ function authorized(request: Request): boolean {
   return Boolean(expected && request.headers.get("x-push-internal-token") === expected);
 }
 
+function safeLinkUrl(linkUrl: unknown, notificationId: number): string {
+  if (linkUrl === null) return "./mypage.html";
+  if (
+    typeof linkUrl === "string"
+    && linkUrl.length <= 300
+    && /^\.\/[A-Za-z0-9._~%/?&=#+-]*$/.test(linkUrl)
+    && !linkUrl.includes("//")
+  ) {
+    return linkUrl;
+  }
+
+  console.error("[send-push-notification] unsafe notification link URL", { notificationId });
+  return "./mypage.html";
+}
+
 Deno.serve(async (request) => {
   if (request.method === "OPTIONS") return new Response("ok", { headers: cors });
   if (request.method !== "POST") return json({ ok: false, error: "METHOD_NOT_ALLOWED" }, 405);
@@ -39,6 +54,8 @@ Deno.serve(async (request) => {
     if (subscriptionError) throw subscriptionError;
     if (!notification || !subscriptions?.length) return json({ ok: true, sent: 0, removed: 0 });
 
+    const linkUrl = safeLinkUrl(notification.link_url, notification.id);
+
     const vapidPublicKey = env("VAPID_PUBLIC_KEY");
     const vapidPrivateKey = env("VAPID_PRIVATE_KEY");
     const vapidSubject = env("VAPID_SUBJECT");
@@ -52,7 +69,7 @@ Deno.serve(async (request) => {
         await webpush.sendNotification({ endpoint: subscription.endpoint, keys: { p256dh: subscription.p256dh, auth: subscription.auth } }, JSON.stringify({
           title: notification.title,
           body: notification.content,
-          url: notification.link_url || "./mypage.html",
+          url: linkUrl,
         }));
         sent += 1;
       } catch (error: any) {
