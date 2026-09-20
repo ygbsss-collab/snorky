@@ -180,28 +180,47 @@
         <ul>
           <li><strong>자격증 증빙 사진:</strong> 관리자 심사 완료 후 삭제됩니다.</li>
           <li><strong>신고 증거 이미지:</strong> 신고 처리 완료 후 6개월간 보관한 뒤 자동 삭제합니다.</li>
+          <li><strong>제재 이력:</strong> 신고 내용, 조치 내용 및 계정 식별값을 부정이용 방지를 위해 30일간 보관한 뒤 삭제합니다.</li>
+          <li><strong>재가입 제한 정보:</strong> 카카오 회원 고유 ID와 탈퇴일을 탈퇴일로부터 1년간 보관한 뒤 삭제합니다.</li>
         </ul>
       </section>
 
-      <!-- 4. 파기 절차 및 방법 -->
+      <!-- 4. 신고 및 제재 정책 -->
       <section class="privacy-section">
-        <h3 class="privacy-section-title">4. 회원탈퇴 및 파기 범위</h3>
+        <h3 class="privacy-section-title">4. 신고 및 제재 정책</h3>
+        <ul>
+          <li><strong>신고:</strong> 다른 이용자 또는 버디 게시글을 신고할 수 있으며, 신고 사유, 상세 내용 및 증거를 제출할 수 있습니다.</li>
+          <li><strong>처리 절차:</strong> 신고 접수 &rarr; 운영자 검토 &rarr; 경고·기간정지·영구정지 등의 조치 순서로 처리합니다.</li>
+          <li><strong>기간정지:</strong> 3일, 7일 또는 30일 동안 서비스 이용이 제한되며, 정지 기간이 지나면 자동으로 해제됩니다.</li>
+          <li><strong>영구정지:</strong> 서비스 이용이 영구적으로 제한됩니다.</li>
+          <li><strong>화면 차단:</strong> 제재 기간에는 홈을 포함한 모든 서비스 화면에 접근할 수 없습니다.</li>
+          <li><strong>제재 이력 보관:</strong> 부정이용 방지를 위해 신고 내용, 조치 내용 및 계정 식별값을 30일간 보관한 뒤 삭제합니다.</li>
+          <li><strong>문의 및 소명:</strong> 서비스의 “문의하기”를 통해 제재 사유를 문의하거나 소명할 수 있습니다.</li>
+          <li><strong>신고자 보호:</strong> 신고자 정보는 피신고자에게 공개하지 않습니다.</li>
+        </ul>
+      </section>
+
+      <!-- 5. 파기 절차 및 방법 -->
+      <section class="privacy-section">
+        <h3 class="privacy-section-title">5. 회원탈퇴 및 파기 범위</h3>
         <p class="privacy-section-body">회원은 account-delete.html에서 계정 삭제를 요청할 수 있습니다. 현재 탈퇴 처리에서 확인되는 삭제 대상은 다음과 같습니다.</p>
         <ul>
           <li><strong>삭제:</strong> user_profiles 레코드, avatars 스토리지의 사용자 아바타, buddy_posts, buddy_applications, certification_requests, user_push_subscriptions 및 이용자 기기의 관련 로컬 저장 데이터를 삭제합니다.</li>
-          <li><strong>보존 가능:</strong> user_reports 및 user_moderation_actions는 신고 처리, 부정 이용 방지 및 분쟁 대응을 위해 보존할 수 있습니다.</li>
+          <li><strong>재가입 제한:</strong> 탈퇴일로부터 1년 동안 재가입할 수 없습니다.</li>
+          <li><strong>재가입 제한 정보 보관:</strong> 재가입 제한을 적용하기 위해 카카오 회원 고유 ID와 탈퇴일을 1년간 보관한 뒤 삭제합니다.</li>
+          <li><strong>제재 중 탈퇴:</strong> 제재 중 탈퇴하더라도 제재 이력과 재가입 제한은 각 보관기간 동안 유지됩니다.</li>
         </ul>
       </section>
 
-      <!-- 5. 제3자 제공 -->
+      <!-- 6. 제3자 제공 -->
       <section class="privacy-section">
-        <h3 class="privacy-section-title">5. 개인정보의 제3자 제공</h3>
+        <h3 class="privacy-section-title">6. 개인정보의 제3자 제공</h3>
         <p class="privacy-section-body">SNORKY는 이용자의 사전 동의 없이 개인정보를 제3자에게 제공하지 않습니다. 다만 법률상 근거가 있는 경우 또는 서비스 이용자가 외부 서비스로 이동하여 해당 서비스의 정책이 적용되는 경우는 예외로 합니다.</p>
       </section>
 
-      <!-- 6. 처리 위탁 및 외부 처리 -->
+      <!-- 7. 처리 위탁 및 외부 처리 -->
       <section class="privacy-section">
-        <h3 class="privacy-section-title">6. 개인정보 처리 위탁 및 외부 처리</h3>
+        <h3 class="privacy-section-title">7. 개인정보 처리 위탁 및 외부 처리</h3>
         <p class="privacy-section-body">서비스 운영을 위해 다음 외부 사업자 및 서비스가 개인정보 또는 이용자 입력정보를 처리할 수 있습니다.</p>
         
         <div class="privacy-data-list">
@@ -239,9 +258,9 @@
         </div>
       </section>
 
-      <!-- 7. 스토리지 및 알림 -->
+      <!-- 8. 스토리지 및 알림 -->
       <section class="privacy-section">
-        <h3 class="privacy-section-title">7. 스토리지 및 알림 처리</h3>
+        <h3 class="privacy-section-title">8. 스토리지 및 알림 처리</h3>
         <ul>
           <li><strong>avatars:</strong> 프로필 이미지 저장에 사용되며, 서비스 화면에서 표시될 수 있는 공개 스토리지입니다.</li>
           <li><strong>certification-photos:</strong> 자격증 증빙 사진 저장에 사용되며, 비공개 스토리지로 관리자 심사에만 사용되고 심사 완료 후 삭제됩니다.</li>
@@ -250,9 +269,9 @@
         </ul>
       </section>
 
-      <!-- 8. 이용자의 권리와 행사 방법 -->
+      <!-- 9. 이용자의 권리와 행사 방법 -->
       <section class="privacy-section">
-        <h3 class="privacy-section-title">8. 이용자의 권리와 행사 방법</h3>
+        <h3 class="privacy-section-title">9. 이용자의 권리와 행사 방법</h3>
         <ol>
           <li>이용자는 언제든지 자신의 개인정보를 조회하거나 수정할 수 있으며, 회원탈퇴를 통해 개인정보의 삭제를 요구할 수 있습니다.</li>
           <li><strong>회원탈퇴 경로:</strong> SNORKY 홈 하단 [회원탈퇴] 메뉴 또는 회원탈퇴 전용 화면(account-delete.html)에서 직접 즉시 탈퇴할 수 있습니다.</li>
@@ -260,9 +279,9 @@
         </ol>
       </section>
 
-      <!-- 9. 안전성 확보조치 -->
+      <!-- 10. 안전성 확보조치 -->
       <section class="privacy-section">
-        <h3 class="privacy-section-title">9. 개인정보의 안전성 확보조치</h3>
+        <h3 class="privacy-section-title">10. 개인정보의 안전성 확보조치</h3>
         <ul>
           <li><strong>전송 암호화:</strong> HTTPS(SSL/TLS) 암호화 통신을 적용하여 데이터를 전송합니다.</li>
           <li><strong>접근 제어:</strong> 데이터베이스 및 스토리지에 접근 제어 정책을 적용하여 인가되지 않은 접근을 제한합니다.</li>
@@ -270,9 +289,9 @@
         </ul>
       </section>
 
-      <!-- 10. 보호책임자 -->
+      <!-- 11. 보호책임자 -->
       <section class="privacy-section">
-        <h3 class="privacy-section-title">10. 개인정보 보호책임자 및 담당부서</h3>
+        <h3 class="privacy-section-title">11. 개인정보 보호책임자 및 담당부서</h3>
         <p class="privacy-section-body">개인정보 처리에 관한 문의, 불만 처리 및 피해구제 등을 위하여 아래와 같이 개인정보 보호책임자를 지정하고 있습니다.</p>
         <div class="privacy-contact-card">
           <ul>
@@ -288,9 +307,9 @@
         </div>
       </section>
 
-      <!-- 11. 고지의 의무 -->
+      <!-- 12. 고지의 의무 -->
       <section class="privacy-section">
-        <h3 class="privacy-section-title">11. 고지의 의무</h3>
+        <h3 class="privacy-section-title">12. 고지의 의무</h3>
         <p class="privacy-section-body">본 개인정보처리방침의 내용 추가, 삭제 및 수정이 있을 경우 서비스 화면을 통해 공지합니다.</p>
       </section>
 
