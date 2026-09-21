@@ -128,17 +128,26 @@
   let selectedHour = null; // 0..23
 
   function getAvailableDates() {
-    if (!activeMarineData?.hourly?.time || !activeMarineData.hourly.time.length) {
-      const nowKst = new Date(Date.now() + 9 * 3600000);
+    const nowKst = new Date(Date.now() + 9 * 3600000);
+    const todayKst = nowKst.toISOString().slice(0, 10);
+    const getFallbackDates = () => {
       const list = [];
       for (let i = 0; i < 7; i++) {
         const d = new Date(nowKst.getTime() + i * 86400000);
         list.push(d.toISOString().slice(0, 10));
       }
       return list;
+    };
+
+    if (!activeMarineData?.hourly?.time || !activeMarineData.hourly.time.length) {
+      return getFallbackDates();
     }
-    const dates = [...new Set(activeMarineData.hourly.time.map((t) => t.slice(0, 10)))];
-    return dates.slice(0, 7);
+
+    const dates = [...new Set(activeMarineData.hourly.time.map((t) => t.slice(0, 10)))].sort();
+    const filteredDates = dates.filter((date) => date >= todayKst).slice(0, 7);
+    if (!filteredDates.length) return getFallbackDates();
+    if (filteredDates[0] !== todayKst) filteredDates.unshift(todayKst);
+    return filteredDates.slice(0, 7);
   }
 
   function getAvailableHoursForDate(dateStr) {
