@@ -62,10 +62,21 @@
   }
 
   async function requestPermissionAndSubscribe() {
+    console.info("[SNORKY][perm-debug] requestPermissionAndSubscribe entered", { hasToken: Boolean(getSessionToken()), hasNotification: "Notification" in window });
     if (!getSessionToken()) throw new Error("푸시 알림은 로그인 후 사용할 수 있습니다.");
     if (!("Notification" in window)) throw new Error("이 브라우저는 알림을 지원하지 않습니다.");
     let permission = Notification.permission;
-    if (permission === "default") permission = await Notification.requestPermission();
+    console.info("[SNORKY][perm-debug] permission before request:", permission);
+    if (permission === "default") {
+      console.info("[SNORKY][perm-debug] calling Notification.requestPermission()");
+      try {
+        permission = await Notification.requestPermission();
+      } catch (error) {
+        console.info("[SNORKY][perm-debug] requestPermission threw:", error?.message || error);
+        throw error;
+      }
+      console.info("[SNORKY][perm-debug] requestPermission returned:", permission);
+    }
     if (permission !== "granted") throw new Error("알림 권한이 허용되지 않았습니다.");
     return subscribe();
   }
