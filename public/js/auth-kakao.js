@@ -120,6 +120,7 @@
       const authResult = await exchangeCode(code, getRedirectUri());
       const session = global.SNORKYAuthSession.create("kakao", authResult.user);
       global.SNORKYAuthSession.save(session);
+      try { localStorage.setItem("snorky_permission_prompt_pending_v1", "true"); } catch (_) {}
       if (authResult.pushToken) {
         try { localStorage.setItem("snorky_push_token_v1", authResult.pushToken); } catch (_) {}
       }

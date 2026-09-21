@@ -295,6 +295,61 @@ function checkInitialPermission(){
     }).catch(()=>{});
   }
 }
+const permissionPromptPendingKey="snorky_permission_prompt_pending_v1";
+function hasPermissionPromptUser(){
+  try{
+    const session=window.SNORKYAuthSession?.get?.()||JSON.parse(localStorage.getItem("snorky_auth_session_v1")||"null");
+    return Boolean(session&&session.version===1&&session.user?.id);
+  }catch(_){return false}
+}
+async function requestLocationPermissionIfPrompt(){
+  if(!navigator.geolocation||!navigator.permissions?.query)return;
+  let permissionStatus;
+  try{permissionStatus=await navigator.permissions.query({name:"geolocation"})}catch(_){return}
+  if(permissionStatus.state!=="prompt")return;
+  await new Promise(resolve=>{
+    try{
+      navigator.geolocation.getCurrentPosition(resolve,resolve,{enableHighAccuracy:false,timeout:10000,maximumAge:5*60*1000});
+    }catch(_){resolve()}
+  });
+}
+function showFirstLoginPermissionPrompt(){
+  let pending=false;
+  try{pending=localStorage.getItem(permissionPromptPendingKey)==="true"}catch(_){}
+  if(!pending||!hasPermissionPromptUser()||document.getElementById("snorkyPermissionPrompt"))return;
+
+  const overlay=document.createElement("div");
+  overlay.id="snorkyPermissionPrompt";
+  overlay.setAttribute("role","dialog");
+  overlay.setAttribute("aria-modal","true");
+  overlay.setAttribute("aria-labelledby","snorkyPermissionPromptTitle");
+  overlay.style.cssText="position:fixed;inset:0;z-index:100000;display:flex;align-items:center;justify-content:center;padding:20px;background:rgba(8,24,38,.58);";
+  overlay.innerHTML=`<div style="width:min(100%,360px);padding:26px 22px;border-radius:22px;background:#fff;box-shadow:0 18px 50px rgba(8,24,38,.24);text-align:center"><h2 id="snorkyPermissionPromptTitle" style="margin:0 0 10px;color:#102a43;font-size:20px">SNORKY 권한 안내</h2><p style="margin:0 0 22px;color:#607d8b;font-size:14px;line-height:1.6">내 주변 바다 정보와 새 알림을 받으려면 위치와 알림 권한이 필요합니다.</p><button id="snorkyPermissionPromptSetup" type="button" style="width:100%;min-height:48px;border:0;border-radius:12px;background:#087fa8;color:#fff;font-size:15px;font-weight:800;cursor:pointer">권한 설정</button><button id="snorkyPermissionPromptLater" type="button" style="width:100%;min-height:44px;margin-top:8px;border:1px solid #d8e2e8;border-radius:12px;background:#fff;color:#36576d;font-size:14px;font-weight:700;cursor:pointer">나중에</button></div>`;
+  document.body.appendChild(overlay);
+
+  const finish=()=>{
+    try{localStorage.removeItem(permissionPromptPendingKey)}catch(_){}
+    overlay.remove();
+  };
+  overlay.querySelector("#snorkyPermissionPromptLater")?.addEventListener("click",finish,{once:true});
+  overlay.querySelector("#snorkyPermissionPromptSetup")?.addEventListener("click",async event=>{
+    const setupButton=event.currentTarget;
+    const laterButton=overlay.querySelector("#snorkyPermissionPromptLater");
+    setupButton.disabled=true;
+    if(laterButton)laterButton.disabled=true;
+    try{
+      if(!hasPermissionPromptUser())return;
+      await requestLocationPermissionIfPrompt();
+      if(window.Notification&&window.Notification.permission==="default"&&typeof window.SNORKYWebPush?.requestPermissionAndSubscribe==="function"){
+        await window.SNORKYWebPush.requestPermissionAndSubscribe();
+      }
+    }catch(error){
+      console.warn("[SNORKY] permission setup did not complete:",error?.message||error);
+    }finally{
+      finish();
+    }
+  },{once:true});
+}
 function populateRegions(){const select=document.getElementById("homeRegionFilter"),regions=Array.isArray(window.SNORKY_SUPABASE_REGIONS)?window.SNORKY_SUPABASE_REGIONS:[];if(!regions.length||select.options.length>1)return false;select.insertAdjacentHTML("beforeend",regions.map(region=>`<option value="${escapeHtml(region.id)}">${escapeHtml(region.name)}</option>`).join(""));populateMapRegions();setHeroImage();return true}
 function renderWarning(){
   const host=document.getElementById("homeMarineWarning");
@@ -2185,6 +2240,7 @@ function checkUrlPointParam(){
   }catch(_){}
 }
 checkUrlPointParam();
+showFirstLoginPermissionPrompt();
 
 window.SNORKYHomeV2=Object.freeze({
   formatPointScore,
