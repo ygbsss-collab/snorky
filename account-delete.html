@@ -411,6 +411,8 @@
             localStorage.removeItem("snorky_my_spots");
             localStorage.removeItem("snorky_my_points");
             localStorage.removeItem("snorky_diving_schedules");
+            localStorage.removeItem(`snorky_custom_spots_v1:${session.user.id}`);
+            localStorage.removeItem("snorky_push_token_v1");
             if (window.SNORKYAuthSession?.clear) {
               window.SNORKYAuthSession.clear();
             } else {

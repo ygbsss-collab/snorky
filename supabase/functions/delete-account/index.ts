@@ -169,6 +169,17 @@ Deno.serve(async (request) => {
     }, 502, requestOrigin);
   }
 
+  const supabaseUrl = Deno.env.get("SUPABASE_URL");
+  const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+  if (!supabaseUrl || !serviceRoleKey) {
+    console.error("[delete-account] missing SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY");
+    return json({
+      ok: false,
+      step: "server_config",
+      message: "탈퇴 서버 설정이 누락되었습니다.",
+    }, 503, requestOrigin);
+  }
+
   // 4. 카카오 연결 해제 (OAuth Unlink)
   // 검증된 사용자 Access Token으로 연결 끊기 호출 -> 즉시 토큰 무효화
   let unlinkSuccess = false;
@@ -202,14 +213,23 @@ Deno.serve(async (request) => {
   }
 
   // 5. Supabase DB 사용자 프로필 및 스토리지 데이터 삭제 (Unlink 성공 후에만 실행)
-  const supabaseUrl = Deno.env.get("SUPABASE_URL");
-  const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || Deno.env.get("SUPABASE_ANON_KEY");
-
   if (supabaseUrl && serviceRoleKey) {
     try {
       const supabase = createClient(supabaseUrl, serviceRoleKey, {
         auth: { persistSession: false, autoRefreshToken: false },
       });
+
+      const { error: pushSubscriptionsDeleteError } = await supabase
+        .from("user_push_subscriptions")
+        .delete()
+        .eq("user_id", verifiedKakaoUserId);
+      if (pushSubscriptionsDeleteError) {
+        return json({
+          ok: false,
+          step: "db_push_subscriptions_delete",
+          message: "Push 구독 데이터 삭제 중 오류가 발생했습니다.",
+        }, 500, requestOrigin);
+      }
 
       // 5-1. 탈퇴 사용자의 버디 신청 및 모집 게시글 연결 데이터 삭제
       const { data: ownedPosts, error: ownedPostsError } = await supabase
@@ -284,7 +304,177 @@ Deno.serve(async (request) => {
         }, 500, requestOrigin);
       }
 
+      const { error: userNotificationsDeleteError } = await supabase
+        .from("user_notifications")
+        .delete()
+        .eq("user_id", verifiedKakaoUserId);
+      if (userNotificationsDeleteError) {
+        return json({
+          ok: false,
+          step: "db_user_notifications_delete",
+          message: "알림 데이터 삭제 중 오류가 발생했습니다.",
+        }, 500, requestOrigin);
+      }
+
+      const { error: divingSchedulesDeleteError } = await supabase
+        .from("user_diving_schedules")
+        .delete()
+        .eq("user_id", verifiedKakaoUserId);
+      if (divingSchedulesDeleteError) {
+        return json({
+          ok: false,
+          step: "db_diving_schedules_delete",
+          message: "다이빙 일정 데이터 삭제 중 오류가 발생했습니다.",
+        }, 500, requestOrigin);
+      }
+
+      const { error: buddyAlertSettingsDeleteError } = await supabase
+        .from("buddy_alert_settings")
+        .delete()
+        .eq("user_id", verifiedKakaoUserId);
+      if (buddyAlertSettingsDeleteError) {
+        return json({
+          ok: false,
+          step: "db_buddy_alert_settings_delete",
+          message: "버디 알림 설정 삭제 중 오류가 발생했습니다.",
+        }, 500, requestOrigin);
+      }
+
+      const { error: snorkyFriendsDeleteError } = await supabase
+        .from("snorky_friends")
+        .delete()
+        .or(`user_id.eq.${verifiedKakaoUserId},friend_user_id.eq.${verifiedKakaoUserId}`);
+      if (snorkyFriendsDeleteError) {
+        return json({
+          ok: false,
+          step: "db_snorky_friends_delete",
+          message: "친구 데이터 삭제 중 오류가 발생했습니다.",
+        }, 500, requestOrigin);
+      }
+
+      const { error: buddyBlocksDeleteError } = await supabase
+        .from("buddy_blocks")
+        .delete()
+        .eq("blocker_user_id", verifiedKakaoUserId);
+      if (buddyBlocksDeleteError) {
+        return json({
+          ok: false,
+          step: "db_buddy_blocks_delete",
+          message: "내가 설정한 차단 데이터 삭제 중 오류가 발생했습니다.",
+        }, 500, requestOrigin);
+      }
+
       // 5-2. user_profiles 테이블 레코드 삭제
+      const { data: registrySanction, error: registrySanctionLookupError } = await supabase
+        .from("user_sanction_registry")
+        .select("banned, suspended_until, withdrawn_at, purge_after")
+        .eq("provider", "kakao")
+        .eq("provider_user_id", verifiedKakaoUserId)
+        .maybeSingle();
+      if (registrySanctionLookupError) {
+        return json({
+          ok: false,
+          step: "db_sanction_lookup",
+          message: "현재 제재 상태 확인 중 오류가 발생했습니다.",
+        }, 500, requestOrigin);
+      }
+
+      let sanction = registrySanction;
+      if (!sanction) {
+        const { data: profileSanction, error: profileSanctionLookupError } = await supabase
+          .from("user_profiles")
+          .select("banned, suspended_until")
+          .eq("provider", "kakao")
+          .eq("provider_user_id", verifiedKakaoUserId)
+          .maybeSingle();
+        if (profileSanctionLookupError) {
+          return json({
+            ok: false,
+            step: "db_profile_sanction_lookup",
+            message: "현재 제재 상태 확인 중 오류가 발생했습니다.",
+          }, 500, requestOrigin);
+        }
+        sanction = profileSanction;
+      }
+
+      let createdWithdrawalRestriction = false;
+      let updatedWithdrawalRestriction = false;
+      const now = new Date();
+      const suspendedUntil = sanction?.suspended_until ? new Date(sanction.suspended_until) : null;
+      const hasActiveSuspension = suspendedUntil !== null
+        && !Number.isNaN(suspendedUntil.getTime())
+        && suspendedUntil.getTime() > now.getTime();
+      const hasActiveSanction = sanction?.banned === true || hasActiveSuspension;
+      const previousWithdrawnAt = registrySanction?.withdrawn_at ?? null;
+      const previousPurgeAfter = registrySanction?.purge_after ?? null;
+      const hasExistingWithdrawal = !!previousWithdrawnAt;
+
+      if (hasActiveSanction && !hasExistingWithdrawal) {
+        const withdrawnAt = now.toISOString();
+        let purgeAfter: string;
+        if (sanction?.banned === true) {
+          const permanentBanPurgeAfter = new Date(now);
+          permanentBanPurgeAfter.setUTCFullYear(permanentBanPurgeAfter.getUTCFullYear() + 1);
+          purgeAfter = permanentBanPurgeAfter.toISOString();
+        } else {
+          purgeAfter = sanction?.suspended_until as string;
+        }
+
+        if (registrySanction) {
+          const { data: updatedRegistry, error: sanctionUpdateError } = await supabase
+            .from("user_sanction_registry")
+            .update({ withdrawn_at: withdrawnAt, purge_after: purgeAfter })
+            .eq("provider", "kakao")
+            .eq("provider_user_id", verifiedKakaoUserId)
+            .select("provider_user_id");
+          if (sanctionUpdateError || !updatedRegistry?.length) {
+            return json({
+              ok: false,
+              step: "db_sanction_withdrawal_update",
+              message: "재가입 제한 처리 중 오류가 발생했습니다.",
+            }, 500, requestOrigin);
+          }
+          updatedWithdrawalRestriction = true;
+        } else {
+          const { data: createdRegistry, error: sanctionInsertError } = await supabase
+            .from("user_sanction_registry")
+            .insert({
+              provider: "kakao",
+              provider_user_id: verifiedKakaoUserId,
+              banned: sanction?.banned === true,
+              suspended_until: sanction?.suspended_until ?? null,
+              withdrawn_at: withdrawnAt,
+              purge_after: purgeAfter,
+            })
+            .select("provider_user_id");
+          if (sanctionInsertError || !createdRegistry?.length) {
+            return json({
+              ok: false,
+              step: "db_sanction_withdrawal_insert",
+              message: "재가입 제한 처리 중 오류가 발생했습니다.",
+            }, 500, requestOrigin);
+          }
+          createdWithdrawalRestriction = true;
+        }
+      }
+
+      const restoreWithdrawalRestriction = async () => {
+        if (createdWithdrawalRestriction) {
+          const { error } = await supabase
+            .from("user_sanction_registry")
+            .delete()
+            .eq("provider", "kakao")
+            .eq("provider_user_id", verifiedKakaoUserId);
+          if (error) console.error("[delete-account] failed to remove withdrawal restriction", error);
+        } else if (updatedWithdrawalRestriction) {
+          const { error } = await supabase
+            .from("user_sanction_registry")
+            .update({ withdrawn_at: previousWithdrawnAt, purge_after: previousPurgeAfter })
+            .eq("provider", "kakao")
+            .eq("provider_user_id", verifiedKakaoUserId);
+          if (error) console.error("[delete-account] failed to restore withdrawal restriction", error);
+        }
+      };
       const { error: profileDeleteError } = await supabase
         .from("user_profiles")
         .delete()
@@ -292,6 +482,7 @@ Deno.serve(async (request) => {
         .eq("provider_user_id", verifiedKakaoUserId);
 
       if (profileDeleteError) {
+        await restoreWithdrawalRestriction();
         return json({
           ok: false,
           step: "db_profile_delete",
