@@ -1,5 +1,5 @@
 const CACHE_PREFIX = 'snorky-static-';
-const CACHE_NAME = `${CACHE_PREFIX}v125`;
+const CACHE_NAME = `${CACHE_PREFIX}v126`;
 const APP_SHELL = [
   './',
   './index.html',
@@ -77,17 +77,28 @@ self.addEventListener('push', event => {
 
 self.addEventListener('notificationclick', event => {
   event.notification.close();
-  const targetUrl = new URL(event.notification.data?.url || './mypage.html', self.location.origin).href;
+  const scopeUrl = new URL(self.registration.scope);
+  const fallbackUrl = new URL('./mypage.html', self.registration.scope);
+  let targetUrl;
+  try {
+    targetUrl = new URL(event.notification.data?.url || './mypage.html', self.registration.scope);
+  } catch (_) {
+    targetUrl = fallbackUrl;
+  }
+  if (targetUrl.origin !== scopeUrl.origin || !targetUrl.pathname.startsWith(scopeUrl.pathname)) {
+    targetUrl = fallbackUrl;
+  }
   event.waitUntil((async () => {
     const clients = await self.clients.matchAll({ type: 'window', includeUncontrolled: true });
     for (const client of clients) {
-      if ('focus' in client) {
-        await client.focus();
-        if ('navigate' in client && client.url !== targetUrl) await client.navigate(targetUrl);
-        return;
-      }
+      const clientUrl = new URL(client.url);
+      if (clientUrl.origin !== scopeUrl.origin || !clientUrl.pathname.startsWith(scopeUrl.pathname)) continue;
+      let targetClient = client;
+      if ('navigate' in client && client.url !== targetUrl.href) targetClient = await client.navigate(targetUrl.href) || client;
+      if ('focus' in targetClient) await targetClient.focus();
+      return;
     }
-    if (self.clients.openWindow) await self.clients.openWindow(targetUrl);
+    if (self.clients.openWindow) await self.clients.openWindow(targetUrl.href);
   })());
 });
 

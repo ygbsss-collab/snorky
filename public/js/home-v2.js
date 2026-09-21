@@ -308,10 +308,7 @@ function hasPermissionPromptUser(){
   }catch(_){return false}
 }
 async function requestLocationPermissionIfPrompt(){
-  if(!navigator.geolocation||!navigator.permissions?.query)return;
-  let permissionStatus;
-  try{permissionStatus=await withPermissionPromptTimeout(navigator.permissions.query({name:"geolocation"}),5000,"위치 권한 상태 확인 시간 초과")}catch(_){return}
-  if(permissionStatus.state!=="prompt")return;
+  if(!navigator.geolocation)return;
   try{await withPermissionPromptTimeout(new Promise(resolve=>{
     try{
       navigator.geolocation.getCurrentPosition(resolve,resolve,{enableHighAccuracy:false,timeout:10000,maximumAge:5*60*1000});
