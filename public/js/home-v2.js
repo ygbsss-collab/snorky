@@ -305,13 +305,20 @@ function hasPermissionPromptUser(){
 async function requestLocationPermissionIfPrompt(){
   if(!navigator.geolocation||!navigator.permissions?.query)return;
   let permissionStatus;
-  try{permissionStatus=await navigator.permissions.query({name:"geolocation"})}catch(_){return}
+  try{permissionStatus=await withPermissionPromptTimeout(navigator.permissions.query({name:"geolocation"}),5000,"위치 권한 상태 확인 시간 초과")}catch(_){return}
   if(permissionStatus.state!=="prompt")return;
-  await new Promise(resolve=>{
+  try{await withPermissionPromptTimeout(new Promise(resolve=>{
     try{
       navigator.geolocation.getCurrentPosition(resolve,resolve,{enableHighAccuracy:false,timeout:10000,maximumAge:5*60*1000});
     }catch(_){resolve()}
-  });
+  }),12000,"위치 권한 요청 시간 초과")}catch(_){}
+}
+function withPermissionPromptTimeout(promise,timeoutMs,message){
+  let timeoutId;
+  return Promise.race([
+    Promise.resolve(promise),
+    new Promise((_,reject)=>{timeoutId=setTimeout(()=>reject(new Error(message)),timeoutMs)})
+  ]).finally(()=>clearTimeout(timeoutId));
 }
 function showFirstLoginPermissionPrompt(){
   let pending=false;
@@ -327,28 +334,45 @@ function showFirstLoginPermissionPrompt(){
   overlay.innerHTML=`<div style="width:min(100%,360px);padding:26px 22px;border-radius:22px;background:#fff;box-shadow:0 18px 50px rgba(8,24,38,.24);text-align:center"><h2 id="snorkyPermissionPromptTitle" style="margin:0 0 10px;color:#102a43;font-size:20px">SNORKY 권한 안내</h2><p style="margin:0 0 22px;color:#607d8b;font-size:14px;line-height:1.6">내 주변 바다 정보와 새 알림을 받으려면 위치와 알림 권한이 필요합니다.</p><button id="snorkyPermissionPromptSetup" type="button" style="width:100%;min-height:48px;border:0;border-radius:12px;background:#087fa8;color:#fff;font-size:15px;font-weight:800;cursor:pointer">권한 설정</button><button id="snorkyPermissionPromptLater" type="button" style="width:100%;min-height:44px;margin-top:8px;border:1px solid #d8e2e8;border-radius:12px;background:#fff;color:#36576d;font-size:14px;font-weight:700;cursor:pointer">나중에</button></div>`;
   document.body.appendChild(overlay);
 
+  let finished=false;
   const finish=()=>{
+    if(finished)return;
+    finished=true;
     try{localStorage.removeItem(permissionPromptPendingKey)}catch(_){}
     overlay.remove();
   };
   overlay.querySelector("#snorkyPermissionPromptLater")?.addEventListener("click",finish,{once:true});
   overlay.querySelector("#snorkyPermissionPromptSetup")?.addEventListener("click",async event=>{
     const setupButton=event.currentTarget;
-    const laterButton=overlay.querySelector("#snorkyPermissionPromptLater");
+    const notificationStep=setupButton.dataset.permissionStep==="notification";
     setupButton.disabled=true;
-    if(laterButton)laterButton.disabled=true;
     try{
-      if(!hasPermissionPromptUser())return;
-      await requestLocationPermissionIfPrompt();
-      if(window.Notification&&window.Notification.permission==="default"&&typeof window.SNORKYWebPush?.requestPermissionAndSubscribe==="function"){
-        await window.SNORKYWebPush.requestPermissionAndSubscribe();
+      if(!hasPermissionPromptUser()){
+        finish();
+        return;
       }
+
+      if(notificationStep){
+        const request=window.SNORKYWebPush.requestPermissionAndSubscribe();
+        await withPermissionPromptTimeout(request,15000,"알림 권한 요청 시간 초과");
+        finish();
+        return;
+      }
+
+      await requestLocationPermissionIfPrompt();
+      if(finished)return;
+      if(window.Notification?.permission==="default"){
+        setupButton.textContent="알림 설정";
+        setupButton.dataset.permissionStep="notification";
+        setupButton.disabled=false;
+        return;
+      }
+      finish();
     }catch(error){
-      console.warn("[SNORKY] permission setup did not complete:",error?.message||error);
-    }finally{
+      console.warn("[SNORKY] 권한 설정을 완료하지 못했습니다:",error?.message||error);
       finish();
     }
-  },{once:true});
+  });
 }
 function populateRegions(){const select=document.getElementById("homeRegionFilter"),regions=Array.isArray(window.SNORKY_SUPABASE_REGIONS)?window.SNORKY_SUPABASE_REGIONS:[];if(!regions.length||select.options.length>1)return false;select.insertAdjacentHTML("beforeend",regions.map(region=>`<option value="${escapeHtml(region.id)}">${escapeHtml(region.name)}</option>`).join(""));populateMapRegions();setHeroImage();return true}
 function renderWarning(){
@@ -715,6 +739,16 @@ function applySnorkyMapInitialViewport(includeUser=false){
 }
 
 function openMapScreen(){
+  if(!mapScreen.classList.contains("open")){
+    try{
+      const currentState=history.state&&typeof history.state==="object"?history.state:{};
+      if(currentState.snorkyMapScreen!==true){
+        history.pushState({...currentState,snorkyMapScreen:true},"",window.location.href);
+      }
+    }catch(error){
+      console.warn("[SNORKY Map] history state를 추가하지 못했습니다.",error);
+    }
+  }
   mapScreen.classList.add("open");
   document.body.classList.remove("home-show-legacy");
   setBottomActive(snorkyMapActiveFilter==="즐겨찾기"?"favorites":"map");
@@ -861,11 +895,16 @@ window.renderHomeWarning=renderWarning;
 window.getFilteredPoints=getFilteredPoints;
 window.getSnorkyMapPanelTitle=getSnorkyMapPanelTitle;
 
-function closeMapScreen(){
+function closeMapScreen(options={}){
+  const wasOpen=mapScreen.classList.contains("open");
+  const shouldReturnHistory=wasOpen&&!options.fromPopState&&history.state?.snorkyMapScreen===true;
   mapScreen.classList.remove("open");
   document.body.classList.remove("home-show-legacy");
   resetSnorkyMapToGeneral();
   setBottomActive("home");
+  if(shouldReturnHistory){
+    try{history.back()}catch(error){console.warn("[SNORKY Map] history 항목을 정리하지 못했습니다.",error)}
+  }
 }
 
 function makeGoldMarkerSvg(rank,active){
