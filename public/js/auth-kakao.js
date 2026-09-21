@@ -73,7 +73,11 @@
     });
     const payload = await response.json().catch(() => ({}));
     if (!response.ok || !payload.user) {
-      throw new Error(payload.message || "카카오 로그인을 완료하지 못했습니다.");
+      const error = new Error(payload.message || "카카오 로그인을 완료하지 못했습니다.");
+      error.code = payload.error || null;
+      error.error = payload.error || null;
+      error.restrictedUntil = payload.restrictedUntil || null;
+      throw error;
     }
     return {
       user: payload.user,
@@ -122,9 +126,18 @@
       queueProfileEnsure(session);
       cleanCallbackUrl();
       global.location.replace(new URL("./index.html?fromLogin=1", global.location.href));
-    } catch (_) {
+    } catch (error) {
       cleanCallbackUrl();
-      showError("카카오 로그인을 완료하지 못했습니다. 다시 시도해 주세요.");
+      if (error?.code === "ACCOUNT_UNDER_REREGISTRATION_BAN") {
+        const restrictedUntil = error.restrictedUntil ? new Date(error.restrictedUntil) : null;
+        if (restrictedUntil && !Number.isNaN(restrictedUntil.getTime())) {
+          showError(`현재 이용정지 기간으로 재가입할 수 없습니다. 재가입 가능일: ${restrictedUntil.toISOString().slice(0, 10)}`);
+        } else {
+          showError(error.message || "카카오 로그인을 완료하지 못했습니다. 다시 시도해 주세요.");
+        }
+      } else {
+        showError("카카오 로그인을 완료하지 못했습니다. 다시 시도해 주세요.");
+      }
       setBusy(false);
     }
     return true;
