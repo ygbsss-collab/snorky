@@ -249,7 +249,7 @@
     onlyScuba: false,
     onlyParking: false,
     activeTab: null, // null | 'region' | 'depth' | 'facility'
-    sortBy: "depth" // 'depth' | 'name'
+    sortBy: "depth" // 'depth' | 'name' | 'distance'
   };
 
   const REGION_OPTIONS = ["전체", "경기", "서울", "인천", "충청", "경상", "전라", "강원", "제주"];
@@ -402,8 +402,42 @@
     // 정렬 셀렉트
     if (sortSelect) {
       sortSelect.addEventListener("change", (e) => {
-        state.sortBy = e.target.value;
-        render();
+        const nextSort = e.target.value;
+        if (nextSort !== "distance") {
+          state.sortBy = nextSort;
+          render();
+          return;
+        }
+
+        if (getEffectiveUserLocation()) {
+          state.sortBy = "distance";
+          render();
+          return;
+        }
+
+        const restoreDepthSort = () => {
+          state.sortBy = "depth";
+          sortSelect.value = "depth";
+          render();
+          showToast("가까운순 정렬을 사용하려면 위치 권한이 필요합니다.");
+        };
+        if (!navigator.geolocation) {
+          restoreDepthSort();
+          return;
+        }
+
+        navigator.geolocation.getCurrentPosition(position => {
+          try {
+            sessionStorage.setItem("snorky_user_coords", JSON.stringify({
+              latitude: position.coords.latitude,
+              longitude: position.coords.longitude,
+              timestamp: Date.now()
+            }));
+          } catch (_) {}
+          state.sortBy = "distance";
+          sortSelect.value = "distance";
+          render();
+        }, restoreDepthSort, { enableHighAccuracy: false, timeout: 10000, maximumAge: 5 * 60 * 1000 });
       });
     }
 
@@ -966,7 +1000,28 @@
     showToast("필터가 초기화되었습니다.");
   }
 
+  function haversineKm(lat1, lng1, lat2, lng2) {
+    const toRadians = value => value * Math.PI / 180;
+    const earthRadiusKm = 6371;
+    const dLat = toRadians(lat2 - lat1);
+    const dLng = toRadians(lng2 - lng1);
+    const a = Math.sin(dLat / 2) ** 2
+      + Math.cos(toRadians(lat1)) * Math.cos(toRadians(lat2)) * Math.sin(dLng / 2) ** 2;
+    return earthRadiusKm * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  }
+
+  function distanceFromUser(center, userLocation) {
+    if (center.lat === null || center.lat === undefined || center.lat === ""
+      || center.lng === null || center.lng === undefined || center.lng === "") return Infinity;
+    const lat = Number(center.lat);
+    const lng = Number(center.lng);
+    if (!Number.isFinite(lat) || !Number.isFinite(lng)) return Infinity;
+    const calculateDistance = window.SNORKYNearbyBest?.haversineKm || haversineKm;
+    return calculateDistance(userLocation.lat, userLocation.lng, lat, lng);
+  }
+
   function getFilteredCenters() {
+    const userLocation = state.sortBy === "distance" ? getEffectiveUserLocation() : null;
     return window.SNORKYIndoor.getCenters().filter(center => {
       if (center.isActive !== true) return false;
       // 검색어 필터 (센터명, 지역, 주소)
@@ -1018,6 +1073,12 @@
       if (state.sortBy === "depth") {
         return (b.maxDepth || 0) - (a.maxDepth || 0);
       } else if (state.sortBy === "name") {
+        return (a.name || "").localeCompare(b.name || "", "ko");
+      } else if (state.sortBy === "distance") {
+        if (!userLocation) return 0;
+        const distanceA = distanceFromUser(a, userLocation);
+        const distanceB = distanceFromUser(b, userLocation);
+        if (distanceA !== distanceB) return distanceA - distanceB;
         return (a.name || "").localeCompare(b.name || "", "ko");
       }
       return 0;
