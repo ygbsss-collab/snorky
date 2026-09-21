@@ -47,7 +47,20 @@
     .mypage-menu-text strong{font-size:14.5px;font-weight:800;color:#16313f}
     .mypage-menu-text small{font-size:12px;color:#708792}
     .mypage-menu-arrow{font-size:20px;color:#9cb0b8;text-align:right}
-    
+
+    /* 푸시 알림 설정 */
+    .mypage-push-card{display:grid;gap:8px;margin:0 0 28px;padding:16px;border:1px solid #e5edf1;border-radius:18px;background:#ffffff;box-shadow:0 2px 8px rgba(22,49,63,.03)}
+    .mypage-push-head{display:flex;align-items:center;justify-content:space-between;gap:10px}
+    .mypage-push-head strong{font-size:14.5px;font-weight:800;color:#16313f}
+    .mypage-push-status{padding:3px 10px;border-radius:999px;background:#eef3f6;color:#526a76;font-size:12px;font-weight:800;white-space:nowrap}
+    .mypage-push-status[data-state="connected"]{background:#e3f6ec;color:#0b7a4b}
+    .mypage-push-status[data-state="default"]{background:#e8f4fa;color:#087ca7}
+    .mypage-push-status[data-state="denied"],.mypage-push-status[data-state="sync-failed"]{background:#fdecec;color:#c0392b}
+    .mypage-push-permission{margin:0;font-size:12.5px;color:#708792}
+    .mypage-push-guide{margin:0;font-size:12.5px;line-height:1.6;color:#36576d;white-space:pre-line}
+    .mypage-push-action{min-height:42px;border:0;border-radius:12px;background:#087fa8;color:#fff;font-size:14px;font-weight:800;cursor:pointer}
+    .mypage-push-action:disabled{opacity:.6;cursor:default}
+
     /* 하단 정보 & 로그아웃 */
     .mypage-footer{margin-top:auto;padding-top:20px;border-top:1px solid #f0f4f7;display:flex;flex-direction:column;align-items:center;gap:14px}
     .mypage-links{display:flex;align-items:center;justify-content:center;gap:12px}
@@ -246,6 +259,17 @@
           </div>
         </button>
       </nav>
+
+      <!-- 푸시 알림 설정 -->
+      <section id="mypagePushCard" class="mypage-push-card" aria-labelledby="mypagePushTitle">
+        <div class="mypage-push-head">
+          <strong id="mypagePushTitle">푸시 알림</strong>
+          <span id="mypagePushStatus" class="mypage-push-status" data-state="checking">확인 중</span>
+        </div>
+        <p id="mypagePushPermission" class="mypage-push-permission"></p>
+        <p id="mypagePushGuide" class="mypage-push-guide" hidden></p>
+        <button id="mypagePushAction" type="button" class="mypage-push-action" hidden></button>
+      </section>
     </main>
   </div>
 
@@ -1566,6 +1590,85 @@
       }
     })();
   </script>
-  <script src="./public/js/web-push-manager.js"></script>
+  <script src="./public/js/web-push-manager.js?v=20260921_push_sync_v1"></script>
+  <script>
+    // 마이페이지 푸시 알림 설정 카드: Notification.permission을 실시간으로 반영하고, 서버 저장 성공 응답 후에만 "알림 켜짐"으로 표시한다.
+    (function () {
+      const card = document.getElementById("mypagePushCard");
+      const statusEl = document.getElementById("mypagePushStatus");
+      const permissionEl = document.getElementById("mypagePushPermission");
+      const guideEl = document.getElementById("mypagePushGuide");
+      const actionBtn = document.getElementById("mypagePushAction");
+      if (!card || !statusEl || !permissionEl || !guideEl || !actionBtn) return;
+
+      const PERMISSION_LABELS = { granted: "알림 권한: 허용", denied: "알림 권한: 차단", default: "알림 권한: 미결정" };
+      const DENIED_GUIDE = "휴대폰 설정 > 앱 > SNORKY > 알림에서 알림을 켜주세요.\n켠 뒤 SNORKY로 돌아오면 자동으로 연결됩니다.";
+      let renderSeq = 0;
+      let busy = false;
+
+      function readPermission() { return window.Notification ? Notification.permission : "unsupported"; }
+
+      function paint(state, label, guide, action) {
+        statusEl.dataset.state = state;
+        statusEl.textContent = label;
+        guideEl.textContent = guide || "";
+        guideEl.hidden = !guide;
+        actionBtn.hidden = !action;
+        actionBtn.textContent = action || "";
+        actionBtn.dataset.action = action ? state : "";
+        actionBtn.disabled = busy;
+      }
+
+      function paintPermission() {
+        permissionEl.textContent = PERMISSION_LABELS[readPermission()] || "알림 권한: 지원 안 함";
+      }
+
+      function paintResult(state) {
+        if (state === "connected") return paint("connected", "알림 켜짐", "", "");
+        if (state === "default") return paint("default", "설정 필요", "", "알림 켜기");
+        if (state === "denied") return paint("denied", "알림 차단됨", DENIED_GUIDE, "");
+        if (state === "login-required") return paint("sync-failed", "연결 확인 필요", "로그인 세션을 확인한 뒤 다시 연결해 주세요.", "다시 연결");
+        if (state === "unsupported") return paint("sync-failed", "연결 확인 필요", "이 환경에서는 푸시 알림을 지원하지 않습니다.", "");
+        return paint("sync-failed", "연결 확인 필요", "알림 연결을 확인하지 못했습니다.", "다시 연결");
+      }
+
+      // 권한 라벨은 즉시 다시 읽고, granted이면 구독 동기화 성공 응답을 받은 뒤에만 켜짐으로 표시한다.
+      async function refresh(reason, force) {
+        const seq = ++renderSeq;
+        paintPermission();
+        const permission = readPermission();
+        if (permission === "default" || permission === "denied") return paintResult(permission);
+        if (permission === "unsupported" || !window.SNORKYWebPush) return paintResult("unsupported");
+        paint("checking", "확인 중", "", "");
+        let result;
+        try {
+          result = await window.SNORKYWebPush.syncGrantedSubscription(reason, { force: Boolean(force) });
+        } catch (_) {
+          result = { state: "sync-failed" };
+        }
+        if (seq !== renderSeq) return;
+        paintPermission();
+        paintResult(result?.state);
+      }
+
+      actionBtn.addEventListener("click", async () => {
+        if (busy) return;
+        busy = true;
+        actionBtn.disabled = true;
+        try {
+          if (actionBtn.dataset.action === "default" && window.SNORKYWebPush?.requestPermissionAndSubscribe) {
+            try { await window.SNORKYWebPush.requestPermissionAndSubscribe(); } catch (error) { console.warn("[SNORKY] 알림 켜기 실패:", error?.message || error); }
+          }
+        } finally {
+          busy = false;
+        }
+        await refresh("mypage-action", true);
+      });
+
+      document.addEventListener("visibilitychange", () => { if (document.visibilityState === "visible") refresh("mypage-visibility", false); });
+      window.addEventListener("focus", () => { refresh("mypage-focus", false); });
+      refresh("mypage-load", true);
+    })();
+  </script>
 </body>
 </html>

@@ -346,9 +346,24 @@ function showFirstLoginPermissionPrompt(){
     try{localStorage.removeItem(permissionPromptPendingKey)}catch(_){}
     overlay.remove();
   };
+  const showNotificationSettingsGuide=()=>{
+    const guideText=overlay.querySelector("p");
+    if(guideText)guideText.innerHTML="휴대폰 설정 &gt; 앱 &gt; SNORKY &gt; 알림에서 알림을 켜주세요.<br>켠 뒤 SNORKY로 돌아오면 자동으로 연결됩니다.";
+    overlay.querySelector("#snorkyPermissionPromptLater")?.remove();
+    const guideButton=overlay.querySelector("#snorkyPermissionPromptSetup");
+    if(guideButton){
+      guideButton.textContent="확인";
+      guideButton.dataset.permissionStep="guide";
+      guideButton.disabled=false;
+    }
+  };
   overlay.querySelector("#snorkyPermissionPromptLater")?.addEventListener("click",finish,{once:true});
   overlay.querySelector("#snorkyPermissionPromptSetup")?.addEventListener("click",async event=>{
     const setupButton=event.currentTarget;
+    if(setupButton.dataset.permissionStep==="guide"){
+      finish();
+      return;
+    }
     const notificationStep=setupButton.dataset.permissionStep==="notification";
     setupButton.disabled=true;
     try{
@@ -358,12 +373,16 @@ function showFirstLoginPermissionPrompt(){
       }
 
       if(notificationStep){
-        let debugHasToken=false;
-        try{debugHasToken=Boolean(localStorage.getItem("snorky_push_token_v1"))}catch(_){}
-        console.info("[SNORKY][perm-debug] notification step click",{permission:window.Notification?.permission??"no-Notification",hasToken:debugHasToken,hasWebPush:typeof window.SNORKYWebPush?.requestPermissionAndSubscribe});
-        const request=window.SNORKYWebPush.requestPermissionAndSubscribe();
-        await withPermissionPromptTimeout(request,15000,"알림 권한 요청 시간 초과");
-        console.info("[SNORKY][perm-debug] requestPermissionAndSubscribe resolved");
+        if(window.Notification?.permission==="denied"){
+          showNotificationSettingsGuide();
+          return;
+        }
+        try{
+          const request=window.SNORKYWebPush.requestPermissionAndSubscribe();
+          await withPermissionPromptTimeout(request,15000,"알림 권한 요청 시간 초과");
+        }catch(error){
+          console.warn("[SNORKY] 권한 설정을 완료하지 못했습니다:",error?.message||error);
+        }
         finish();
         return;
       }
@@ -374,6 +393,10 @@ function showFirstLoginPermissionPrompt(){
         setupButton.textContent="알림 설정";
         setupButton.dataset.permissionStep="notification";
         setupButton.disabled=false;
+        return;
+      }
+      if(window.Notification?.permission==="denied"){
+        showNotificationSettingsGuide();
         return;
       }
       finish();
