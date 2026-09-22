@@ -421,9 +421,22 @@
   </div>
 
   <script src="./public/js/native-push-manager.js?v=20260922_fcm_v4"></script>
+  <script src="./public/js/native-back-handler.js?v=20260923_back_v1"></script>
   <script src="./public/js/supabase-client.js?v=20260820_stitch_v76"></script>
   <script async src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" onload="window.dispatchEvent(new Event('snorky:supabase-ready'))"></script>
   <script src="./public/js/auth-session.js?v=20260916_access_v3"></script>
   <script src="./public/js/indoor-diving.js?v=20260921_distance_sort_v1"></script>
+  <script>
+    // Android 시스템 뒤로가기: 상세 모달이 열려있으면 같은 방식(open 클래스 해제)으로 닫는다.
+    window.SNORKYBackHandler?.registerHandler(function () {
+      var modal = document.getElementById("indoorDetailModal");
+      if (modal && modal.classList.contains("open")) {
+        modal.classList.remove("open");
+        document.body.style.overflow = "";
+        return true;
+      }
+      return false;
+    });
+  </script>
 </body>
 </html>

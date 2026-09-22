@@ -576,6 +576,7 @@
 <div id="photoLightbox" class="photo-lightbox" role="dialog" aria-modal="true" aria-label="포인트 사진 확대 보기"><button id="photoLightboxClose" class="photo-lightbox-close" type="button" aria-label="확대 사진 닫기">×</button><img id="photoLightboxImage" alt="확대된 포인트 사진"></div>
 <script src="./public/js/supabase-client.js?v=20260820_stitch_v76"></script>
 <script src="./public/js/native-push-manager.js?v=20260922_fcm_v4"></script>
+<script src="./public/js/native-back-handler.js?v=20260923_back_v1"></script>
 <script src="./public/js/auth-session.js?v=20260916_entry_v1"></script>
 <script src="./public/js/user-profile.js?v=20260919_profile_write_v3"></script>
 <script src="./public/js/point-video.js?v=20260901_v1"></script>
@@ -949,6 +950,17 @@ window.addEventListener('popstate',event=>{
     return;
   }
   if(snorkyMapScreen?.classList.contains('open'))window.closeMapScreen?.({fromPopState:true});
+});
+// Android 시스템 뒤로가기: 열려있는 오버레이가 있으면 기존 history.back()/popstate 흐름을 그대로 재사용해 닫는다.
+// 오버레이가 없으면(홈 기본 화면) native-back-handler.js가 App.minimizeApp()으로 처리한다.
+window.SNORKYBackHandler?.registerHandler(function(){
+  const hasOverlay=document.getElementById('pointModal')?.classList.contains('open')
+    ||document.getElementById('snorkyMapScreen')?.classList.contains('open')
+    ||window.SNORKYPointDetailMap?.isOpen?.()
+    ||window.SNORKYTodayConditionDetail?.isOpen?.()
+    ||window.SNORKYDailyForecast?.isOpen?.();
+  if(hasOverlay){history.back();return true;}
+  return false;
 });
 let map=null,kakaoMapReady=false,kakaoMarkers=[],mapResizeObserver=null,mapInitialViewportApplied=false,coordinateEditPoint=null,coordinateEditRegion=null,editPinMode=null,tempLat=null,tempLng=null,tempCoordinateMarker=null;
 const todayHourlyScrollPositions=new Map();

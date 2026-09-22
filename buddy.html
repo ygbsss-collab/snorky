@@ -769,6 +769,7 @@
 
   <script src="./public/js/snorky-test-mode.js?v=20260905_v1"></script>
   <script src="./public/js/native-push-manager.js?v=20260922_fcm_v4"></script>
+  <script src="./public/js/native-back-handler.js?v=20260923_back_v1"></script>
   <script src="./public/js/auth-session.js?v=20260916_access_v3"></script>
   <script src="./public/js/user-profile.js?v=20260919_profile_write_v3"></script>
   <script src="./public/js/buddy-regions.js?v=20260903_v1"></script>
@@ -2662,6 +2663,24 @@
         } catch (error) {
           console.error("[pageshow] Detail post revalidation error:", error);
         }
+      });
+
+      // Android 시스템 뒤로가기: 열려있는 모달이 있으면 해당 모달만 닫는다(기존 close 함수 재사용).
+      window.SNORKYBackHandler?.registerHandler(function () {
+        if (applyFormModal && applyFormModal.style.display === "flex") { closeApplyFormModal(); return true; }
+        if (safetyModal && safetyModal.style.display === "flex") { closeSafetyModal(); return true; }
+        const notiModalEl = document.getElementById("buddyNotiModal");
+        if (notiModalEl && notiModalEl.style.display === "flex") { notiModalEl.style.display = "none"; return true; }
+        const openChatModalEl = document.getElementById("buddyOpenChatModal");
+        if (openChatModalEl && openChatModalEl.style.display === "flex") { openChatModalEl.style.display = "none"; return true; }
+        const communityModalEl = document.getElementById("buddyCommunityModal");
+        if (communityModalEl && communityModalEl.style.display === "flex") {
+          communityModalEl.style.display = "none";
+          document.body.style.overflow = "";
+          return true;
+        }
+        if (detailModal && detailModal.style.display === "flex") { closeDetailModal(); return true; }
+        return false;
       });
     })();
   </script>

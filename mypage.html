@@ -507,6 +507,7 @@
   <script src="./public/js/supabase-client.js?v=20260820_stitch_v76"></script>
   <script async src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" onload="window.dispatchEvent(new Event('snorky:supabase-ready'))"></script>
   <script src="./public/js/native-push-manager.js?v=20260922_fcm_v4"></script>
+  <script src="./public/js/native-back-handler.js?v=20260923_back_v1"></script>
   <script src="./public/js/auth-session.js?v=20260916_access_v3"></script>
   <script src="./public/js/buddy-certification.js?v=20260911_certification_display_v3"></script>
   <script src="./public/js/user-profile.js?v=20260919_profile_write_v3"></script>
@@ -1016,6 +1017,14 @@
             closeModal();
           }
         }
+      });
+
+      // Android 시스템 뒤로가기: 열려있는 모달이 있으면 기존 close 함수로 그 모달만 닫는다(ESC 처리와 동일한 우선순위).
+      window.SNORKYBackHandler?.registerHandler(function () {
+        if (cropModal && !cropModal.hidden) { closeCropModal(); return true; }
+        if (profileModal && !profileModal.hidden) { closeModal(); return true; }
+        if (typeof notiModal !== "undefined" && notiModal && !notiModal.hidden) { notiModal.hidden = true; return true; }
+        return false;
       });
 
       // 사진 변경 버튼 -> 파일 다이얼로그 열기
