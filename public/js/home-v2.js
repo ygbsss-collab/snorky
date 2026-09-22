@@ -308,12 +308,14 @@ function hasPermissionPromptUser(){
   }catch(_){return false}
 }
 async function requestLocationPermissionIfPrompt(){
-  if(!navigator.geolocation)return;
+  if(!navigator.geolocation)return false;
+  let granted=false;
   try{await withPermissionPromptTimeout(new Promise(resolve=>{
     try{
-      navigator.geolocation.getCurrentPosition(resolve,resolve,{enableHighAccuracy:false,timeout:10000,maximumAge:5*60*1000});
+      navigator.geolocation.getCurrentPosition(position=>{granted=Boolean(position);resolve(position)},resolve,{enableHighAccuracy:false,timeout:10000,maximumAge:5*60*1000});
     }catch(_){resolve()}
   }),12000,"위치 권한 요청 시간 초과")}catch(_){}
+  return granted;
 }
 function withPermissionPromptTimeout(promise,timeoutMs,message){
   let timeoutId;
@@ -322,10 +324,37 @@ function withPermissionPromptTimeout(promise,timeoutMs,message){
     new Promise((_,reject)=>{timeoutId=setTimeout(()=>reject(new Error(message)),timeoutMs)})
   ]).finally(()=>clearTimeout(timeoutId));
 }
-function showFirstLoginPermissionPrompt(){
+function isNativeAndroidPlatform(){
+  const capacitor=window.Capacitor;
+  const platform=typeof capacitor?.getPlatform==="function"?capacitor.getPlatform():capacitor?.Platform?.getPlatform?.();
+  return platform==="android";
+}
+function isNativeAndroidPush(){
+  return isNativeAndroidPlatform()&&typeof window.SNORKYNativePush?.requestPermissionAndRegister==="function";
+}
+async function getLocationPermissionState(){
+  try{
+    const result=await navigator.permissions?.query?.({name:"geolocation"});
+    return result?.state||"unknown";
+  }catch(_){return "unknown"}
+}
+async function getNotificationPermissionState(){
+  if(isNativeAndroidPlatform()){
+    try{return (await window.SNORKYNativePush?.getPermissionState?.())?.permission||"unsupported"}catch(_){return "unsupported"}
+  }
+  return window.Notification?.permission||"unsupported";
+}
+async function showFirstLoginPermissionPrompt(){
   let pending=false;
   try{pending=localStorage.getItem(permissionPromptPendingKey)==="true"}catch(_){}
   if(!pending||!hasPermissionPromptUser()||document.getElementById("snorkyPermissionPrompt"))return;
+  const locationPermission=await getLocationPermissionState();
+  const notificationPermission=await getNotificationPermissionState();
+  const skipLocation=locationPermission==="granted";
+  if(skipLocation&&notificationPermission==="granted"){
+    try{localStorage.removeItem(permissionPromptPendingKey)}catch(_){ }
+    return;
+  }
 
   const overlay=document.createElement("div");
   overlay.id="snorkyPermissionPrompt";
@@ -354,6 +383,19 @@ function showFirstLoginPermissionPrompt(){
       guideButton.disabled=false;
     }
   };
+  const showNotificationPermissionCard=()=>{
+    const title=overlay.querySelector("#snorkyPermissionPromptTitle");
+    const guideText=overlay.querySelector("p");
+    if(title)title.textContent="알림 권한 안내";
+    if(guideText)guideText.textContent="새 알림을 받으려면 알림 권한을 허용해주세요.";
+    const guideButton=overlay.querySelector("#snorkyPermissionPromptSetup");
+    if(guideButton){
+      guideButton.textContent="알림 설정";
+      guideButton.dataset.permissionStep="notification";
+      guideButton.disabled=false;
+    }
+  };
+  if(skipLocation)showNotificationPermissionCard();
   overlay.querySelector("#snorkyPermissionPromptLater")?.addEventListener("click",finish,{once:true});
   overlay.querySelector("#snorkyPermissionPromptSetup")?.addEventListener("click",async event=>{
     const setupButton=event.currentTarget;
@@ -370,6 +412,20 @@ function showFirstLoginPermissionPrompt(){
       }
 
       if(notificationStep){
+        if(isNativeAndroidPlatform()){
+          if(!isNativeAndroidPush()){
+            console.warn("[SNORKY] Native Push 모듈을 사용할 수 없습니다.");
+            showNotificationSettingsGuide();
+            return;
+          }
+          const result=await withPermissionPromptTimeout(window.SNORKYNativePush.requestPermissionAndRegister(),15000,"알림 권한 요청 시간 초과");
+          if(result?.permission!=="granted"){
+            showNotificationSettingsGuide();
+            return;
+          }
+          finish();
+          return;
+        }
         if(window.Notification?.permission==="denied"){
           showNotificationSettingsGuide();
           return;
@@ -384,8 +440,21 @@ function showFirstLoginPermissionPrompt(){
         return;
       }
 
-      await requestLocationPermissionIfPrompt();
+      const locationGranted=await requestLocationPermissionIfPrompt();
       if(finished)return;
+      if(!locationGranted){
+        setupButton.disabled=false;
+        return;
+      }
+      if(isNativeAndroidPlatform()){
+        const permission=await getNotificationPermissionState();
+        if(permission==="granted"){
+          finish();
+          return;
+        }
+        showNotificationPermissionCard();
+        return;
+      }
       if(window.Notification?.permission==="default"){
         setupButton.textContent="알림 설정";
         setupButton.dataset.permissionStep="notification";
@@ -2305,7 +2374,7 @@ function checkUrlPointParam(){
   }catch(_){}
 }
 checkUrlPointParam();
-showFirstLoginPermissionPrompt();
+showFirstLoginPermissionPrompt().catch(error=>console.warn("[SNORKY] 권한 안내 표시 실패:",error?.message||error));
 
 window.SNORKYHomeV2=Object.freeze({
   formatPointScore,
