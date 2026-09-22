@@ -4,17 +4,80 @@
   const NATIVE_TOKEN_KEY = "snorky_native_push_token_v1";
   const SESSION_TOKEN_KEY = "snorky_push_token_v1";
   const ANDROID_APP_ID = "com.yklabs.snorky";
+  const CHANNEL_ID = "snorky_default";
+  const CHANNEL_NAME = "SNORKY 알림";
   let plugin = null;
+  let localPlugin = null;
   let initialized = false;
+  let channelReady = false;
+
+  function getLocalPlugin() {
+    const capacitor = global.Capacitor;
+    return capacitor?.Plugins?.LocalNotifications || null;
+  }
+
+  async function ensureNotificationChannel() {
+    localPlugin = localPlugin || getLocalPlugin();
+    if (!localPlugin || channelReady) return Boolean(localPlugin);
+    await localPlugin.createChannel({
+      id: CHANNEL_ID,
+      name: CHANNEL_NAME,
+      importance: 5,
+      visibility: 1,
+      vibration: true,
+      lights: true,
+    });
+    channelReady = true;
+    return true;
+  }
+
+  function getNotificationData(notification) {
+    const data = notification?.data;
+    return data && typeof data === "object" ? { ...data } : {};
+  }
+
+  function navigateToNotificationUrl(url) {
+    if (!url) return;
+    try {
+      const target = new URL(String(url), global.location.href);
+      if (target.origin === global.location.origin) global.location.assign(target.href);
+    } catch (_) {}
+  }
+
+  async function showForegroundNotification(notification) {
+    if (!localPlugin) return;
+    const title = String(notification?.title || "SNORKY");
+    const body = String(notification?.body || "");
+    const data = getNotificationData(notification);
+    await localPlugin.schedule({
+      notifications: [{
+        id: Date.now() % 2147483647,
+        title,
+        body,
+        extra: data,
+        channelId: CHANNEL_ID,
+      }],
+    });
+  }
 
   async function ensureListeners() {
     if (initialized) return;
     initialized = true;
+    localPlugin = localPlugin || getLocalPlugin();
     await plugin.addListener("registration", ({ value }) => {
       registerToken(value).catch((error) => console.warn("[SNORKY Native Push] 토큰 등록 실패:", error?.message || error));
     });
     await plugin.addListener("registrationError", (error) => {
       console.warn("[SNORKY Native Push] FCM 등록 실패:", error?.error || error);
+    });
+    await plugin.addListener("pushNotificationReceived", (notification) => {
+      showForegroundNotification(notification).catch((error) => console.warn("[SNORKY Native Push] Foreground 알림 표시 실패:", error?.message || error));
+    });
+    await plugin.addListener("pushNotificationActionPerformed", (event) => {
+      navigateToNotificationUrl(getNotificationData(event?.notification).url);
+    });
+    await localPlugin?.addListener("localNotificationActionPerformed", (event) => {
+      navigateToNotificationUrl(event?.notification?.extra?.url);
     });
   }
 
@@ -86,6 +149,7 @@
   async function initialize() {
     plugin = getPlugin();
     if (!plugin) return { supported: false, permission: "unsupported" };
+    await ensureNotificationChannel();
     const permission = await plugin.checkPermissions();
     if (permission.receive !== "granted" || !getSessionToken()) {
       return { supported: true, permission: permission.receive };
@@ -105,6 +169,7 @@
   async function requestPermissionAndRegister() {
     plugin = plugin || getPlugin();
     if (!plugin) return { supported: false, permission: "unsupported" };
+    await ensureNotificationChannel();
     await ensureListeners();
     let permission = await plugin.checkPermissions();
     if (permission.receive !== "granted") permission = await plugin.requestPermissions();

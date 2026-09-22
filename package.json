@@ -6,5 +6,15 @@
   "scripts": {
     "start": "node scripts/server.mjs",
     "dev": "node scripts/server.mjs"
+  },
+  "dependencies": {
+    "@capacitor/android": "8.5.2",
+    "@capacitor/cli": "8.5.2",
+    "@capacitor/core": "8.5.2",
+    "@capacitor/local-notifications": "8.3.1",
+    "@capacitor/push-notifications": "8.1.2"
+  },
+  "devDependencies": {
+    "typescript": "7.0.2"
   }
 }
