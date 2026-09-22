@@ -44,20 +44,38 @@
     } catch (_) {}
   }
 
+  async function ensureLocalPlugin(retryDelayMs = 300) {
+    localPlugin = localPlugin || getLocalPlugin();
+    if (localPlugin) return localPlugin;
+    await new Promise((resolve) => setTimeout(resolve, retryDelayMs));
+    localPlugin = getLocalPlugin();
+    if (!localPlugin) {
+      console.warn("[SNORKY Native Push] LocalNotifications 플러그인을 찾을 수 없어 Foreground 알림을 표시하지 못했습니다.");
+    }
+    return localPlugin;
+  }
+
   async function showForegroundNotification(notification) {
-    if (!localPlugin) return;
+    const localNotifPlugin = await ensureLocalPlugin();
+    if (!localNotifPlugin) return;
     const title = String(notification?.title || "SNORKY");
     const body = String(notification?.body || "");
     const data = getNotificationData(notification);
-    await localPlugin.schedule({
-      notifications: [{
-        id: Date.now() % 2147483647,
-        title,
-        body,
-        extra: data,
-        channelId: CHANNEL_ID,
-      }],
-    });
+    try {
+      await localNotifPlugin.schedule({
+        notifications: [{
+          id: Date.now() % 2147483647,
+          title,
+          body,
+          extra: data,
+          channelId: CHANNEL_ID,
+        }],
+      });
+      console.info("[SNORKY Native Push] Foreground 알림 표시 성공.");
+    } catch (error) {
+      console.warn("[SNORKY Native Push] LocalNotifications.schedule 실패:", error?.message || error);
+      throw error;
+    }
   }
 
   async function ensureListeners() {
