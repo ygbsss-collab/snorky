@@ -532,7 +532,7 @@
             </div>
             <div style="display:flex;align-items:center;gap:8px;">
               <button type="button" id="btnReportBuddyPost" style="display:none;padding:0;border:0;background:transparent;color:#64748b;font:inherit;font-size:12px;font-weight:700;cursor:pointer;">게시글 신고</button>
-              <button type="button" id="btnShareBuddyPost">
+              <button type="button" id="btnShareBuddyPost" data-snorky-access-allowed>
                 <svg viewBox="0 0 24 24" width="14" height="14" fill="#191919" aria-hidden="true" style="flex-shrink:0;"><path d="M12 3c-4.97 0-9 3.185-9 7.115 0 2.557 1.707 4.8 4.27 6.054-.188.702-.682 2.545-.78 2.94-.122.49.18.483.377.352.155-.103 2.466-1.675 3.47-2.36.544.08 1.102.13 1.663.13 4.97 0 9-3.186 9-7.116S16.97 3 12 3z"/></svg>
                 <span>공유하기</span>
               </button>
@@ -1393,6 +1393,18 @@
       }
 
       async function shareBuddyPost(post) {
+        // 0. 캐시된 제재 상태를 동기 확인 (비동기 대기 없이 원래 클릭 제스처 안에서 처리)
+        const accessState = window.SNORKYAuthSession?.getAccessState?.();
+        if (accessState?.banned) {
+          showToast("영구 정지된 계정은 앱 기능을 사용할 수 없습니다.");
+          return;
+        }
+        if (accessState?.isSuspended) {
+          const until = new Date(accessState.suspendedUntil).toLocaleString("ko-KR");
+          showToast(`${until}까지 게시 및 참여 기능이 정지되었습니다.`);
+          return;
+        }
+
         const share = buildBuddyShareData(post);
 
         // 1. 카카오톡 공유 최우선 실행
