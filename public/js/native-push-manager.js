@@ -69,6 +69,7 @@
           body,
           extra: data,
           channelId: CHANNEL_ID,
+          isExactNotification: false,
         }],
       });
       console.info("[SNORKY Native Push] Foreground 알림 표시 성공.");
