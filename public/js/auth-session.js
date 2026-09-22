@@ -71,6 +71,9 @@
   }
 
   function clear() {
+    global.SNORKYNativePush?.removeRegisteredToken?.().catch?.((error) => {
+      console.warn("[SNORKY Native Push] 토큰 삭제 실패:", error?.message || error);
+    });
     localStorage.removeItem(STORAGE_KEY);
     localStorage.removeItem(GUEST_SELECTION_KEY);
   }
@@ -462,6 +465,10 @@
     refreshAccessState,
     requireServiceAccess,
     requirePostingAccess,
+  });
+
+  global.SNORKYNativePush?.initialize?.().catch?.((error) => {
+    console.warn("[SNORKY Native Push] 초기화 실패:", error?.message || error);
   });
 
   const replayAllowed = new WeakSet();
