@@ -10,6 +10,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Pretendard:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
   <script src="https://t1.kakaocdn.net/kakao_js_sdk/2.8.2/kakao.min.js" crossorigin="anonymous" defer></script>
   <script src="./public/js/supabase-client.js?v=20260820_stitch_v76" defer></script>
+  <script src="./public/js/native-push-manager.js?v=20260922_fcm_v1" defer></script>
   <script src="./public/js/auth-session.js?v=20260916_access_v3" defer></script>
   <script src="./public/js/auth-kakao.js?v=20260901_v1" defer></script>
   <style>
@@ -406,18 +407,29 @@
           }
 
           // 로컬 데이터 및 세션 완전 삭제
+          if (window.SNORKYNativePush?.removeRegisteredToken) {
+            try {
+              await window.SNORKYNativePush.removeRegisteredToken();
+            } catch (error) {
+              console.warn("[SNORKY Native Push] token deletion failed:", error?.message || error);
+            }
+          }
+
           try {
             localStorage.removeItem("snorky_favorites");
             localStorage.removeItem("snorky_my_spots");
             localStorage.removeItem("snorky_my_points");
             localStorage.removeItem("snorky_diving_schedules");
             localStorage.removeItem(`snorky_custom_spots_v1:${session.user.id}`);
-            localStorage.removeItem("snorky_push_token_v1");
-            if (window.SNORKYAuthSession?.clear) {
-              window.SNORKYAuthSession.clear();
-            } else {
-              localStorage.removeItem("snorky_auth_session_v1");
-            }
+            [
+              "snorky_auth_session_v1",
+              "snorky_push_token_v1",
+              "snorky_native_push_token_v1",
+              "snorky_permission_prompt_pending_v1",
+              "snorky_guest_selected_v1",
+              "snorky_profile_ensure_pending_v1",
+              "snorky_restricted_open_inquiry",
+            ].forEach((key) => localStorage.removeItem(key));
             window.dispatchEvent(new CustomEvent("snorky:auth-changed"));
           } catch (_) {}
 

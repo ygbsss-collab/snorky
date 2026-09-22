@@ -588,6 +588,13 @@
     } catch (_) {}
 
     // 5. Push subscription 삭제 및 Push token 제거
+    if (window.SNORKYNativePush?.removeRegisteredToken) {
+      try {
+        await window.SNORKYNativePush.removeRegisteredToken();
+      } catch (error) {
+        console.warn("[SNORKY Native Push] token deletion failed:", error?.message || error);
+      }
+    }
     try {
       if (window.SNORKYWebPush?.removeSubscription) {
         const reg = await navigator.serviceWorker?.ready.catch(() => null);
@@ -595,19 +602,22 @@
         if (sub) await window.SNORKYWebPush.removeSubscription(sub).catch((e) => console.warn("[SNORKY] push 삭제 실패(무시):", e));
       }
     } catch (_) {}
-    try { localStorage.removeItem("snorky_push_token_v1"); } catch (_) {}
-
     // 6. 로그인 세션 삭제
     try {
-      if (window.SNORKYAuthSession?.clear) {
-        window.SNORKYAuthSession.clear();
-      } else {
-        localStorage.removeItem("snorky_auth_session_v1");
-      }
+      [
+        "snorky_auth_session_v1",
+        "snorky_push_token_v1",
+        "snorky_native_push_token_v1",
+        "snorky_permission_prompt_pending_v1",
+        "snorky_guest_selected_v1",
+        PROFILE_ENSURE_PENDING_KEY,
+        "snorky_restricted_open_inquiry",
+      ].forEach((key) => localStorage.removeItem(key));
       window.dispatchEvent(new CustomEvent("snorky:auth-changed"));
       window.dispatchEvent(new CustomEvent("snorky:favorites-updated"));
     } catch (_) {}
 
+    window.location.replace("./index.html");
     return true;
   }
 

@@ -347,7 +347,9 @@ async function getNotificationPermissionState(){
 async function showFirstLoginPermissionPrompt(){
   let pending=false;
   try{pending=localStorage.getItem(permissionPromptPendingKey)==="true"}catch(_){}
-  if(!pending||!hasPermissionPromptUser()||document.getElementById("snorkyPermissionPrompt"))return;
+  const nativeAndroid=isNativeAndroidPlatform();
+  if(!hasPermissionPromptUser()||document.getElementById("snorkyPermissionPrompt"))return;
+  if(!nativeAndroid&&!pending)return;
   const locationPermission=await getLocationPermissionState();
   const notificationPermission=await getNotificationPermissionState();
   const skipLocation=locationPermission==="granted";
