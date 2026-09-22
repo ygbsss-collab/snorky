@@ -6,10 +6,13 @@
   const ANDROID_APP_ID = "com.yklabs.snorky";
   const CHANNEL_ID = "snorky_default";
   const CHANNEL_NAME = "SNORKY 알림";
+  const SCRIPT_VERSION = "20260922_fcm_v4";
   let plugin = null;
   let localPlugin = null;
   let initialized = false;
   let channelReady = false;
+
+  console.info("[SNORKY Native Push] script loaded", { version: SCRIPT_VERSION, page: global.location.href });
 
   function getLocalPlugin() {
     const capacitor = global.Capacitor;
@@ -62,6 +65,11 @@
     const body = String(notification?.body || "");
     const data = getNotificationData(notification);
     try {
+      console.info("[SNORKY Native Push] showForegroundNotification payload", {
+        scriptVersion: SCRIPT_VERSION,
+        isExactNotification: false,
+        page: global.location.href,
+      });
       await localNotifPlugin.schedule({
         notifications: [{
           id: Date.now() % 2147483647,
