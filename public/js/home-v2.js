@@ -2,7 +2,9 @@
 "use strict";
 const directPointRequest=document.documentElement.classList.contains("snorky-direct-point-detail");
 const state={todayExpanded:false,todayRows:[],nearbyExpanded:false,nearbyRows:[],nearbyRadius:300,nearestExpanded:false,hasLocation:false,userCoords:null};
-function saveSnorkyUserCoords(coords){try{if(Number.isFinite(Number(coords?.latitude))&&Number.isFinite(Number(coords?.longitude))){sessionStorage.setItem("snorky_user_coords",JSON.stringify({latitude:Number(coords.latitude),longitude:Number(coords.longitude),timestamp:Date.now()}));}}catch(_){} }
+const nativeLocationGrantedKey="snorky_native_location_granted_v1";
+function setNativeLocationGranted(granted){if(!isNativeAndroidPlatform())return;try{if(granted)localStorage.setItem(nativeLocationGrantedKey,"true");else localStorage.removeItem(nativeLocationGrantedKey)}catch(_){} }
+function saveSnorkyUserCoords(coords){try{if(Number.isFinite(Number(coords?.latitude))&&Number.isFinite(Number(coords?.longitude))){sessionStorage.setItem("snorky_user_coords",JSON.stringify({latitude:Number(coords.latitude),longitude:Number(coords.longitude),timestamp:Date.now()}));setNativeLocationGranted(true);}}catch(_){} }
 const homeMountRoot=document.getElementById("homeV2Root")||document.querySelector(".app")||document.body;
 let section=homeMountRoot.querySelector(".home-v2");if(!section)section=document.createElement("section");
 section.className="home-v2 home-reference";section.setAttribute("aria-label","SNORKY 홈");
@@ -279,7 +281,7 @@ function requestNearbyWithLocation(radius=100,silent=false){
   }
   navigator.geolocation.getCurrentPosition(position=>{
     state.userCoords={latitude:position.coords.latitude,longitude:position.coords.longitude};
-    try{sessionStorage.setItem("snorky_user_coords",JSON.stringify({latitude:position.coords.latitude,longitude:position.coords.longitude,timestamp:Date.now()}));}catch(_){}
+    saveSnorkyUserCoords(position.coords);
     state.hasLocation=true;
     state.nearbyRadius=radius;
     state.nearbyExpanded=false;
@@ -289,6 +291,7 @@ function requestNearbyWithLocation(radius=100,silent=false){
     renderNearestSection();
   },error=>{
     state.hasLocation=false;
+    if(error?.code===1)setNativeLocationGranted(false);
     if(!silent)renderNearbySection(error?.code===1?"위치 권한이 차단되었습니다. 브라우저 설정에서 허용해주세요.":"현재 위치를 확인할 수 없습니다.");
     renderNearestSection();
   },{enableHighAccuracy:false,timeout:10000,maximumAge:5*60*1000});
@@ -312,7 +315,7 @@ async function requestLocationPermissionIfPrompt(){
   let granted=false;
   try{await withPermissionPromptTimeout(new Promise(resolve=>{
     try{
-      navigator.geolocation.getCurrentPosition(position=>{granted=Boolean(position);resolve(position)},resolve,{enableHighAccuracy:false,timeout:10000,maximumAge:5*60*1000});
+      navigator.geolocation.getCurrentPosition(position=>{granted=Boolean(position);if(granted)saveSnorkyUserCoords(position.coords);resolve(position)},error=>{if(error?.code===1)setNativeLocationGranted(false);resolve(error)},{enableHighAccuracy:false,timeout:10000,maximumAge:5*60*1000});
     }catch(_){resolve()}
   }),12000,"위치 권한 요청 시간 초과")}catch(_){}
   return granted;
@@ -333,6 +336,28 @@ function isNativeAndroidPush(){
   return isNativeAndroidPlatform()&&typeof window.SNORKYNativePush?.requestPermissionAndRegister==="function";
 }
 async function getLocationPermissionState(){
+  if(isNativeAndroidPlatform()){
+    const geolocation=window.Capacitor?.Plugins?.Geolocation;
+    if(typeof geolocation?.checkPermissions==="function"){
+      try{
+        const permission=await geolocation.checkPermissions();
+        const nativeState=permission?.location==="granted"||permission?.coarseLocation==="granted"
+          ?"granted"
+          :(permission?.location||permission?.coarseLocation||"unknown");
+        if(nativeState==="granted")setNativeLocationGranted(true);
+        else if(nativeState==="denied")setNativeLocationGranted(false);
+        return nativeState;
+      }catch(_){}
+    }
+    try{if(localStorage.getItem(nativeLocationGrantedKey)==="true")return "granted"}catch(_){}
+    try{
+      const cached=JSON.parse(sessionStorage.getItem("snorky_user_coords")||"null");
+      if(Number.isFinite(Number(cached?.latitude))&&Number.isFinite(Number(cached?.longitude))){
+        setNativeLocationGranted(true);
+        return "granted";
+      }
+    }catch(_){}
+  }
   try{
     const result=await navigator.permissions?.query?.({name:"geolocation"});
     return result?.state||"unknown";

@@ -65,7 +65,8 @@
     initialized = true;
     localPlugin = localPlugin || getLocalPlugin();
     await plugin.addListener("registration", ({ value }) => {
-      registerToken(value).catch((error) => console.warn("[SNORKY Native Push] 토큰 등록 실패:", error?.message || error));
+      console.info("[SNORKY Native Push] FCM registration token received.");
+      registerToken(value).catch(() => {});
     });
     await plugin.addListener("registrationError", (error) => {
       console.warn("[SNORKY Native Push] FCM 등록 실패:", error?.error || error);
@@ -102,6 +103,20 @@
     try { localStorage.setItem(NATIVE_TOKEN_KEY, token); } catch (_) {}
   }
 
+  function isSupabaseConfigReady(config) {
+    return /^https:\/\/.+\.supabase\.co\/?$/i.test(config?.url || "")
+      && /^sb_publishable_/.test(config?.publishableKey || "");
+  }
+
+  async function waitForSupabaseConfig(timeoutMs = 3000) {
+    const startedAt = Date.now();
+    while (Date.now() - startedAt < timeoutMs) {
+      if (isSupabaseConfigReady(global.SNORKY_SUPABASE_CONFIG)) return true;
+      await new Promise((resolve) => setTimeout(resolve, 100));
+    }
+    return isSupabaseConfigReady(global.SNORKY_SUPABASE_CONFIG);
+  }
+
   function getSupabaseConfig() {
     const config = global.SNORKY_SUPABASE_CONFIG;
     if (!/^https:\/\/.+\.supabase\.co\/?$/i.test(config?.url || "") || !/^sb_publishable_/.test(config?.publishableKey || "")) {
@@ -130,9 +145,33 @@
 
   async function registerToken(token) {
     const sessionToken = getSessionToken();
-    if (!sessionToken || !token) return;
-    await callTokenFunction("register-native-push-token", token, sessionToken);
-    saveNativeToken(token);
+    if (!token) {
+      console.error("[SNORKY Native Push] register-native-push-token failed: empty FCM token.");
+      return { registered: false, reason: "EMPTY_FCM_TOKEN" };
+    }
+    if (!sessionToken) {
+      console.info("[SNORKY Native Push] register-native-push-token skipped: no logged-in session.");
+      return { registered: false, reason: "NO_SESSION" };
+    }
+    const configReadyAtFirstAttempt = isSupabaseConfigReady(global.SNORKY_SUPABASE_CONFIG);
+    let retriedAfterConfigWait = false;
+    try {
+      try {
+        await callTokenFunction("register-native-push-token", token, sessionToken);
+      } catch (error) {
+        if (configReadyAtFirstAttempt) throw error;
+        console.warn("[SNORKY Native Push] Supabase config is not ready; waiting before one retry.");
+        if (!await waitForSupabaseConfig()) throw error;
+        retriedAfterConfigWait = true;
+        await callTokenFunction("register-native-push-token", token, sessionToken);
+      }
+      saveNativeToken(token);
+      console.info("[SNORKY Native Push] register-native-push-token succeeded.", { retriedAfterConfigWait });
+      return { registered: true, retriedAfterConfigWait };
+    } catch (error) {
+      console.error("[SNORKY Native Push] register-native-push-token failed:", error?.message || error);
+      throw error;
+    }
   }
 
   async function removeRegisteredToken() {
