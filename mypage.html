@@ -18,7 +18,7 @@
     .mypage-app{width:100%;max-width:520px;min-height:100vh;display:flex;flex-direction:column;background:#fff;box-shadow:0 0 30px rgba(10,35,48,.04)}
     
     /* 상단 헤더 */
-    .mypage-header{position:sticky;top:0;z-index:50;display:flex;align-items:center;justify-content:space-between;height:52px;padding:0 16px;background:rgba(255,255,255,.96);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);border-bottom:1px solid #edf2f5}
+    .mypage-header{position:sticky;top:0;z-index:50;display:flex;align-items:center;justify-content:space-between;height:calc(52px + env(safe-area-inset-top, 0px));min-height:calc(52px + env(safe-area-inset-top, 0px));padding:env(safe-area-inset-top, 0px) 16px 0;background:rgba(255,255,255,.96);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);border-bottom:1px solid #edf2f5}
     .mypage-back{display:grid;place-items:center;width:36px;height:36px;padding:0;border:0;border-radius:50%;background:transparent;color:#101828;font-size:24px;font-weight:300;text-decoration:none;line-height:1;cursor:pointer;transition:background .15s}
     .mypage-back:hover{background:#f1f5f9}
     .mypage-header h1{margin:0;font-size:17px;font-weight:800;letter-spacing:-.02em;color:#0e2032}
