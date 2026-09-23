@@ -829,8 +829,8 @@ img.indoor-card-thumb {
   width: min(600px, 100%);
   min-width: 0;
   max-width: 600px;
-  max-height: 92vh;
-  height: 92vh;
+  max-height: 100%;
+  height: min(92vh, 100%);
   background: #f4f7fb;
   border-radius: 20px 20px 0 0;
   display: flex;

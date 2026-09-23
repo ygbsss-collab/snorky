@@ -4,7 +4,7 @@ body{margin:0;min-height:100vh;background:#f4f8fa;color:var(--custom-ink);font-f
 button,input{font:inherit}
 button{cursor:pointer}
 .custom-spots-app{width:100%;max-width:640px;min-height:100vh;margin:0 auto;background:#fff;box-shadow:0 0 30px rgba(10,35,48,.05)}
-.custom-spots-header{position:sticky;top:0;z-index:50;display:grid;grid-template-columns:36px 1fr auto;gap:10px;align-items:center;height:52px;padding:0 16px;background:rgba(255,255,255,.96);border-bottom:1px solid #e9f0f3;backdrop-filter:blur(10px)}
+.custom-spots-header{position:sticky;top:0;z-index:50;display:grid;grid-template-columns:36px 1fr auto;gap:10px;align-items:center;height:calc(52px + env(safe-area-inset-top, 0px));min-height:calc(52px + env(safe-area-inset-top, 0px));padding:env(safe-area-inset-top, 0px) 16px 0;background:rgba(255,255,255,.96);border-bottom:1px solid #e9f0f3;backdrop-filter:blur(10px)}
 .custom-spots-header h1{margin:0;font-size:17px;font-weight:800;letter-spacing:-.02em;color:#0e2032;line-height:1.2}.custom-spots-header p{display:none}
 .custom-spots-back{display:grid;place-items:center;width:36px;height:36px;border:0;border-radius:50%;background:transparent;color:#101828;font-size:24px;font-weight:300;text-decoration:none;line-height:1;cursor:pointer;transition:background .15s}
 .custom-spots-back:hover{background:#f1f5f9}
